@@ -1,0 +1,6 @@
+/limine
+*.iso
+*.hdd
+edk2-ovmf
+*.config
+*.config.old

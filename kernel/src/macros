@@ -1,0 +1,17 @@
+#ifndef MACROS
+#define MACROS
+
+#define EQU_IN_SET(x, arr) \
+    ({ \
+        int _found = 0; \
+        size_t _size = sizeof(arr) / sizeof(arr[0]); \
+        for (size_t _i = 0; _i < _size; _i++) { \
+            if ((x) == (arr)[_i]) { \
+                _found = 1; \
+                break; \
+            } \
+        } \
+        _found; \
+    })
+
+#endif

@@ -1,0 +1,112 @@
+menu "Logging"
+
+config PRINT_INFO
+	bool "Verbose information logs"
+	default y
+
+config PRINT_STATUS
+	bool "Verbose status logs"
+	default y
+
+endmenu
+
+menu "Drivers"
+
+menu "PS2 Keyboard"
+
+config PS2K_INITIAL_BUF_SIZE
+    int "Initial buffer size"
+    default 512
+
+config PS2K_DEBUG
+    bool "Debugging"
+    default n
+
+config PS2K_ALLOC_BUF_MALLOC
+    bool "Use malloc over Valloc"
+    default y
+
+config PS2K_ALLOC_BUF
+    bool "Allocate buffer"
+    default y
+
+config PS2K_DROP_EVENTS_ON_FAILURE_OR_OVERFLOW
+    bool "Drop events on failiure"
+    default n
+
+endmenu
+
+menu "PS2 Mouse"
+
+config DEBUG_MOUSE
+	bool "Debugging"
+	default n
+
+endmenu
+
+menu "ACPI"
+
+config ACPI_VERBOSE
+    bool "Verbose Logging"
+    default y
+
+endmenu
+
+menu "PCI"
+
+config PCI_VERBOSE
+    bool "Verbose Logging"
+    default n
+
+endmenu
+
+menu "PIT - Deprecated (Unused)"
+
+config PIT_FREQUENCY
+	int "PIT Timer Frequency"
+	default 300
+
+endmenu
+
+endmenu
+
+menu "IDT"
+
+menu "Exceptions"
+
+config EXCEPTIONS_NESTING_THRESHOLD
+	int "Exceptions nesting threshold"
+	default 3
+
+config EXCEPTIONS_RUN_DEBUGGER
+	bool "Run the debugger when an exception occurs"
+	default y
+
+endmenu
+
+endmenu
+
+menu "Syscalls"
+
+config ALLOW_SYSCALL_REGISTRATION_OVERRIDE
+    bool "Allow syscall registration override"
+    default y
+    help
+      Allow a system call to be registered even if its syscall
+      number (vector) is already in use
+
+      This permits runtime replacement of syscall handlers
+
+config CONFIG_VERBOSE_SYSCALL_CREATION
+	bool "Verbose Logging"
+	default y
+
+endmenu
+
+menu "APIC"
+
+config APIC_VERBOSE
+	bool "Verbose Logging"
+	default y
+
+endmenu
