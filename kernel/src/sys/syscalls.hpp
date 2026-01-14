@@ -1,0 +1,39 @@
+#ifndef SYSCALLS_HPP
+#define SYSCALLS_HPP 1
+
+#include <ObjectManager/ObjectManager.hpp>
+
+void HlKernelMessage(const char* __restrict dat);
+Handle* HlCreateNewHandle();
+void HlDestroyHandle(Handle* hptr);
+void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags);
+void HlCloseFile(Handle* hptr);
+int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count);
+int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count);
+int64_t HlPositionedWriteFile(Handle* hptr, size_t offset, const void* __restrict dat, size_t count);
+int64_t HlPositionedReadFile(Handle* hptr, size_t offset, void* __restrict buf, size_t count);
+void HlSyncFile(Handle* hptr);
+void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFlags);
+void HlCloseDirectory(Handle* hptr);
+void HlMakeDirectory(Handle* hptr, const char* __restrict path);
+void HlRemoveDirectory(Handle* hptr, const char* __restrict path);
+void HlListDirectory(Handle* hptr, void* __restrict buf);
+void HlResetDirectoryReadOffset(Handle* hptr);
+void* HlMemoryPoolAllocate(size_t n);
+void HlMemoryPoolFree(void* ptr);
+void* HlMemoryAllocatePool(size_t nbytes);
+void HlMemoryFreePool(void* poolptr);
+void* HlMemoryAllocateAligned(size_t npages);
+void HlMemoryFreeAligned(void* ptr, size_t npages);
+void HlMemorySetAttributes(void* ptr, size_t npages, uint64_t attributes);
+int64_t HlCreateNewProcess();
+void HlKillProcess(int64_t pid);
+void HlTerminateProcess(int64_t pid);
+void HlLoadElf(const void* __restrict datbase);
+void HlExit(int exit_code);
+void HlOpenConsole(Handle* portR, Handle* portW);
+void HlWaitForInputConsole();
+int64_t HlReadConsole(void* __restrict buf, size_t count);
+int64_t HlWriteConsole(const void* __restrict dat, size_t count);
+
+#endif

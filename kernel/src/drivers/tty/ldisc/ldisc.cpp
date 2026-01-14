@@ -179,4 +179,16 @@ ssize_t write(const char* buf, ssize_t n) {
 	else return builtin_ldisc_write((void*)buf, n);
 }
 
+bool has_input() {
+    return !read_done();
+}
+
+void begin_read(bool echo, char* buf, size_t n) {
+    set(echo, buf, n);
+}
+
+void end_read() {
+    reset();
+}
+
 }

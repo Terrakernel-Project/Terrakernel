@@ -110,3 +110,14 @@ config APIC_VERBOSE
 	default y
 
 endmenu
+
+menu "Kernel Messages"
+
+config ENABLE_KERNEL_MESSAGES
+	bool "Enable kernel messages"
+	default y
+
+config Language
+	# choose either EN_UK, DE, FR, ES, IT, PT, NL, SV, NO, DK, FI, IS
+
+endmenu

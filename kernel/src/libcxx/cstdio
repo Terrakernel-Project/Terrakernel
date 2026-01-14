@@ -5,6 +5,36 @@
 #include <drivers/serial/printf.h>
 #include <drivers/serial/serial.hpp>
 
+#include <cstdint>
+
+enum MESSAGE_ID : uint16_t {
+	TEST = 0
+};
+
+enum LANG {
+    EN_UK,  // English (United Kingdom)
+    DE,     // German
+    FR,     // French
+    ES,     // Spanish
+    IT,     // Italian
+    PT,     // Portuguese
+    NL,     // Dutch
+    SV,     // Swedish
+    NO,     // Norwegian
+    DK,     // Danish
+    FI,     // Finnish
+    IS,     // Icelandic
+    LANG_COUNT  // always last, tracks number of languages
+};
+
+namespace messages {
+
+void print_message(MESSAGE_ID message, LANG language);
+
+void initialise();
+
+}
+
 // printf automatically included now
 
 #endif

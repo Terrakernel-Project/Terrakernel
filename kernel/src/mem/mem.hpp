@@ -42,6 +42,11 @@ namespace mem {
 		uint64_t get_cr3();
 	}
 
+	namespace usr {
+		void* alloc(size_t npages);
+		void free(void* ptr, size_t npages);
+	}
+
 	namespace heap {
 		void initialise();
 

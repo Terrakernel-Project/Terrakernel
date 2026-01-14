@@ -304,3 +304,20 @@ void* reserve_heap(size_t npages) {
 }
 
 }
+
+#include <mem/mem.hpp>
+
+namespace mem::usr {
+
+void* alloc(size_t npages) {
+	void* mem = mem::pmm::palloc(npages);
+	mem::vmm::mmap(mem, mem, npages, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+	return mem;
+}
+
+void free(void* ptr, size_t npages) {
+	mem::vmm::mmap(ptr, ptr, npages, PAGE_PRESENT | PAGE_RW);
+	mem::pmm::free(ptr, npages);
+}
+
+}

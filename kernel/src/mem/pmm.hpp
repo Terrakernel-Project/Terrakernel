@@ -31,4 +31,11 @@ void* reserve_heap(size_t npages);
 
 }
 
+namespace mem::usr {
+
+void* alloc(size_t npages);
+void free(void* ptr, size_t npages);
+
+}
+
 #endif /* PMM_HPP */

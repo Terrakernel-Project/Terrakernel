@@ -9,13 +9,13 @@ namespace dbg {
 
 namespace memview {
 
-void print_memory_contents_at(uint64_t addr, uint64_t len, uint64_t paging_len);
+void print_memory_contents_at(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t highlight_addr = 0);
 
 }
 
 namespace disasm {
 
-void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len);
+void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t highlight_addr = 0);
 
 }
 

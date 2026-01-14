@@ -185,9 +185,9 @@ void debugger_event_handler(key_event& ev, exception_frame* frame) {
 		case KEY_F2:
 			clr();
 			printf("RIP\n\r");
-			dbg::memview::print_memory_contents_at(frame->rip, 100, 0);
+			dbg::memview::print_memory_contents_at(frame->rip-50, 150, 0, frame->rip);
 			printf("\n\r\n\rCR2\n\r");
-			dbg::memview::print_memory_contents_at(frame->cr2, 100, 0);
+			dbg::memview::print_memory_contents_at(frame->cr2-50, 150, 0, frame->rip);
 			break;
 		case KEY_F3:
 			clr();
@@ -209,7 +209,7 @@ void debugger(exception_frame* frame) {
 	drivers::input::ps2k::set_event_callback((event_callback_fn)debugger_event_handler, frame);
 
 	clr();
-	dbg::disasm::disasm_at_memory(frame->rip, 100, 0);
+	dbg::disasm::disasm_at_memory(frame->rip-50, 150, 0, frame->rip);
 
 	while (true) drivers::input::ps2k::user_ps2k_poll();
 }

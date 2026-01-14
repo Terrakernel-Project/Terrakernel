@@ -12,7 +12,7 @@ HOST_CPPFLAGS := -g -O0 -pipe
 HOST_LDFLAGS := -g
 HOST_LIBS :=
 
-INIT_FLAGS := -ffreestanding -nolibc -nostdlib -isystem ./binaries/sys/ -I ./binaries/sys/
+INIT_FLAGS := -ffreestanding -nolibc -nostdlib -isystem ./binaries/sys/ -I ./binaries/sys/ -e _start
 INIT_SOURCE := ./binaries/init/init.c
 INIT_LINKER_SCRIPT := ./binaries/init/linker.ld
 
@@ -66,6 +66,16 @@ run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 		-device ahci,id=ahci \
 		-device ide-hd,drive=disk0,bus=ahci.0 \
 		$(QEMUFLAGS)
+
+run-dbg: edk2-ovmf $(IMAGE_NAME).iso
+	qemu-system-$(ARCH) \
+			-machine q35 \
+			-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
+			-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
+			-blockdev driver=raw,node-name=disk0,file=diskfile \
+			-device ahci,id=ahci \
+			-device ide-hd,drive=disk0,bus=ahci.0 \
+			-m 6G -s -S \
 
 .PHONY: run-bios
 run-bios: $(IMAGE_NAME).iso

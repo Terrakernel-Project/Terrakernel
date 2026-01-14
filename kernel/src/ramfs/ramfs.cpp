@@ -402,6 +402,14 @@ int64_t lseek(int fd, int64_t offset, int whence) {
     return new_offset;
 }
 
+int64_t tell(int fd) {
+    if (fd < 0 || fd >= MAX_FDS || !fd_table[fd].in_use) {
+        return -1;
+    }
+    
+    return fd_table[fd].offset;
+}
+
 int stat(const char* pathname, struct stat* statbuf) {
     Inode* inode = find_inode(pathname);
     if (!inode) {

@@ -136,19 +136,39 @@ extern "C" void init() {
 	size_t nsc = initialise_syscall_handlers();
 	Log::printf_status("OK", "Syscall handlers Initialised, there are %zu valid syscalls", nsc);
 
-	proc::initialise();
+	messages::initialise();
+	Log::printf_status("OK", "Messages Initialised");
+
+	messages::print_message(TEST, EN_UK);
+	messages::print_message(TEST, DE);
+	messages::print_message(TEST, FR);
+	messages::print_message(TEST, ES);
+	messages::print_message(TEST, IT);
+	messages::print_message(TEST, PT);
+	messages::print_message(TEST, NL);
+	messages::print_message(TEST, SV);
+	messages::print_message(TEST, NO);
+	messages::print_message(TEST, DK);
+	messages::print_message(TEST, FI);
+	messages::print_message(TEST, IS);
 
 	asm ("sti");
 
-	proc::execve("/initrd/init", 0, 0, 0);
+	int fd = ramfs::open("/initrd/init", O_RDONLY);
+	if (fd < 0) { Log::panic("no init executable was found... Halting..."); }
 
-	//char buf[4096];
+	stat sb;
+	ramfs::fstat(fd, &sb);
+	if (sb.st_size < 1) { Log::panic("init executable has no data"); }
+
+	void* exe_buf = mem::vmm::valloc((sb.st_size + 0xFFF) / 0x1000);
+	size_t read = (size_t)ramfs::read(fd, exe_buf, sb.st_size);
+
+	if (read != sb.st_size) { Log::panic("failed to read the init executable correctly"); }
+
+	
     while (1) {
-    	//printf("> ");
-    	//size_t read = drivers::tty::ldisc::read(true, buf, 4096);
-    	//if (read > 0) printf("Read %zu characters: %s\n\r", read, buf);
-    	//else printf("Read 0 characters...\n\r");
-    	//printf("Timer report: %zu\n\r", drivers::timers::apic::ns_elapsed_time());
+		run_elf(exe_buf, sb.st_size, true); // you cannot terminate this program
         asm volatile("hlt");
     }
     

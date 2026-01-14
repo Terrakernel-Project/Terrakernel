@@ -14,6 +14,10 @@ ssize_t read(bool echo, char* buf, size_t n);
 // -1 means write until null terminator, it will be cast to size_t then used as the max value
 ssize_t write(const char* buf, ssize_t n = -1);
 
+bool has_input();
+void begin_read(bool echo, char* buf, size_t n);
+void end_read();
+
 }
 
 #endif

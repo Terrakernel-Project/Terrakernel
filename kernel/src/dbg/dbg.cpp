@@ -89,7 +89,7 @@ uint64_t hexstr_to_u64(const char* str) {
 namespace dbg {
 namespace memview {
 
-void print_memory_contents_at(uint64_t addr, uint64_t len, uint64_t paging_len) {
+void print_memory_contents_at(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t highlight_addr) {
     if (paging_len == 0 || paging_len % 16 != 0)
         paging_len = 256;
 
@@ -107,7 +107,11 @@ void print_memory_contents_at(uint64_t addr, uint64_t len, uint64_t paging_len) 
         }
         
         if (a % 16 == 0) {
-            printf(" %016llX | ", (unsigned long long)(addr + a));
+            if (highlight_addr == (addr + a)) {
+                printf(">%016llX | ", (unsigned long long)(addr + a));
+            } else {
+                printf(" %016llX | ", (unsigned long long)(addr + a));
+            }
         }
         
         if (mem::vmm::is_mapped((void*)(addr + a))) {
@@ -128,7 +132,7 @@ void print_memory_contents_at(uint64_t addr, uint64_t len, uint64_t paging_len) 
 
 namespace disasm {
 
-void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len) {
+void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t highlight_addr) {
     if (paging_len == 0 || paging_len % 16 != 0)
         paging_len = 256;
 
@@ -154,7 +158,13 @@ void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len) {
             printf("\033[2J\033[H");
         }
 
-        printf("%016llX  %s\n\r", (unsigned long long)runtime_address, instruction.text);
+        if (highlight_addr >= runtime_address &&
+            highlight_addr < runtime_address + instruction.info.length) {
+            printf(">");
+        } else {
+            printf(" ");
+        }
+        printf("%016llX  %s", (unsigned long long)runtime_address, instruction.text); /* no crlf because we will need that later */
 
         if (instruction.text[0] == 'j' || instruction.text[0] == 'J' ||
 			strncmp(instruction.text, "call", 4) == 0 || strncmp(instruction.text, "CALL", 4) == 0
@@ -164,6 +174,8 @@ void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len) {
             const char* func = find_symbol(target, &offset);
                     
             printf(" -> %s + 0x%llX\n\r", func, (unsigned long long)offset);
+        } else {
+        	printf("\n\r");
         }
         
         offset += instruction.info.length;

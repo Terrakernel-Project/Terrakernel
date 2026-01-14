@@ -5,7 +5,7 @@
 #include <cstdio>
 #include "ps2k_key_event.hpp"
 #include "ps2k_scancode_map.hpp"
-#include <errno.hpp>
+#include <kerr.hpp>
 #include <drivers/timers/pit/pit.hpp>
 #include <types.hpp>
 

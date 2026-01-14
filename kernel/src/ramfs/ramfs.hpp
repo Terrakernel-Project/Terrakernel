@@ -75,6 +75,7 @@ int close(int fd);
 int64_t read(int fd, void* buf, size_t count);
 int64_t write(int fd, const void* buf, size_t count);
 int64_t lseek(int fd, int64_t offset, int whence);
+int64_t tell(int fd);
 int stat(const char* pathname, struct stat* statbuf);
 int fstat(int fd, struct stat* statbuf);
 int mkdir(const char* pathname, uint32_t mode);

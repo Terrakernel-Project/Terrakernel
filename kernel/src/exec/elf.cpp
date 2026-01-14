@@ -15,17 +15,76 @@ constexpr uint16_t ET_DYN  = 3;
 
 constexpr uint32_t PT_LOAD    = 1;
 constexpr uint32_t PT_DYNAMIC = 2;
+constexpr uint32_t PT_INTERP  = 3;
+constexpr uint32_t PT_TLS     = 7;
 
 constexpr uint32_t PF_X = 0x1;
 constexpr uint32_t PF_W = 0x2;
 constexpr uint32_t PF_R = 0x4;
 
-constexpr int64_t DT_NULL    = 0;
-constexpr int64_t DT_RELA    = 7;
-constexpr int64_t DT_RELASZ  = 8;
-constexpr int64_t DT_RELAENT = 9;
+constexpr int64_t DT_NULL       = 0;
+constexpr int64_t DT_NEEDED     = 1;
+constexpr int64_t DT_PLTRELSZ   = 2;
+constexpr int64_t DT_PLTGOT     = 3;
+constexpr int64_t DT_HASH       = 4;
+constexpr int64_t DT_STRTAB     = 5;
+constexpr int64_t DT_SYMTAB     = 6;
+constexpr int64_t DT_RELA       = 7;
+constexpr int64_t DT_RELASZ     = 8;
+constexpr int64_t DT_RELAENT    = 9;
+constexpr int64_t DT_STRSZ      = 10;
+constexpr int64_t DT_SYMENT     = 11;
+constexpr int64_t DT_INIT       = 12;
+constexpr int64_t DT_FINI       = 13;
+constexpr int64_t DT_SONAME     = 14;
+constexpr int64_t DT_RPATH      = 15;
+constexpr int64_t DT_SYMBOLIC   = 16;
+constexpr int64_t DT_REL        = 17;
+constexpr int64_t DT_RELSZ      = 18;
+constexpr int64_t DT_RELENT     = 19;
+constexpr int64_t DT_PLTREL     = 20;
+constexpr int64_t DT_DEBUG      = 21;
+constexpr int64_t DT_TEXTREL    = 22;
+constexpr int64_t DT_JMPREL     = 23;
+constexpr int64_t DT_BIND_NOW   = 24;
+constexpr int64_t DT_INIT_ARRAY = 25;
+constexpr int64_t DT_FINI_ARRAY = 26;
+constexpr int64_t DT_INIT_ARRAYSZ = 27;
+constexpr int64_t DT_FINI_ARRAYSZ = 28;
+constexpr int64_t DT_FLAGS      = 30;
+constexpr int64_t DT_PREINIT_ARRAY = 32;
+constexpr int64_t DT_PREINIT_ARRAYSZ = 33;
 
-constexpr uint64_t R_X86_64_RELATIVE = 8;
+constexpr uint64_t R_X86_64_NONE       = 0;
+constexpr uint64_t R_X86_64_64         = 1;
+constexpr uint64_t R_X86_64_PC32       = 2;
+constexpr uint64_t R_X86_64_GOT32      = 3;
+constexpr uint64_t R_X86_64_PLT32      = 4;
+constexpr uint64_t R_X86_64_COPY       = 5;
+constexpr uint64_t R_X86_64_GLOB_DAT   = 6;
+constexpr uint64_t R_X86_64_JUMP_SLOT  = 7;
+constexpr uint64_t R_X86_64_RELATIVE   = 8;
+constexpr uint64_t R_X86_64_GOTPCREL   = 9;
+constexpr uint64_t R_X86_64_32         = 10;
+constexpr uint64_t R_X86_64_32S        = 11;
+constexpr uint64_t R_X86_64_16         = 12;
+constexpr uint64_t R_X86_64_PC16       = 13;
+constexpr uint64_t R_X86_64_8          = 14;
+constexpr uint64_t R_X86_64_PC8        = 15;
+constexpr uint64_t R_X86_64_DTPMOD64   = 16;
+constexpr uint64_t R_X86_64_DTPOFF64   = 17;
+constexpr uint64_t R_X86_64_TPOFF64    = 18;
+constexpr uint64_t R_X86_64_TLSGD      = 19;
+constexpr uint64_t R_X86_64_TLSLD      = 20;
+constexpr uint64_t R_X86_64_DTPOFF32   = 21;
+constexpr uint64_t R_X86_64_GOTTPOFF   = 22;
+constexpr uint64_t R_X86_64_TPOFF32    = 23;
+constexpr uint64_t R_X86_64_PC64       = 24;
+constexpr uint64_t R_X86_64_GOTOFF64   = 25;
+constexpr uint64_t R_X86_64_GOTPC32    = 26;
+constexpr uint64_t R_X86_64_SIZE32     = 32;
+constexpr uint64_t R_X86_64_SIZE64     = 33;
+constexpr uint64_t R_X86_64_IRELATIVE  = 37;
 
 static inline uint64_t align_down(uint64_t addr, uint64_t alignment) {
     return addr & ~(alignment - 1);
@@ -42,8 +101,12 @@ static inline bool is_valid_elf_magic(const Elf64_Ehdr* ehdr) {
            ehdr->e_ident[3] == 'F';
 }
 
-static inline uint64_t elf_reloc_type(uint64_t info) {
+static inline uint32_t elf_reloc_type(uint64_t info) {
     return info & 0xFFFFFFFF;
+}
+
+static inline uint32_t elf_reloc_symbol(uint64_t info) {
+    return info >> 32;
 }
 
 static inline uint64_t convert_flags_to_page_flags(uint32_t elf_flags, bool user_mode) {
@@ -60,6 +123,39 @@ static inline uint64_t convert_flags_to_page_flags(uint32_t elf_flags, bool user
     return flags;
 }
 
+struct dynamic_info {
+    Elf64_Sym*  symtab;
+    const char* strtab;
+    size_t      strtab_size;
+    
+    Elf64_Rela* rela;
+    size_t      rela_size;
+    size_t      rela_ent;
+    
+    Elf64_Rel*  rel;
+    size_t      rel_size;
+    size_t      rel_ent;
+    
+    Elf64_Rela* jmprel;
+    size_t      pltrelsz;
+    uint64_t    pltrel_type;
+    
+    uint64_t*   init_array;
+    size_t      init_array_sz;
+    
+    uint64_t*   fini_array;
+    size_t      fini_array_sz;
+    
+    uint64_t*   preinit_array;
+    size_t      preinit_array_sz;
+    
+    uint64_t    init_func;
+    uint64_t    fini_func;
+    
+    bool        has_textrel;
+    bool        bind_now;
+};
+
 static Elf64_Dyn* find_dynamic_section(uint64_t load_base, Elf64_Phdr* phdrs, uint16_t phnum) {
     for (uint16_t i = 0; i < phnum; i++) {
         if (phdrs[i].p_type == PT_DYNAMIC) {
@@ -69,45 +165,283 @@ static Elf64_Dyn* find_dynamic_section(uint64_t load_base, Elf64_Phdr* phdrs, ui
     return nullptr;
 }
 
-static void process_relocations(uint64_t load_base, Elf64_Phdr* phdrs, uint16_t phnum) {
-    Elf64_Dyn* dynamic_section = find_dynamic_section(load_base, phdrs, phnum);
-    if (!dynamic_section) {
-        return;
+static bool parse_dynamic_section(uint64_t load_base, Elf64_Phdr* phdrs, uint16_t phnum, 
+                                  dynamic_info& dyn) {
+    mem::memset(&dyn, 0, sizeof(dyn));
+    
+    Elf64_Dyn* dynamic = find_dynamic_section(load_base, phdrs, phnum);
+    if (!dynamic) {
+        return true;
     }
 
-    Elf64_Rela* rela_table = nullptr;
-    size_t rela_total_size = 0;
-    size_t rela_entry_size = sizeof(Elf64_Rela);
-
-    for (Elf64_Dyn* entry = dynamic_section; entry->d_tag != DT_NULL; entry++) {
+    for (Elf64_Dyn* entry = dynamic; entry->d_tag != DT_NULL; entry++) {
         switch (entry->d_tag) {
+            case DT_SYMTAB:
+                dyn.symtab = reinterpret_cast<Elf64_Sym*>(load_base + entry->d_val);
+                break;
+            case DT_STRTAB:
+                dyn.strtab = reinterpret_cast<const char*>(load_base + entry->d_val);
+                break;
+            case DT_STRSZ:
+                dyn.strtab_size = entry->d_val;
+                break;
             case DT_RELA:
-                rela_table = reinterpret_cast<Elf64_Rela*>(load_base + entry->d_val);
+                dyn.rela = reinterpret_cast<Elf64_Rela*>(load_base + entry->d_val);
                 break;
             case DT_RELASZ:
-                rela_total_size = entry->d_val;
+                dyn.rela_size = entry->d_val;
                 break;
             case DT_RELAENT:
-                rela_entry_size = entry->d_val;
+                dyn.rela_ent = entry->d_val;
+                break;
+            case DT_REL:
+                dyn.rel = reinterpret_cast<Elf64_Rel*>(load_base + entry->d_val);
+                break;
+            case DT_RELSZ:
+                dyn.rel_size = entry->d_val;
+                break;
+            case DT_RELENT:
+                dyn.rel_ent = entry->d_val;
+                break;
+            case DT_JMPREL:
+                dyn.jmprel = reinterpret_cast<Elf64_Rela*>(load_base + entry->d_val);
+                break;
+            case DT_PLTRELSZ:
+                dyn.pltrelsz = entry->d_val;
+                break;
+            case DT_PLTREL:
+                dyn.pltrel_type = entry->d_val;
+                break;
+            case DT_INIT:
+                dyn.init_func = load_base + entry->d_val;
+                break;
+            case DT_FINI:
+                dyn.fini_func = load_base + entry->d_val;
+                break;
+            case DT_INIT_ARRAY:
+                dyn.init_array = reinterpret_cast<uint64_t*>(load_base + entry->d_val);
+                break;
+            case DT_INIT_ARRAYSZ:
+                dyn.init_array_sz = entry->d_val;
+                break;
+            case DT_FINI_ARRAY:
+                dyn.fini_array = reinterpret_cast<uint64_t*>(load_base + entry->d_val);
+                break;
+            case DT_FINI_ARRAYSZ:
+                dyn.fini_array_sz = entry->d_val;
+                break;
+            case DT_PREINIT_ARRAY:
+                dyn.preinit_array = reinterpret_cast<uint64_t*>(load_base + entry->d_val);
+                break;
+            case DT_PREINIT_ARRAYSZ:
+                dyn.preinit_array_sz = entry->d_val;
+                break;
+            case DT_TEXTREL:
+                dyn.has_textrel = true;
+                break;
+            case DT_BIND_NOW:
+                dyn.bind_now = true;
                 break;
         }
     }
-
-    if (!rela_table || rela_total_size == 0) {
-        return;
-    }
-
-    size_t num_relocations = rela_total_size / rela_entry_size;
     
-    for (size_t i = 0; i < num_relocations; i++) {
-        Elf64_Rela* reloc = &rela_table[i];
-        uint64_t reloc_type = elf_reloc_type(reloc->r_info);
+    return true;
+}
+
+static const char* reloc_type_name(uint32_t type) {
+    switch (type) {
+        case R_X86_64_NONE:       return "NONE";
+        case R_X86_64_64:         return "64";
+        case R_X86_64_PC32:       return "PC32";
+        case R_X86_64_GOT32:      return "GOT32";
+        case R_X86_64_PLT32:      return "PLT32";
+        case R_X86_64_COPY:       return "COPY";
+        case R_X86_64_GLOB_DAT:   return "GLOB_DAT";
+        case R_X86_64_JUMP_SLOT:  return "JUMP_SLOT";
+        case R_X86_64_RELATIVE:   return "RELATIVE";
+        case R_X86_64_GOTPCREL:   return "GOTPCREL";
+        case R_X86_64_32:         return "32";
+        case R_X86_64_32S:        return "32S";
+        case R_X86_64_16:         return "16";
+        case R_X86_64_PC16:       return "PC16";
+        case R_X86_64_8:          return "8";
+        case R_X86_64_PC8:        return "PC8";
+        case R_X86_64_IRELATIVE:  return "IRELATIVE";
+        default:                  return "UNKNOWN";
+    }
+}
+
+static bool apply_relocation_rela(uint64_t load_base, const Elf64_Rela* reloc, 
+                                  const dynamic_info& dyn) {
+    uint32_t reloc_type = elf_reloc_type(reloc->r_info);
+    uint32_t reloc_sym = elf_reloc_symbol(reloc->r_info);
+    
+    uint64_t* target = reinterpret_cast<uint64_t*>(load_base + reloc->r_offset);
+    uint64_t symbol_value = 0;
+    
+    if (reloc_sym != 0) {
+        if (!dyn.symtab) {
+            Log::errf("Symbol table missing for relocation type %s", 
+                     reloc_type_name(reloc_type));
+            return false;
+        }
         
-        if (reloc_type == R_X86_64_RELATIVE) {
-            uint64_t* target = reinterpret_cast<uint64_t*>(load_base + reloc->r_offset);
-            *target = load_base + reloc->r_addend;
+        Elf64_Sym* sym = &dyn.symtab[reloc_sym];
+        
+        if (sym->st_shndx != 0) {
+            symbol_value = load_base + sym->st_value;
+        } else {
+            Log::warnf("Undefined symbol in relocation (index %u)", reloc_sym);
         }
     }
+    
+    switch (reloc_type) {
+        case R_X86_64_NONE:
+            break;
+            
+        case R_X86_64_64:
+            *target = symbol_value + reloc->r_addend;
+            break;
+            
+        case R_X86_64_PC32:
+        case R_X86_64_PLT32: {
+            int64_t value = symbol_value + reloc->r_addend - (load_base + reloc->r_offset);
+            if (value < INT32_MIN || value > INT32_MAX) {
+                Log::errf("PC32 relocation overflow: %lld", value);
+                return false;
+            }
+            *reinterpret_cast<int32_t*>(target) = static_cast<int32_t>(value);
+            break;
+        }
+            
+        case R_X86_64_RELATIVE:
+            *target = load_base + reloc->r_addend;
+            break;
+            
+        case R_X86_64_GLOB_DAT:
+        case R_X86_64_JUMP_SLOT:
+            *target = symbol_value;
+            break;
+            
+        case R_X86_64_32:
+        case R_X86_64_32S: {
+            uint64_t value = symbol_value + reloc->r_addend;
+            if (reloc_type == R_X86_64_32S) {
+                if (static_cast<int64_t>(value) < INT32_MIN || 
+                    static_cast<int64_t>(value) > INT32_MAX) {
+                    Log::errf("32S relocation overflow");
+                    return false;
+                }
+            } else if (value > UINT32_MAX) {
+                Log::errf("32 relocation overflow");
+                return false;
+            }
+            *reinterpret_cast<uint32_t*>(target) = static_cast<uint32_t>(value);
+            break;
+        }
+            
+        case R_X86_64_GOTPCREL:
+        case R_X86_64_GOT32: {
+            int64_t value = symbol_value + reloc->r_addend - (load_base + reloc->r_offset);
+            *reinterpret_cast<int32_t*>(target) = static_cast<int32_t>(value);
+            break;
+        }
+            
+        case R_X86_64_IRELATIVE: {
+            uint64_t resolver = load_base + reloc->r_addend;
+            typedef uint64_t (*resolver_func_t)();
+            uint64_t resolved = reinterpret_cast<resolver_func_t>(resolver)();
+            *target = resolved;
+            break;
+        }
+            
+        default:
+            Log::warnf("Unsupported relocation type: %s (%u)", 
+                      reloc_type_name(reloc_type), reloc_type);
+            return false;
+    }
+    
+    return true;
+}
+
+static bool apply_relocation_rel(uint64_t load_base, const Elf64_Rel* reloc, 
+                                 const dynamic_info& dyn) {
+    uint64_t* target = reinterpret_cast<uint64_t*>(load_base + reloc->r_offset);
+    
+    Elf64_Rela rela;
+    rela.r_offset = reloc->r_offset;
+    rela.r_info = reloc->r_info;
+    rela.r_addend = *target;
+    
+    return apply_relocation_rela(load_base, &rela, dyn);
+}
+
+static bool process_relocations(uint64_t load_base, Elf64_Phdr* phdrs, uint16_t phnum) {
+    dynamic_info dyn;
+    if (!parse_dynamic_section(load_base, phdrs, phnum, dyn)) {
+        return false;
+    }
+    
+    size_t total_relocs = 0;
+    
+    if (dyn.rela && dyn.rela_size > 0) {
+        size_t rela_count = dyn.rela_size / (dyn.rela_ent ? dyn.rela_ent : sizeof(Elf64_Rela));
+        Log::infof("Processing %zu RELA relocations", rela_count);
+        
+        for (size_t i = 0; i < rela_count; i++) {
+            if (!apply_relocation_rela(load_base, &dyn.rela[i], dyn)) {
+                Log::errf("Failed to apply RELA relocation %zu", i);
+                return false;
+            }
+        }
+        total_relocs += rela_count;
+    }
+    
+    if (dyn.rel && dyn.rel_size > 0) {
+        size_t rel_count = dyn.rel_size / (dyn.rel_ent ? dyn.rel_ent : sizeof(Elf64_Rel));
+        Log::infof("Processing %zu REL relocations", rel_count);
+        
+        for (size_t i = 0; i < rel_count; i++) {
+            if (!apply_relocation_rel(load_base, &dyn.rel[i], dyn)) {
+                Log::errf("Failed to apply REL relocation %zu", i);
+                return false;
+            }
+        }
+        total_relocs += rel_count;
+    }
+    
+    if (dyn.jmprel && dyn.pltrelsz > 0) {
+        if (dyn.pltrel_type == DT_RELA) {
+            size_t plt_count = dyn.pltrelsz / sizeof(Elf64_Rela);
+            Log::infof("Processing %zu PLT RELA relocations", plt_count);
+            
+            for (size_t i = 0; i < plt_count; i++) {
+                if (!apply_relocation_rela(load_base, &dyn.jmprel[i], dyn)) {
+                    Log::errf("Failed to apply PLT relocation %zu", i);
+                    return false;
+                }
+            }
+            total_relocs += plt_count;
+        } else if (dyn.pltrel_type == DT_REL) {
+            Elf64_Rel* plt_rel = reinterpret_cast<Elf64_Rel*>(dyn.jmprel);
+            size_t plt_count = dyn.pltrelsz / sizeof(Elf64_Rel);
+            Log::infof("Processing %zu PLT REL relocations", plt_count);
+            
+            for (size_t i = 0; i < plt_count; i++) {
+                if (!apply_relocation_rel(load_base, &plt_rel[i], dyn)) {
+                    Log::errf("Failed to apply PLT relocation %zu", i);
+                    return false;
+                }
+            }
+            total_relocs += plt_count;
+        }
+    }
+    
+    if (total_relocs > 0) {
+        Log::infof("Successfully applied %zu relocations", total_relocs);
+    }
+    
+    return true;
 }
 
 static bool map_segment_pages(uint64_t segment_base, size_t segment_size, uint64_t page_flags) {
@@ -120,7 +454,14 @@ static bool map_segment_pages(uint64_t segment_base, size_t segment_size, uint64
         
         void* physical_page = mem::pmm::palloc(1);
         if (!physical_page) {
-            Log::errf("Failed to allocate physical memory for segment");
+            Log::errf("Failed to allocate physical memory for segment at %p", virtual_addr);
+            
+            for (size_t j = 0; j < i; j++) {
+                void* cleanup_va = reinterpret_cast<void*>(page_start + j * PAGE_SIZE);
+                uint64_t cleanup_pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(cleanup_va));
+                mem::vmm::munmap(cleanup_va, 1);
+                mem::pmm::free(reinterpret_cast<void*>(cleanup_pa), 1);
+            }
             return false;
         }
         
@@ -131,6 +472,13 @@ static bool map_segment_pages(uint64_t segment_base, size_t segment_size, uint64
         if (result == 0) {
             Log::errf("Failed to map page at virtual address %p", virtual_addr);
             mem::pmm::free(physical_page, 1);
+            
+            for (size_t j = 0; j < i; j++) {
+                void* cleanup_va = reinterpret_cast<void*>(page_start + j * PAGE_SIZE);
+                uint64_t cleanup_pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(cleanup_va));
+                mem::vmm::munmap(cleanup_va, 1);
+                mem::pmm::free(reinterpret_cast<void*>(cleanup_pa), 1);
+            }
             return false;
         }
     }
@@ -145,6 +493,12 @@ static bool load_elf_segment(const Elf64_Phdr* phdr, uint64_t load_base,
                             : phdr->p_vaddr;
     
     uint64_t page_flags = convert_flags_to_page_flags(phdr->p_flags, user_mode);
+    
+    Log::infof("Loading segment: vaddr=%p memsz=%zu filesz=%zu flags=%c%c%c",
+               (void*)segment_vaddr, phdr->p_memsz, phdr->p_filesz,
+               (phdr->p_flags & PF_R) ? 'R' : '-',
+               (phdr->p_flags & PF_W) ? 'W' : '-',
+               (phdr->p_flags & PF_X) ? 'X' : '-');
     
     if (!map_segment_pages(segment_vaddr, phdr->p_memsz, page_flags)) {
         Log::errf("Failed to map segment pages");
@@ -167,6 +521,7 @@ static bool load_elf_segment(const Elf64_Phdr* phdr, uint64_t load_base,
 }
 
 constexpr uint64_t STACK_START = 0x7FFFFFFF0000ULL;
+constexpr size_t   GUARD_PAGES = 1;
 
 struct stack_entry {
     void* bottom;
@@ -183,55 +538,79 @@ struct stack_table {
     stack_entry* first_stack;
     stack_entry* free_stacks;
     uint64_t current_top;
-} stable = {0, nullptr, nullptr, STACK_START};
+} stable = {
+    0,
+    nullptr,
+    nullptr,
+    STACK_START
+};
 
-stack_entry* allocate_stack_entry(size_t num_pages, bool user) {
+static stack_entry* allocate_stack_entry(size_t num_pages, bool user) {
     stack_entry* e = nullptr;
+    bool reused = false;
 
     stack_entry** prev_ptr = &stable.free_stacks;
-    stack_entry* curr = stable.free_stacks;
-    while (curr) {
+    for (stack_entry* curr = stable.free_stacks; curr; curr = curr->free_next) {
         if (curr->npages >= num_pages) {
             *prev_ptr = curr->free_next;
             e = curr;
+            reused = true;
             break;
         }
         prev_ptr = &curr->free_next;
-        curr = curr->free_next;
     }
 
     if (!e) {
         e = (stack_entry*)mem::heap::malloc(sizeof(stack_entry));
         if (!e) return nullptr;
-        e->npages = num_pages;
-        e->nbytes = num_pages * PAGE_SIZE;
-        e->user = true;
     }
 
+    e->npages = num_pages;
+    e->nbytes = num_pages * PAGE_SIZE;
+    e->user   = user;
     e->next = nullptr;
     e->free_next = nullptr;
 
-    uint64_t top = stable.current_top;
-    uint64_t bottom = top - num_pages * PAGE_SIZE;
+    const size_t total_pages = num_pages + 2 * GUARD_PAGES;
 
-    for (size_t i = 0; i < num_pages; i++) {
+    uint64_t top    = stable.current_top;
+    uint64_t bottom = top - total_pages * PAGE_SIZE;
+
+    uint64_t stack_bottom = bottom + GUARD_PAGES * PAGE_SIZE;
+    uint64_t stack_top    = stack_bottom + num_pages * PAGE_SIZE;
+
+    size_t mapped = 0;
+    for (; mapped < num_pages; mapped++) {
         void* phys = mem::pmm::palloc(1);
         if (!phys) {
-            if (!curr) mem::heap::free(e);
+            for (size_t j = 0; j < mapped; j++) {
+                void* va = (void*)(stack_bottom + j * PAGE_SIZE);
+                uint64_t pa = mem::vmm::va_to_pa((uint64_t)va);
+                mem::vmm::munmap(va, 1);
+                mem::pmm::free((void*)pa, 1);
+            }
+            if (!reused) mem::heap::free(e);
             return nullptr;
         }
-        void* va = reinterpret_cast<void*>(bottom + i * PAGE_SIZE);
-        mem::vmm::mmap(phys, va, 1, PAGE_PRESENT | PAGE_RW | (user ? PAGE_USER : 0));
+
+        void* va = (void*)(stack_bottom + mapped * PAGE_SIZE);
+        mem::vmm::mmap(
+            phys,
+            va,
+            1,
+            PAGE_PRESENT | PAGE_RW | (user ? PAGE_USER : 0)
+        );
         mem::memset(va, 0, PAGE_SIZE);
     }
 
-    e->bottom = reinterpret_cast<void*>(bottom);
-    e->top = reinterpret_cast<void*>(top);
+    e->bottom = (void*)stack_bottom;
+    e->top    = (void*)stack_top;
 
     stable.current_top = bottom;
 
-    if (!stable.first_stack) stable.first_stack = e;
-    else {
+    if (!stable.first_stack) {
+        stable.first_stack = e;
+    } else {
         stack_entry* last = stable.first_stack;
         while (last->next) last = last->next;
         last->next = e;
@@ -253,9 +632,10 @@ bool destroy_stack(void* stack_top) {
     while (curr) {
         if (curr->top == stack_top) {
             for (size_t i = 0; i < curr->npages; i++) {
-                void* va = reinterpret_cast<void*>(reinterpret_cast<uint64_t>(curr->bottom) + i * PAGE_SIZE);
+                void* va = (void*)((uint64_t)curr->bottom + i * PAGE_SIZE);
                 uint64_t pa = mem::vmm::va_to_pa((uint64_t)va);
                 mem::vmm::munmap(va, 1);
+                mem::pmm::free((void*)pa, 1);
             }
 
             if (prev) prev->next = curr->next;
@@ -275,50 +655,93 @@ bool destroy_stack(void* stack_top) {
     return false;
 }
 
-void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
-    auto* ehdr = reinterpret_cast<Elf64_Ehdr*>(elf_base);
+static bool validate_elf_header(const Elf64_Ehdr* ehdr, size_t file_size) {
+    if (file_size < sizeof(Elf64_Ehdr)) {
+        Log::errf("File too small to contain ELF header");
+        return false;
+    }
     
     if (!is_valid_elf_magic(ehdr)) {
-        Log::errf("Executable header is invalid");
-        return;
+        Log::errf("Invalid ELF magic number");
+        return false;
+    }
+    
+    if (ehdr->e_ident[4] != 2) {
+        Log::errf("Not a 64-bit ELF");
+        return false;
+    }
+    
+    if (ehdr->e_ident[5] != 1) {
+        Log::errf("Not little-endian ELF");
+        return false;
+    }
+    
+    if (ehdr->e_machine != 62) {
+        Log::errf("Not an x86-64 ELF");
+        return false;
     }
     
     if (ehdr->e_type != ET_EXEC && ehdr->e_type != ET_DYN) {
-        Log::errf("Executable is neither ET_EXEC nor ET_DYN");
-        return;
-    } else {
-    	Log::infof("Executable is %s\n\r", ehdr->e_type == ET_EXEC ? "ET_EXEC" : "ET_DYN");
+        Log::errf("ELF type must be ET_EXEC or ET_DYN");
+        return false;
     }
     
+    if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > file_size) {
+        Log::errf("Program headers extend beyond file size");
+        return false;
+    }
+    
+    return true;
+}
+
+void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
+    auto* ehdr = reinterpret_cast<Elf64_Ehdr*>(elf_base);
+    
+    if (!validate_elf_header(ehdr, elf_file_size)) {
+        return;
+    }
+    
+    Log::infof("Loading %s ELF binary", ehdr->e_type == ET_EXEC ? "ET_EXEC" : "ET_DYN (PIE)");
+    
     const uint8_t* elf_data = reinterpret_cast<const uint8_t*>(elf_base);
-    Elf64_Phdr* phdrs = (Elf64_Phdr*)(elf_data + ehdr->e_phoff);
+    Elf64_Phdr* phdrs = reinterpret_cast<Elf64_Phdr*>(
+        const_cast<uint8_t*>(elf_data + ehdr->e_phoff)
+    );
     
     uint64_t load_base = 0;
     bool is_pie = (ehdr->e_type == ET_DYN);
     
+    int load_count = 0;
     for (uint16_t i = 0; i < ehdr->e_phnum; i++) {
         if (phdrs[i].p_type == PT_LOAD) {
             if (!load_elf_segment(&phdrs[i], load_base, elf_data, user_mode)) {
                 Log::errf("Failed to load segment %u", i);
                 return;
             }
+            load_count++;
         }
     }
     
+    Log::infof("Loaded %d segments", load_count);
+    
     if (is_pie) {
-        process_relocations(load_base, phdrs, ehdr->e_phnum);
+        Log::infof("Processing relocations for PIE binary");
+        if (!process_relocations(load_base, phdrs, ehdr->e_phnum)) {
+            Log::errf("Failed to process relocations");
+            return;
+        }
     }
     
     uint64_t entry_point = is_pie ? (load_base + ehdr->e_entry) : ehdr->e_entry;
     
-    void* stack_top = stack_manager_get_new_stack(2, user_mode);
+    void* stack_top = stack_manager_get_new_stack(64, user_mode);
     if (!stack_top) {
-        Log::errf("Failed to allocate user stack");
+        Log::errf("Failed to allocate stack");
         return;
     }
 
-    Log::infof("ELF loaded: entry=%p stack=%p user_mode=%d", 
-               (void*)entry_point, stack_top, user_mode);
+    Log::infof("ELF ready: entry=%p stack=%p mode=%s", 
+               (void*)entry_point, stack_top, user_mode ? "user" : "kernel");
     
     if (user_mode) {
         arch::x86_64::ringctl::execute_ring3(
@@ -342,21 +765,21 @@ void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
     }
 }
 
-void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, void* stack_top, void** ret_stack_top) {
+void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, 
+                                void* stack_top, void** ret_stack_top) {
     auto* ehdr = reinterpret_cast<Elf64_Ehdr*>(elf_base);
     
-    if (!is_valid_elf_magic(ehdr)) {
-        Log::errf("Executable header is invalid");
+    if (!validate_elf_header(ehdr, elf_file_size)) {
         return nullptr;
     }
     
-    if (ehdr->e_type != ET_EXEC && ehdr->e_type != ET_DYN) {
-        Log::errf("Executable is neither ET_EXEC nor ET_DYN");
-        return nullptr;
-    }
+    Log::infof("Preparing user-mode ELF: %s", 
+               ehdr->e_type == ET_EXEC ? "ET_EXEC" : "ET_DYN");
     
     const uint8_t* elf_data = reinterpret_cast<const uint8_t*>(elf_base);
-    Elf64_Phdr* phdrs = (Elf64_Phdr*)(elf_data + ehdr->e_phoff);
+    Elf64_Phdr* phdrs = reinterpret_cast<Elf64_Phdr*>(
+        const_cast<uint8_t*>(elf_data + ehdr->e_phoff)
+    );
     
     uint64_t load_base = 0;
     bool is_pie = (ehdr->e_type == ET_DYN);
@@ -371,25 +794,28 @@ void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, void* stack
     }
     
     if (is_pie) {
-        process_relocations(load_base, phdrs, ehdr->e_phnum);
+        if (!process_relocations(load_base, phdrs, ehdr->e_phnum)) {
+            Log::errf("Relocation processing failed");
+            return nullptr;
+        }
     }
     
     uint64_t entry_point = is_pie ? (load_base + ehdr->e_entry) : ehdr->e_entry;
 
-	if (!stack_top) {    
-    	stack_top = stack_manager_get_new_stack(2, true);
-    	if (!stack_top) {
-	        Log::errf("Failed to allocate user stack");
-        	return nullptr;
-    	}
+    if (!stack_top) {    
+        stack_top = stack_manager_get_new_stack(64, true);
+        if (!stack_top) {
+            Log::errf("Failed to allocate user stack");
+            return nullptr;
+        }
     }
     
-    Log::infof("ELF loaded: entry=%p stack=%p user_mode=%d", 
-               (void*)entry_point, stack_top, true);
+    Log::infof("User ELF loaded: entry=%p stack=%p", 
+               (void*)entry_point, stack_top);
 
-	if (ret_stack_top) {
-		*ret_stack_top = stack_top;
-	}
+    if (ret_stack_top) {
+        *ret_stack_top = stack_top;
+    }
     
     return reinterpret_cast<void*>(entry_point);
 }

@@ -65,6 +65,11 @@ struct Elf64_Rela {
     int64_t  r_addend;
 };
 
+struct Elf64_Rel {
+    uint64_t r_offset;
+    uint64_t r_info;
+};
+
 void run_elf(void* base, size_t filesz, bool user);
 void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, void* stack_top = nullptr, void** ret_stack_top = nullptr);
 
