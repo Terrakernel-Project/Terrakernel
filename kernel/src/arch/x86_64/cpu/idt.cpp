@@ -214,6 +214,33 @@ void debugger(exception_frame* frame) {
 	while (true) drivers::input::ps2k::user_ps2k_poll();
 }
 
+void debugger_show_disasm(exception_frame* frame) {
+	clr();
+	dbg::disasm::disasm_at_memory(frame->rip-50, 150, 0, frame->rip);
+}
+
+void debugger_show_memview(exception_frame* frame) {
+	clr();
+	dbg::memview::print_memory_contents_at(frame->rip-50, 150, 0, frame->rip);
+}
+
+void debugger_show_disasm_and_except(exception_frame* frame) {
+	clr();
+	dbg::disasm::disasm_at_memory(frame->rip-50, 150, 0, frame->rip);
+	print_err(frame);
+}
+
+void debugger_show_memview_and_except(exception_frame* frame) {
+	clr();
+	dbg::memview::print_memory_contents_at(frame->rip-50, 150, 0, frame->rip);
+	print_err(frame);
+}
+
+void debugger_show_stacktrace(exception_frame* frame) {
+	clr();
+	dbg::stacktrace::stacktrace(frame->rip, 5, 0);
+}
+
 uint64_t nesting_table[31] = {0};
 
 extern "C" void exception_handler(exception_frame* frame) {
@@ -274,6 +301,20 @@ extern "C" void exception_handler(exception_frame* frame) {
 		decode_pf_err(err);
 #ifdef CONFIG_EXCEPTIONS_RUN_DEBUGGER
 		debugger(frame);
+#else
+#if CONFIG_EXCEPTION_DEFAULT == 0
+		debugger_show_disasm(frame);
+#elif CONFIG_EXCEPTION_DEFAULT == 1
+		// do nothing, it is already shown
+#elif CONFIG_EXCEPTION_DEFAULT == 2
+		debugger_show_memview(frame);
+#elif CONFIG_EXCEPTION_DEFAULT == 3
+		debugger_show_disasm_and_except(frame);
+#elif CONFIG_EXCEPTION_DEFAULT == 4
+		debugger_show_memview_and_except(frame);
+#elif CONFIG_EXCEPTION_DEFAULT == 5
+		debugger_show_stacktrace(frame);
+#endif // #else is impossible, Kconfig limits 0-5
 #endif
 	}
 

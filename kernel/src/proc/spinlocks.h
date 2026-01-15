@@ -8,7 +8,7 @@ struct spinlock {
 	volatile uint8_t locked;
 };
 
-void c_acquire_spinlock(struct spinlock* lock);
+void c_acquire_spinlock(struct spinlock* lock, int timeout);
 void c_release_spinlock(struct spinlock* lock);
 
 #endif

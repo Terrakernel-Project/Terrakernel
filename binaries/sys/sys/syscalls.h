@@ -216,16 +216,16 @@ static inline void HlOpenConsole(Handle* portR, Handle* portW) {
 	syscall2(28, (uint64_t)portR, (uint64_t)portW);
 }
 
-static inline void HlWaitForInputConsole() {
-	syscall0(29);
+static inline void HlWaitForInputConsole(Handle* portR) {
+	syscall1(29, (uint64_t)portR);
 }
 
-static inline int64_t HlReadConsole(void* __restrict buf, size_t count) {
-	return syscall2(30, (uint64_t)buf, count);
+static inline int64_t HlReadConsole(Handle* portR, void* __restrict buf, size_t count) {
+	return syscall3(30, (uint64_t)portR, (uint64_t)buf, count);
 }
 
-static inline int64_t HlWriteConsole(const void* __restrict dat, size_t count) {
-	return syscall2(31, (uint64_t)dat, count);
+static inline int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count) {
+	return syscall3(31, (uint64_t)portW, (uint64_t)dat, count);
 }
 
 #endif

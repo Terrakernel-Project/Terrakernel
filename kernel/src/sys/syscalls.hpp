@@ -32,8 +32,10 @@ void HlTerminateProcess(int64_t pid);
 void HlLoadElf(const void* __restrict datbase);
 void HlExit(int exit_code);
 void HlOpenConsole(Handle* portR, Handle* portW);
-void HlWaitForInputConsole();
-int64_t HlReadConsole(void* __restrict buf, size_t count);
-int64_t HlWriteConsole(const void* __restrict dat, size_t count);
+void HlWaitForInputConsole(Handle* portR);
+int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count);
+int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count);
+
+void HlPrepareInitReturn(void* init_load_addr);
 
 #endif

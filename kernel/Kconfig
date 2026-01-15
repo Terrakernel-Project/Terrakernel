@@ -82,6 +82,18 @@ config EXCEPTIONS_RUN_DEBUGGER
 	bool "Run the debugger when an exception occurs"
 	default y
 
+config EXCEPTION_DEFAULT
+	    int "Default menu"
+	    default 0
+	    range 0 5
+	    help
+	      0: DISASM ONLY
+	      1: EXCEPTION ONLY
+	      2: MEMVIEW ONLY
+	      3: DISASM + EXCEPTION
+	      4: MEMVIEW + EXCEPTION
+	      5: STACKTRACE
+
 endmenu
 
 endmenu

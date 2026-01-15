@@ -877,7 +877,7 @@ struct spinlock printf_lock = {
 
 int printf_(const char* format, ...)
 {
-  c_acquire_spinlock(&printf_lock);
+  c_acquire_spinlock(&printf_lock, 1000);
   va_list va;
   va_start(va, format);
   char buffer[1];

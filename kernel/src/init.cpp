@@ -22,7 +22,7 @@
 #include <arch/x86_64/syscall/handlers.hpp>
 #include <arch/x86_64/apic/apic.hpp>
 #include <drivers/timers/apic/apic.hpp>
-#include <proc/proc.hpp>
+#include <tasking/sched.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -151,6 +151,23 @@ extern "C" void init() {
 	messages::print_message(TEST, DK);
 	messages::print_message(TEST, FI);
 	messages::print_message(TEST, IS);
+
+    tasking::sched::create_task([](){
+        while (1) {
+            printf("TIC\n");
+        }
+    });
+    tasking::sched::create_task([](){
+        while (1) {
+            printf("TAC\n");
+        }
+    }, true);
+    tasking::sched::create_task([](){
+        while (1) {
+            printf("TOE\n");
+        }
+    }, true);
+    tasking::sched::initialise();
 
 	asm ("sti");
 

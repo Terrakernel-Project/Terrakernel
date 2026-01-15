@@ -63,6 +63,67 @@ const char* find_symbol(uint64_t addr, uint64_t* offset = nullptr) {
     return "??";
 }
 
+const char* unmangle_symbol(const char* mangled_name) {
+    static char buffer[512];
+    
+    if (!mangled_name || mangled_name[0] == '\0') {
+        return "??";
+    }
+
+    static char stripped[256];
+    size_t i = 0;
+    while (mangled_name[i] && mangled_name[i] != '@' && i < sizeof(stripped) - 1) {
+        stripped[i] = mangled_name[i];
+        i++;
+    }
+    stripped[i] = '\0';
+
+    if (stripped[0] != '_' || stripped[1] != 'Z') {
+        return stripped;
+    }
+
+    size_t pos = 2;
+    size_t out = 0;
+    bool first_component = true;
+    
+    while (pos < i && stripped[pos] && out < sizeof(buffer) - 1) {
+        if (isdigit(stripped[pos])) {
+            int len = 0;
+            size_t start = pos;
+            
+            while (pos < i && isdigit(stripped[pos])) {
+                len = len * 10 + (stripped[pos] - '0');
+                pos++;
+            }
+            
+            if (!first_component && out > 0) {
+                if (out + 2 < sizeof(buffer) - 1) {
+                    buffer[out++] = ':';
+                    buffer[out++] = ':';
+                }
+            }
+            first_component = false;
+            
+            for (int j = 0; j < len && pos < i && out < sizeof(buffer) - 1; j++, pos++) {
+                buffer[out++] = stripped[pos];
+            }
+        } else if (stripped[pos] == 'E') {
+            pos++;
+            break;
+        } else {
+            pos++;
+        }
+    }
+    
+    buffer[out] = '\0';
+    
+    if (out == 0) {
+        return stripped;
+    }
+    
+    return buffer;
+}
+
 uint64_t hexstr_to_u64(const char* str) {
     if (!str) return 0;
 
@@ -160,7 +221,7 @@ void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t
 
         if (highlight_addr >= runtime_address &&
             highlight_addr < runtime_address + instruction.info.length) {
-            printf(">");
+            printf("\x1B[93m>\x1B[0m");
         } else {
             printf(" ");
         }
@@ -171,9 +232,12 @@ void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t
         ) {
         	uint64_t offset = 0;
         	uint64_t target = hexstr_to_u64(strchr(instruction.text, ' ') + 1);
-            const char* func = find_symbol(target, &offset);
+            const char* func = unmangle_symbol(find_symbol(target, &offset));
                     
-            printf(" -> %s + 0x%llX\n\r", func, (unsigned long long)offset);
+            if (offset != 0)
+                printf("\t\t <%s + 0x%llx>\n\r", func, (unsigned long long)offset);
+            else
+                printf("\t\t <%s>\n\r", func);
         } else {
         	printf("\n\r");
         }

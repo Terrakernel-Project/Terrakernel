@@ -387,14 +387,17 @@ void HlOpenConsole(Handle* portR, Handle* portW) {
     portW->LastError = 0;
 }
 
-void HlWaitForInputConsole() {
+void HlWaitForInputConsole(Handle* portR) {
+    VALID_HNDL(portR, HANDLE_TYPE_CONSOLE_R, return)
     while (!drivers::tty::ldisc::has_input());
 }
 
-int64_t HlReadConsole(void* __restrict buf, size_t count) {
+int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count) {
+    VALID_HNDL(portW, HANDLE_TYPE_CONSOLE_R, return -1)
     return drivers::tty::ldisc::read(false, (char*)buf, count);
 }
 
-int64_t HlWriteConsole(const void* __restrict dat, size_t count) {
+int64_t HlWriteConsole(Handle* portR, const void* __restrict dat, size_t count) {
+    VALID_HNDL(portR, HANDLE_TYPE_CONSOLE_W, return -1)
     return drivers::tty::ldisc::write((const char*)dat, count);
 }

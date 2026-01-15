@@ -1,5 +1,6 @@
 #include <arch/x86_64/syscall/handlers.hpp>
 #include "syscalls.hpp"
+#include <cstdio>
 
 int64_t no_handler() {
 	return 0;
@@ -17,6 +18,21 @@ void set_no_handler(uint64_t vector) {
 
 #define set_handler(vec, func, nargs) \
 	register_syscall(vec, (void*)func, nargs, "#func#", "C++ pretty func not available");
+
+void HlTestStub0() {
+	printf("HlTestStub0 called\n");
+	return;
+}
+
+void HlTestStub1() {
+	printf("HlTestStub1 called\n");
+	return;
+}
+
+void HlTestStub2() {
+	printf("HlTestStub2 called\n");
+	return;
+}
 
 void initialise_syscalls() {
 	set_handler(0, HlKernelMessage, 1);
@@ -48,8 +64,11 @@ void initialise_syscalls() {
 	set_handler(26, HlLoadElf, 1);
 	set_handler(27, HlExit, 1);
 	set_handler(28, HlOpenConsole, 2);
-	set_handler(29, HlWaitForInputConsole, 0);
-	set_handler(30, HlReadConsole, 2);
-	set_handler(31, HlWriteConsole, 2);
+	set_handler(29, HlWaitForInputConsole, 1);
+	set_handler(30, HlReadConsole, 3);
+	set_handler(31, HlWriteConsole, 3);
+	set_handler(0xFFFFFFFF, HlTestStub0, 0);
+	set_handler(0xFFFFFFFE, HlTestStub1, 0);
+	set_handler(0xFFFFFFFD, HlTestStub2, 0);
 }
 

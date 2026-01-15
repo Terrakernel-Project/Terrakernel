@@ -11,9 +11,14 @@ static inline uint8_t atomic_test_and_set(volatile uint8_t* ptr) {
     return old;
 }
 
-void c_acquire_spinlock(struct spinlock* lock) {
+void c_acquire_spinlock(struct spinlock* lock, int timeout) {
+    int timeout_counter = 0;
     while (atomic_test_and_set(&lock->locked)) {
         asm volatile("pause");
+        timeout_counter++;
+        if (timeout_counter >= timeout) {
+            break;
+        }
     }
 }
 
