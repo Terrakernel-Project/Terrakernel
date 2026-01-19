@@ -22,7 +22,6 @@
 #include <arch/x86_64/syscall/handlers.hpp>
 #include <arch/x86_64/apic/apic.hpp>
 #include <drivers/timers/apic/apic.hpp>
-#include <tasking/sched.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -49,6 +48,9 @@ extern "C" void init() {
     }
 
     flanterm_initialise();
+
+    Log::print_rtc_time("STARTING");
+
     serial::serial_enable();
     Log::printf_status("OK", "Flanterm Initialised"); // late
     Log::printf_status("OK", "Serial Initialised");
@@ -70,7 +72,7 @@ extern "C" void init() {
     
     drivers::timers::pit::initialise();
     Log::printf_status("OK", "PIT Initialised (FREQ=300)");
-    
+
     Log::info("Disabling COM1 serial output, falling back to graphical interface");
     serial::serial_putc('\033');
     serial::serial_putc('[');
@@ -96,16 +98,33 @@ extern "C" void init() {
     //uacpi_result = uacpi_finalize_gpe_initialization();
     //UACPI_ERROR("GPE", 0);
 
+    uint8_t mask_master = arch::x86_64::io::inb(0x21);
+    uint8_t mask_slave  = arch::x86_64::io::inb(0xA1);
 	for (int i = 0; i < 16; i++) arch::x86_64::cpu::idt::irq_set_mask(i);
 
 	arch::x86_64::apic::initialise();
 	arch::x86_64::ioapic::initialise();
 	Log::printf_status("OK", "APIC Initialised");
 
-	asm ("sti");
-	drivers::timers::apic::initialise();
-	Log::printf_status("OK", "APIC Timer Initialised");
-	asm ("cli");
+    Log::print_rtc_time("TIMER ON");
+
+    if (apic_enabled()) {
+        asm ("sti");
+        drivers::timers::apic::initialise();
+        Log::printf_status("OK", "APIC Timer Initialised");
+        asm ("cli");
+    } else {
+        for (int i = 0; i < 8; i++) {
+            if ((mask_master & (1 << i)) == 0) {
+                arch::x86_64::cpu::idt::irq_clear_mask(i);
+            }
+        }
+        for (int i = 0; i < 8; i++) {
+            if ((mask_slave & (1 << i)) == 0) {
+                arch::x86_64::cpu::idt::irq_clear_mask(i + 8);
+            }
+        }
+    }
 
 	ramfs::initialise();
 	Log::printf_status("OK", "RamFS Initialised");
@@ -136,56 +155,11 @@ extern "C" void init() {
 	size_t nsc = initialise_syscall_handlers();
 	Log::printf_status("OK", "Syscall handlers Initialised, there are %zu valid syscalls", nsc);
 
-	messages::initialise();
-	Log::printf_status("OK", "Messages Initialised");
+    Log::print_rtc_time("FINISHED");
 
-	messages::print_message(TEST, EN_UK);
-	messages::print_message(TEST, DE);
-	messages::print_message(TEST, FR);
-	messages::print_message(TEST, ES);
-	messages::print_message(TEST, IT);
-	messages::print_message(TEST, PT);
-	messages::print_message(TEST, NL);
-	messages::print_message(TEST, SV);
-	messages::print_message(TEST, NO);
-	messages::print_message(TEST, DK);
-	messages::print_message(TEST, FI);
-	messages::print_message(TEST, IS);
+    drivers::timers::apic::sleep_ms(1000);
 
-    tasking::sched::create_task([](){
-        while (1) {
-            printf("TIC\n");
-        }
-    });
-    tasking::sched::create_task([](){
-        while (1) {
-            printf("TAC\n");
-        }
-    }, true);
-    tasking::sched::create_task([](){
-        while (1) {
-            printf("TOE\n");
-        }
-    }, true);
-    tasking::sched::initialise();
-
-	asm ("sti");
-
-	int fd = ramfs::open("/initrd/init", O_RDONLY);
-	if (fd < 0) { Log::panic("no init executable was found... Halting..."); }
-
-	stat sb;
-	ramfs::fstat(fd, &sb);
-	if (sb.st_size < 1) { Log::panic("init executable has no data"); }
-
-	void* exe_buf = mem::vmm::valloc((sb.st_size + 0xFFF) / 0x1000);
-	size_t read = (size_t)ramfs::read(fd, exe_buf, sb.st_size);
-
-	if (read != sb.st_size) { Log::panic("failed to read the init executable correctly"); }
-
-	
     while (1) {
-		run_elf(exe_buf, sb.st_size, true); // you cannot terminate this program
         asm volatile("hlt");
     }
     

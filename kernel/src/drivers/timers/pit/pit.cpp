@@ -56,4 +56,8 @@ void disable() {
 	arch::x86_64::io::outb(CHx_DATA(0), 0x00);	
 }
 
+uint64_t get_ticks() {
+    return ticks;
+}
+
 }

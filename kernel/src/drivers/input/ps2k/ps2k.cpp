@@ -42,7 +42,7 @@ static bool buffer_push(event_buffer& buf, const key_event& ev) {
         printf("[ps2k] Warning: event buffer overflow, %s\n", buf.drop_events == true ? "dropping event" : "flushing buffer");
 #endif
 
-		if (buf.drop_events) {
+	if (buf.drop_events) {
 			return false;
 		} else {
 			flush_events();

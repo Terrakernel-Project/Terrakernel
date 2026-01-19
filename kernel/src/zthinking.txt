@@ -1,0 +1,8 @@
+Uh so I know the scheduler is a pain in the ahh, so:
+
+# = done
+
+# 1. Make sure the timer takes the correct CPU context
+2. create a basic scheduler that loads a new process on every interrupt, prints that it loaded it
+3. now lets change context, load a process, changes context, and iretq.s
+4. add userspace support

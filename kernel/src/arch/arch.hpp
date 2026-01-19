@@ -120,6 +120,16 @@ namespace cpu {
 
 		void* get_base();
 	}
+
+	namespace rtc {
+		uint8_t get_seconds();
+		uint8_t get_minutes();
+		uint8_t get_hours();
+		bool is_night();
+		bool is_day();
+		bool is_am();
+		bool is_pm();
+	}
 }
 namespace ringctl {
 	extern "C" void execute_ring3(void (*entry)(), void* stack_base);

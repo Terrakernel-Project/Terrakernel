@@ -169,7 +169,7 @@ static void register_new_cpu_unit(madt_lapic_entry* lapic, uint32_t index) {
     if (new_unit->is_bsp) {
         new_unit->online = true;
         registry->bsp_index = index;
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
         printf("CPU %d (APIC ID %d) is BSP\n", index, new_unit->apic_id);
 #endif
     }
@@ -189,7 +189,7 @@ static void parse_madt_entries() {
         switch (type) {
             case MADT_ENTRY_LAPIC: {
                 madt_lapic_entry* lapic = (madt_lapic_entry*)ptr;
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
                 printf("Local APIC: ACPI ID=%02X, APIC ID=%02X\n",
                        lapic->acpi_processor_id, lapic->apic_id);
 #endif
@@ -200,7 +200,7 @@ static void parse_madt_entries() {
             case MADT_ENTRY_IOAPIC: {
                 madt_ioapic_entry* ioapic = (madt_ioapic_entry*)ptr;
                 ioapic_base = (volatile uint32_t*)(uintptr_t)ioapic->ioapic_addr;
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
                 printf("I/O APIC: ID=%02X, Address=0x%08X\n",
                        ioapic->ioapic_id, ioapic->ioapic_addr);
 #endif
@@ -218,7 +218,7 @@ __attribute__((interrupt))
 void ipi_handle(void*);
 
 void initialise() {
-	if (arch::x86_64::misc::cpuid(1, 0).eax & CPUID_FEAT_APIC) {} else return;
+	if (arch::x86_64::misc::cpuid(1, 0).eax & CPUID_FEAT_APIC) {} else return; // apic not available
 
     uacpi_status status = uacpi_table_find_by_signature("APIC", &madt_handle);
     if (uacpi_unlikely_error(status)) {
@@ -230,13 +230,13 @@ void initialise() {
     lapic_base = (volatile uint32_t*)(uintptr_t)madt->local_apic_address;
     
     bool x2apic_supported = check_x2apic_support();
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
     printf("Got an %sAPIC\n", x2apic_supported ? "x2" : "x");
 #endif
     
     if (x2apic_supported) {
         enable_x2apic();
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
 		printf("x2APIC enabled\n");
 #endif
     }
@@ -248,7 +248,7 @@ void initialise() {
     
     parse_madt_entries();
 
-#ifdef APIC_VERBOSE    
+#ifdef CONFIG_APIC_VERBOSE    
     printf("Found %d CPUs\n", registry->num_units);
 #endif
 
@@ -302,7 +302,7 @@ cpu_unit* get_current_cpu() {
         }
         curr = curr->next_unit;
     }
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
     printf("Didn't find a CPU with APIC ID %u\n", apic_id);
 #endif
     return nullptr;
@@ -340,7 +340,7 @@ void ipi_send(cpu_unit* unit, uint8_t vector) {
 
 __attribute__((interrupt))
 void ipi_handle(void*) {
-#ifndef APIC_VERBOSE
+#ifndef CONFIG_APIC_VERBOSE
 	printf("got an IPI\n\r");
 #endif
 
@@ -359,12 +359,36 @@ void apic_send_eoi() {
 
 namespace drivers::timers::apic {
 
+#ifdef CONFIG_APIC_INACCURACY_PROT
+#   warning "CONFIG_APIC_INACCURACY_PROT = 1"
+#else
+#   warning "CONFIG_APIC_INACCURACY_PROT = 0"
+#endif
+
+#if CONFIG_APIC_INACCURACY_PROT == 0
+#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY = 0"
+#elif CONFIG_APIC_INACCURACY_PROT == 1
+#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY = 1"
+#elif CONFIG_APIC_INACCURACY_PROT > 1
+#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY > 1"
+#else
+#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY not defined, defaulting to 0"
+#endif
+
 uint64_t calibrate_pit() {
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, 0xFFFFFFFF);
-	drivers::timers::pit::sleep_ms(1);
+#ifdef CONFIG_APIC_INACCURACY_PROT
+    drivers::timers::pit::sleep_ms(CONFIG_APIC_INACCURACY_PROT_DELAY);
+#else
+    drivers::timers::pit::sleep_ms(1);
+#endif
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, APIC_LVT_INT_MASKED);
 
-	uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
+#ifdef CONFIG_APIC_INACCURACY_PROT
+	uint32_t ticks_in_1ms = (0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT)) / CONFIG_APIC_INACCURACY_PROT_DELAY;
+#else
+    uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
+#endif
 
 	drivers::timers::pit::disable();
 
@@ -372,7 +396,7 @@ uint64_t calibrate_pit() {
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_DIVIDE, 0x3);
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, ticks_in_1ms);
 
-#ifdef APIC_VERBOSE
+#ifdef CONFIG_APIC_VERBOSE
 	printf("Took %zu ticks for 1 milliseconds...\n\r", ticks_in_1ms);
 #endif
 

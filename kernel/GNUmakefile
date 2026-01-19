@@ -93,6 +93,7 @@ override SHARED_FLAGS := \
 override CPPFLAGS_C := \
 	-I src \
 	-I src/libcxx \
+	-I src/kutils \
 	-I limine-protocol/include \
 	-isystem freestnd-c-hdrs/$(ARCH)/include \
 	$(CPPFLAGS) \

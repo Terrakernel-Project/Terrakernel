@@ -8,5 +8,6 @@ namespace drivers::timers::apic {
 
 void sleep_ms(uint64_t ms);
 uint64_t ns_elapsed_time();
+uint64_t get_ticks();
 
 }

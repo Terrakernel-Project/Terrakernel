@@ -14,7 +14,10 @@ namespace Log {
 	void print_status(const char* status, const char* s);
 	// This panic implementation doesn't halt unlike <panic.hpp>:panic(const char*)
 	void panic(const char* message);
-	void putc(char c);
+	
+	#define putc putchar
+
+	void print_rtc_time(const char* message = "");
 }
 
 #endif /* PRINT_HPP */

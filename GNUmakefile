@@ -2,7 +2,10 @@
 
 ARCH := x86_64
 
-QEMUFLAGS := -m 6G -smp cores=2,threads=4 -cpu max,+x2apic #-serial stdio
+QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic #-serial stdio
+QEMUFLAGS_DINT := $(QEMUFLAGS) -d int
+QEMUFLAGS_GDB := $(QEMUFLAGS) -s -S
+QEMUFLAGS_A := $(QEMUFLAGS) -d int -s -S
 
 override IMAGE_NAME := terra-$(ARCH)
 
@@ -47,8 +50,7 @@ run-hdd: run-hdd-$(ARCH)
 
 run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35,accel=kvm,kernel-irqchip=on \
-		-enable-kvm \
+		-machine q35 \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
 		-blockdev driver=raw,node-name=disk0,file=diskfile \
@@ -58,8 +60,7 @@ run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 
 run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 	qemu-system-$(ARCH) \
-		-machine q35,accel=kvm,kernel-irqchip=on \
-		-enable-kvm \
+		-machine q35 \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).hdd \
 		-blockdev driver=raw,node-name=disk0,file=diskfile \
@@ -67,15 +68,35 @@ run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 		-device ide-hd,drive=disk0,bus=ahci.0 \
 		$(QEMUFLAGS)
 
-run-dbg: edk2-ovmf $(IMAGE_NAME).iso
+run-dint: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-			-machine q35 \
-			-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
-			-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
-			-blockdev driver=raw,node-name=disk0,file=diskfile \
-			-device ahci,id=ahci \
-			-device ide-hd,drive=disk0,bus=ahci.0 \
-			-m 6G -s -S \
+		-machine q35 \
+		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
+		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
+		-blockdev driver=raw,node-name=disk0,file=diskfile \
+		-device ahci,id=ahci \
+		-device ide-hd,drive=disk0,bus=ahci.0 \
+		$(QEMUFLAGS_DINT)
+
+run-gdb: edk2-ovmf $(IMAGE_NAME).iso
+	qemu-system-$(ARCH) \
+		-machine q35 \
+		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
+		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
+		-blockdev driver=raw,node-name=disk0,file=diskfile \
+		-device ahci,id=ahci \
+		-device ide-hd,drive=disk0,bus=ahci.0 \
+		$(QEMUFLAGS_GDB)
+
+run-a: edk2-ovmf $(IMAGE_NAME).iso
+	qemu-system-$(ARCH) \
+		-machine q35 \
+		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
+		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
+		-blockdev driver=raw,node-name=disk0,file=diskfile \
+		-device ahci,id=ahci \
+		-device ide-hd,drive=disk0,bus=ahci.0 \
+		$(QEMUFLAGS_A)
 
 .PHONY: run-bios
 run-bios: $(IMAGE_NAME).iso

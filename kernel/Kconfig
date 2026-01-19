@@ -60,11 +60,36 @@ config PCI_VERBOSE
 
 endmenu
 
+menu "Timers"
+
 menu "PIT - Deprecated (Unused)"
 
 config PIT_FREQUENCY
 	int "PIT Timer Frequency"
 	default 300
+
+endmenu
+
+menu "APIC Timer"
+
+config FALLBACK_TO_PIT
+	bool "Fallback to PIT if APIC not available"
+	default y
+
+config APIC_INACCURACY_PROT
+	bool "APIC inaccuracy protection"
+	default y
+	help
+		Enabled: improves accuracy of the APIC timer
+		Disabled: improves boot time, by a couple of milliseconds
+		The higher the more accurate the timer is, can range from 1 millisecond to 10 seconds
+
+config APIC_INACCURACY_PROT_DELAY
+	int "Delay in milliseconds" if APIC_INACCURACY_PROT
+	range 1 10000 if APIC_INACCURACY_PROT # 1 millisecond to 10 seconds, the higher to more accurate, i think if TK is a real-time OS then higher is better
+	default 10 if APIC_INACCURACY_PROT
+
+endmenu
 
 endmenu
 
@@ -82,17 +107,43 @@ config EXCEPTIONS_RUN_DEBUGGER
 	bool "Run the debugger when an exception occurs"
 	default y
 
+menu "Default menu"
+
+config EXCEPTION_SHOW_DEFAULT_MENU
+	bool "Show the default menu"
+	default y
+
 config EXCEPTION_DEFAULT
-	    int "Default menu"
-	    default 0
-	    range 0 5
-	    help
-	      0: DISASM ONLY
-	      1: EXCEPTION ONLY
-	      2: MEMVIEW ONLY
-	      3: DISASM + EXCEPTION
-	      4: MEMVIEW + EXCEPTION
-	      5: STACKTRACE
+	int "Default menu"
+	default 0
+	range 0 5
+	help
+		0: DISASM ONLY
+		1: EXCEPTION ONLY
+		2: MEMVIEW ONLY
+		3: DISASM + EXCEPTION
+		4: MEMVIEW + EXCEPTION
+		5: STACKTRACE
+
+endmenu
+
+config EXCEPTION_DEBUGGER_SYNTAX
+	bool "Use Intel Syntax"
+	default y
+	help
+		Intel syntax V. AT&T Syntax... Who wins? Intel ofc :>
+
+config DISASM_STOP_AT_RET
+	bool "Make the disassembler stop at any kind of return"
+	default y
+	help
+		If enabled the disassembler will stop showing more disassembly and will stop at the ret instruction
+		This includes all of the following instructions:
+		- RET
+		- IRET
+		- IRETQ
+		- SYSRET
+		- SYSRETQ
 
 endmenu
 
@@ -128,8 +179,5 @@ menu "Kernel Messages"
 config ENABLE_KERNEL_MESSAGES
 	bool "Enable kernel messages"
 	default y
-
-config Language
-	# choose either EN_UK, DE, FR, ES, IT, PT, NL, SV, NO, DK, FI, IS
 
 endmenu

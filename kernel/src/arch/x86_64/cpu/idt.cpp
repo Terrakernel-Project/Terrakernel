@@ -209,30 +209,30 @@ void debugger(exception_frame* frame) {
 	drivers::input::ps2k::set_event_callback((event_callback_fn)debugger_event_handler, frame);
 
 	clr();
-	dbg::disasm::disasm_at_memory(frame->rip-50, 150, 0, frame->rip);
+	dbg::disasm::disasm_at_memory(frame->rip, 50, 0, frame->rip);
 
 	while (true) drivers::input::ps2k::user_ps2k_poll();
 }
 
 void debugger_show_disasm(exception_frame* frame) {
 	clr();
-	dbg::disasm::disasm_at_memory(frame->rip-50, 150, 0, frame->rip);
+	dbg::disasm::disasm_at_memory(frame->rip, 50, 0, frame->rip);
 }
 
 void debugger_show_memview(exception_frame* frame) {
 	clr();
-	dbg::memview::print_memory_contents_at(frame->rip-50, 150, 0, frame->rip);
+	dbg::memview::print_memory_contents_at(frame->rip, 50, 0, frame->rip);
 }
 
 void debugger_show_disasm_and_except(exception_frame* frame) {
 	clr();
-	dbg::disasm::disasm_at_memory(frame->rip-50, 150, 0, frame->rip);
+	dbg::disasm::disasm_at_memory(frame->rip, 50, 0, frame->rip);
 	print_err(frame);
 }
 
 void debugger_show_memview_and_except(exception_frame* frame) {
 	clr();
-	dbg::memview::print_memory_contents_at(frame->rip-50, 150, 0, frame->rip);
+	dbg::memview::print_memory_contents_at(frame->rip, 50, 0, frame->rip);
 	print_err(frame);
 }
 
@@ -297,11 +297,11 @@ extern "C" void exception_handler(exception_frame* frame) {
 		asm ("cli;hlt");
 	}
 
-	if (vec == 0xE) {
 		decode_pf_err(err);
 #ifdef CONFIG_EXCEPTIONS_RUN_DEBUGGER
 		debugger(frame);
 #else
+#ifdef CONFIG_EXCEPTION_SHOW_DEFAULT_MENU
 #if CONFIG_EXCEPTION_DEFAULT == 0
 		debugger_show_disasm(frame);
 #elif CONFIG_EXCEPTION_DEFAULT == 1
@@ -316,7 +316,7 @@ extern "C" void exception_handler(exception_frame* frame) {
 		debugger_show_stacktrace(frame);
 #endif // #else is impossible, Kconfig limits 0-5
 #endif
-	}
+#endif
 
 	nesting_table[vec]--;
     
