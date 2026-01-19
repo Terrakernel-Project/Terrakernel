@@ -157,7 +157,24 @@ extern "C" void init() {
 
     Log::print_rtc_time("FINISHED");
 
-    drivers::timers::apic::sleep_ms(1000);
+    
+    int fd = ramfs::open("/initrd/init", O_RDONLY);
+    if (fd < 0) {
+        panic("could not find init");
+    }
+
+    stat s;
+    ramfs::fstat(fd, &s);
+    if (s.st_size < 1) panic("file empty");
+
+    void* exe_buf = mem::heap::malloc(s.st_size);
+    if (!exe_buf) panic("no memory");
+    
+    if (ramfs::read(fd, exe_buf, s.st_size) != s.st_size) panic("failed to read full file");
+    
+    Log::end_kernel_messages(); // now no messages print
+
+    run_elf(exe_buf, s.st_size, true);
 
     while (1) {
         asm volatile("hlt");

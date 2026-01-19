@@ -2,47 +2,73 @@
 #include <stddef.h>
 #include <sys/syscalls.h>
 
-Handle* ConR, *ConW;
+Handle *ConR, *ConW;
 
-void list_dir(const char* __restrict path, int lvl) {
-    Handle* dir = HlCreateNewHandle();
+static int is_dot_or_dotdot(const char *name) {
+    return name[0] == '.' &&
+          (name[1] == '\0' ||
+          (name[1] == '.' && name[2] == '\0'));
+}
+
+void list_dir(const char * __restrict path, int lvl) {
+    Handle *dir = HlCreateNewHandle();
+    if (!dir)
+        return;
+
     HlOpenDirectory(dir, path, 0);
 
     uint8_t buf[1024];
     HlListDirectory(dir, buf);
 
-    uint64_t count = *(uint64_t*)buf;
-    char* names = (char*)buf + sizeof(uint64_t);
+    uint64_t count = *(uint64_t *)buf;
+    char *names = (char *)buf + sizeof(uint64_t);
 
     for (uint64_t i = 0; i < count; ++i) {
-        const char* name = names + (i * (NAME_MAX + 1));
+        const char *name = names + i * (NAME_MAX + 1);
 
-        uint64_t name_len;
-        while (name[name_len] != '\0') {
-            name_len++;
-        }
+        if (is_dot_or_dotdot(name))
+            continue;
 
-        for (int j = 0; j < lvl; ++j) {
-            HlWriteConsole(ConW, "  ", 2); // Indentation for hierarchy
-        }
+        uint64_t len = 0;
+        while (len < NAME_MAX && name[len])
+            len++;
 
-        HlWriteConsole(ConW, name, name_len);
-        list_dir(name, lvl + 1); // Recursive call to list subdirectory
+        for (int j = 0; j < lvl; ++j)
+            HlWriteConsole(ConW, "  ", 2);
+
+        HlWriteConsole(ConW, name, len);
+        HlWriteConsole(ConW, "\n", 1);
+
+        char fullpath[PATH_MAX];
+        size_t p = 0;
+
+        while (path[p] && p < PATH_MAX - 1)
+            fullpath[p] = path[p], p++;
+
+        if (p > 1 && fullpath[p - 1] != '/')
+            fullpath[p++] = '/';
+
+        for (size_t k = 0; k < len && p < PATH_MAX - 1; ++k)
+            fullpath[p++] = name[k];
+
+        fullpath[p] = '\0';
+
+        list_dir(fullpath, lvl + 1);
     }
 
     HlCloseDirectory(dir);
     HlDestroyHandle(dir);
 }
 
-int _start() {
+int _start(void) {
     ConR = HlCreateNewHandle();
     ConW = HlCreateNewHandle();
+
     HlOpenConsole(ConR, ConW);
 
     HlWriteConsole(ConW, "Listing root directory:\n", 24);
-    
     list_dir("/", 0);
 
     HlExit(0);
-    return 0;
+    __builtin_unreachable();
 }

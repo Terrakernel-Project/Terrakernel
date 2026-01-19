@@ -18,6 +18,8 @@ namespace Log {
 	#define putc putchar
 
 	void print_rtc_time(const char* message = "");
+
+	void end_kernel_messages();
 }
 
 #endif /* PRINT_HPP */

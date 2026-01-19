@@ -4,7 +4,9 @@
 #define NAME_MAX 255
 #define PATH_MAX 4096
 
-static inline uint64_t syscall0(uint64_t n) {
+static inline uint64_t syscall0(
+	uint64_t n
+) {
     uint64_t ret;
     asm volatile (
         "syscall"
@@ -15,7 +17,9 @@ static inline uint64_t syscall0(uint64_t n) {
     return ret;
 }
 
-static inline uint64_t syscall1(uint64_t n, uint64_t a1) {
+static inline uint64_t syscall1(
+	uint64_t n, uint64_t a1
+) {
     uint64_t ret;
     asm volatile (
         "syscall"
@@ -26,7 +30,9 @@ static inline uint64_t syscall1(uint64_t n, uint64_t a1) {
     return ret;
 }
 
-static inline uint64_t syscall2(uint64_t n, uint64_t a1, uint64_t a2) {
+static inline uint64_t syscall2(
+	uint64_t n, uint64_t a1, uint64_t a2
+) {
     uint64_t ret;
     asm volatile (
         "syscall"
@@ -37,7 +43,10 @@ static inline uint64_t syscall2(uint64_t n, uint64_t a1, uint64_t a2) {
     return ret;
 }
 
-static inline uint64_t syscall3(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3) {
+static inline uint64_t syscall3(
+	uint64_t n, uint64_t a1, uint64_t a2,
+	uint64_t a3
+) {
     uint64_t ret;
     asm volatile (
         "syscall"
@@ -48,9 +57,13 @@ static inline uint64_t syscall3(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a
     return ret;
 }
 
-static inline uint64_t syscall4(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4) {
+static inline uint64_t syscall4(
+    uint64_t n, uint64_t a1, uint64_t a2,
+    uint64_t a3, uint64_t a4
+) {
     uint64_t ret;
     register uint64_t r10 asm("r10") = a4;
+
     asm volatile (
         "syscall"
         : "=a"(ret)
@@ -60,28 +73,39 @@ static inline uint64_t syscall4(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a
     return ret;
 }
 
-static inline uint64_t syscall5(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5) {
+static inline uint64_t syscall5(
+    uint64_t n, uint64_t a1, uint64_t a2,
+    uint64_t a3, uint64_t a4, uint64_t a5
+) {
     uint64_t ret;
     register uint64_t r10 asm("r10") = a4;
     register uint64_t r8  asm("r8")  = a5;
+
     asm volatile (
         "syscall"
         : "=a"(ret)
-        : "a"(n), "D"(a1), "S"(a2), "d"(a3), "r"(r10), "r"(r8)
+        : "a"(n), "D"(a1), "S"(a2), "d"(a3),
+          "r"(r10), "r"(r8)
         : "rcx", "r11", "memory"
     );
     return ret;
 }
 
-static inline uint64_t syscall6(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6) {
+static inline uint64_t syscall6(
+    uint64_t n, uint64_t a1, uint64_t a2,
+    uint64_t a3, uint64_t a4, uint64_t a5,
+    uint64_t a6
+) {
     uint64_t ret;
     register uint64_t r10 asm("r10") = a4;
     register uint64_t r8  asm("r8")  = a5;
     register uint64_t r9  asm("r9")  = a6;
+
     asm volatile (
         "syscall"
         : "=a"(ret)
-        : "a"(n), "D"(a1), "S"(a2), "d"(a3), "r"(r10), "r"(r8), "r"(r9)
+        : "a"(n), "D"(a1), "S"(a2), "d"(a3),
+          "r"(r10), "r"(r8), "r"(r9)
         : "rcx", "r11", "memory"
     );
     return ret;
