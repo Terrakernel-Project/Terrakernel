@@ -6,12 +6,10 @@
 #endif
 #include <cstdio>
 
-uint64_t ticks = 0;
+extern "C" volatile uint64_t ticks = 0;
 
 extern "C" void apic_timer_interrupt_handler();
 extern "C" uint64_t apic_timer_c_handler(uint64_t rsp) {
-	ticks++;
-
 	arch::x86_64::cpu::idt::send_eoi(0);
 
 	return rsp; // do not change context
@@ -31,20 +29,19 @@ void give_timer_ticks(uint64_t taken_ticks) {
 namespace drivers::timers::apic {
 
 void sleep_ms(uint64_t ms) {
-	Log::print_rtc_time("Sleeping");
 	if (!apic_enabled()) {
 #ifdef CONFIG_FALLBACK_TO_PIT
-		printf("FALLBACK");
 		drivers::timers::pit::sleep_ms(ms);
 #endif
-		printf("RETURNING");
 		return;
 	}
 
 	uint64_t curr = ticks;
 	uint64_t target = curr + ms;
-	while (ticks < target) printf("SLEEPING %d\n\r", ticks);
-	Log::print_rtc_time("Done");
+	asm ("sti");
+	while (get_ticks() < target) {
+		asm ("hlt");
+	}
 }
 
 uint64_t ns_elapsed_time() {

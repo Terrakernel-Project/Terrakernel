@@ -17,7 +17,7 @@ void list_dir(const char * __restrict path, int lvl) {
 
     HlOpenDirectory(dir, path, 0);
 
-    uint8_t buf[1024];
+    uint8_t buf[1024]; // because it must be 1KiB according to HlApi
     HlListDirectory(dir, buf);
 
     uint64_t count = *(uint64_t *)buf;

@@ -1,6 +1,9 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H 1
 
+#include <stdint.h>
+#include <stddef.h>
+
 #define NAME_MAX 255
 #define PATH_MAX 4096
 
@@ -113,6 +116,15 @@ static inline uint64_t syscall6(
 
 struct Handle_Struc;
 typedef struct Handle_Struc Handle;
+
+struct {
+    void     *BaseAddress;
+    uint64_t  Width;
+	uint64_t  Height;
+	uint64_t  Pitch;
+    uint64_t  BitsPerPixel;
+    uint64_t  Stride;
+} Framebuffer;
 
 static inline void HlKernelMessage(const char* __restrict dat) {
 	syscall1(0, (uint64_t)dat);

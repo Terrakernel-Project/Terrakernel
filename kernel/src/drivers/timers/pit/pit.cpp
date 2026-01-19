@@ -37,6 +37,8 @@ void initialise() {
 void sleep_ms(uint64_t ms) {
     if (CONFIG_PIT_FREQUENCY == 0) return;
 
+    asm ("sti");
+
     uint64_t current_ticks = ticks;
     uint64_t blocking_ticks = (ms * CONFIG_PIT_FREQUENCY) / 1000;
     uint64_t final_ticks = current_ticks + blocking_ticks;

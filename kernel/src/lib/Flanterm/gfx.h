@@ -18,6 +18,11 @@ void draw_mouse_pointer(int old_x, int old_y, int x, int y, int button_state_lmb
 void fb_clrscr(int no_cur);
 void refresh();
 
+uint64_t get_base_fb();
+uint64_t get_pitch();
+uint64_t get_bpp();
+uint64_t get_stride();
+
 #ifdef __cplusplus
 }
 #endif

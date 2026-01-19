@@ -78,7 +78,7 @@ config FALLBACK_TO_PIT
 
 config APIC_INACCURACY_PROT
 	bool "APIC inaccuracy protection"
-	default y
+	default n
 	help
 		Enabled: improves accuracy of the APIC timer
 		Disabled: improves boot time, by a couple of milliseconds
@@ -86,8 +86,8 @@ config APIC_INACCURACY_PROT
 
 config APIC_INACCURACY_PROT_DELAY
 	int "Delay in milliseconds" if APIC_INACCURACY_PROT
-	range 1 10000 if APIC_INACCURACY_PROT # 1 millisecond to 10 seconds, the higher to more accurate, i think if TK is a real-time OS then higher is better
-	default 10 if APIC_INACCURACY_PROT
+	range 1 3 if APIC_INACCURACY_PROT # 1 millisecond to 3 seconds, the higher to more accurate, i think if TK is a real-time OS then higher is better
+	default 1 if APIC_INACCURACY_PROT
 
 endmenu
 

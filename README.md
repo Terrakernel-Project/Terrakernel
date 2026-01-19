@@ -26,7 +26,7 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Switch to fully graphical (flanterm) messages and logs
 - [x] Port uACPI
 - [x] (Other) Write a VFS and TMPFS and parse a USTAR Initrd archive
-- [ ] Scheduling and multithreading (delayed)
+- [ ] Scheduling and multithreading*
 - [x] Switching to userspace
 - [x] Write some basic syscalls
 - [x] Load x86_64 ELF binaries, static and relocatable (copy from old version of TK) (delayed)
@@ -52,29 +52,29 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [ ] End of project... or at least this version...
 
 ### Building the kernel
-Check [BUILD_INSTRUCTIONS.md](https://github.com/Atlas-Software-Org/Terrakernel/blob/master/BUILD_INSTRUCTIONS.md)
+Check [BUILD_INSTRUCTIONS.md](https://github.com/Terrakernel-Project/Terrakernel/blob/master/BUILD_INSTRUCTIONS.md)
 
 ### How many LoC?
 
 ```x86asm
-     250 text files.
-     229 unique files.
+     258 text files.
+     237 unique files.
        5 files ignored.
 
-github.com/AlDanial/cloc v 1.98  T=1.90 s (120.3 files/s, 43849.6 lines/s)
+github.com/AlDanial/cloc v 1.98  T=2.21 s (107.4 files/s, 38514.3 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               55           6540           4142          36386
-C/C++ Header                   138           3408          11639          15335
-C++                             30           1083              6           4663
-Assembly                         5             36              0            227
+C                               55           6540           4142          36391
+C/C++ Header                   141           3432          11642          15216
+C++                             35           1363             13           5948
+Assembly                         5             36              0            232
 CMake                            1              0              0             21
 -------------------------------------------------------------------------------
-SUM:                           229          11067          15787          56632 (55777 old)
+SUM:                           237          11371          15797          57808 (56632 old)
 -------------------------------------------------------------------------------
 ```
 
-### Screenshot
+### Screenshots
 
 ![Burn on flash drive](./images/recommended_burn.png)

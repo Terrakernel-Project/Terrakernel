@@ -35,6 +35,8 @@ void HlOpenConsole(Handle* portR, Handle* portW);
 void HlWaitForInputConsole(Handle* portR);
 int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count);
 int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count);
+void HlObtainFramebuffer(Handle* hptr);
+void HlStatFramebuffer(Handle* hptr, void* buf);
 
 void HlPrepareInitReturn(void* init_load_addr);
 

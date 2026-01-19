@@ -141,3 +141,20 @@ void fb_clrscr(int no_cur) {
         ((volatile uint32_t*)fb->address)[0] = 0;
     }
 }
+
+uint64_t get_base_fb() {
+    return (uint64_t)fb->address;
+}
+
+uint64_t get_pitch() {
+    return fb->pitch;
+}
+
+uint64_t get_bpp() {
+    return fb->bpp;
+}
+
+uint64_t get_stride() {
+    return get_pitch() / get_bpp();
+}
+

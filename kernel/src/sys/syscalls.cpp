@@ -7,14 +7,17 @@
 #include <drivers/tty/ldisc/ldisc.hpp>
 #include <panic.hpp>
 #include <exec/elf.hpp>
+#include <lib/Flanterm/gfx.h>
 
 int64_t curr_pid = 0;
 
+//hptr->HandleType != type
 #define VALID_HNDL(hptr, type, DOCODE)                 \
 do {                                                   \
     if ((hptr) == NULL ||                              \
-        !ObjMan::ValidateID((hptr)->ObjectID)) {       \
-        DOCODE;                                       \
+        !ObjMan::ValidateID((hptr)->ObjectID)          \
+    ) {                                                \
+        DOCODE;                                        \
     }                                                  \
 } while (0);
 
@@ -29,7 +32,9 @@ void HlKernelMessage(const char* __restrict dat) {
 }
 
 Handle* HlCreateNewHandle() {
-    return ObjMan::CreateNewHandle();
+    Handle* h = ObjMan::CreateNewHandle();
+    h->HandleType = HANDLE_TYPE_GENERIC;
+    return h;
 }
 
 void HlDestroyHandle(Handle* hptr) {
@@ -37,7 +42,7 @@ void HlDestroyHandle(Handle* hptr) {
 }
 
 void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
-    if (hptr->HandleType == HANDLE_TYPE_GENERIC) return; // cannot replace 
+    if (hptr->HandleType != HANDLE_TYPE_GENERIC) return; // cannot replace // buf fix, it was == which meant you could never open files
     hptr->HandleType = HANDLE_TYPE_FILEIO;
     hptr->Flags = OpenFlags;
     hptr->RefCount = 1; // because HlOpenFile references this handle
@@ -400,4 +405,31 @@ int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count) {
 int64_t HlWriteConsole(Handle* portR, const void* __restrict dat, size_t count) {
     VALID_HNDL(portR, HANDLE_TYPE_CONSOLE_W, return -1)
     return drivers::tty::ldisc::write((const char*)dat, count);
+}
+
+extern "C" uint64_t g_scr_height, g_scr_width;
+
+#define QUICK_FB_ACCESS hptr->Payload.Framebuffer
+void HlObtainFramebuffer(Handle* hptr) {
+    VALID_HNDL(hptr, HANDLE_TYPE_GENERIC, return);
+
+    hptr->HandleType = HANDLE_TYPE_FRAMEBUFFER;
+
+    hptr->RefCount = 1;
+    hptr->OwnerPID = 0;
+    hptr->LastError = 0;
+
+    QUICK_FB_ACCESS.BaseAddress = (void*)get_base_fb();
+    QUICK_FB_ACCESS.Width = g_scr_width;;
+    QUICK_FB_ACCESS.Height = g_scr_height;
+    QUICK_FB_ACCESS.Pitch = get_pitch();
+    QUICK_FB_ACCESS.BitsPerPixel = get_bpp();
+    QUICK_FB_ACCESS.Stride = get_stride();
+}
+#undef QUICK_FB_ACCESS
+
+void HlStatFramebuffer(Handle* hptr, void* buf) {
+    VALID_HNDL(hptr, HANDLE_TYPE_FRAMEBUFFER, buf = nullptr; return);
+
+    mem::memcpy(buf, &hptr->Payload.Framebuffer, sizeof(void*) + (5*sizeof(uint64_t)));
 }

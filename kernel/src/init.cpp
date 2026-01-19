@@ -22,6 +22,7 @@
 #include <arch/x86_64/syscall/handlers.hpp>
 #include <arch/x86_64/apic/apic.hpp>
 #include <drivers/timers/apic/apic.hpp>
+#include <parse_karg.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -41,9 +42,19 @@ volatile struct limine_module_request module_request = {
     .response = nullptr, // shut up gcc
 };
 
+__attribute__((section(".limine_requests")))
+volatile struct limine_executable_cmdline_request executable_cmdline_request = {
+    .id = LIMINE_EXECUTABLE_CMDLINE_REQUEST_ID,
+    .revision = 0,
+    .response = nullptr,
+};
+
 extern "C" void init() {
 	asm ("cli");
     if (module_request.response == nullptr || module_request.response->module_count < 1) {
+        asm volatile ("cli;hlt");
+    }
+    if (executable_cmdline_request.response == nullptr || executable_cmdline_request.response->cmdline == nullptr) {
         asm volatile ("cli;hlt");
     }
 
@@ -157,8 +168,15 @@ extern "C" void init() {
 
     Log::print_rtc_time("FINISHED");
 
+    karg_context* karg_ctx = (karg_context*)mem::heap::malloc(sizeof(karg_context));
+    if (!karg_ctx) panic("no memory");
+
+    karg_ctx->base = (void*)executable_cmdline_request.response->cmdline;
+    karg_ctx->size = strlen((const char*)karg_ctx->base);
+    karg_ctx->INIT_PATH_symbol = "INIT_PATH";
+    karg_ctx->default_init_path = "/initrd/init";
     
-    int fd = ramfs::open("/initrd/init", O_RDONLY);
+    int fd = ramfs::open(check_init_path(karg_ctx), O_RDONLY);
     if (fd < 0) {
         panic("could not find init");
     }
@@ -171,6 +189,10 @@ extern "C" void init() {
     if (!exe_buf) panic("no memory");
     
     if (ramfs::read(fd, exe_buf, s.st_size) != s.st_size) panic("failed to read full file");
+    
+    Log::print_rtc_time("BEGIN");
+    drivers::timers::apic::sleep_ms(10000);
+    Log::print_rtc_time("END");
     
     Log::end_kernel_messages(); // now no messages print
 

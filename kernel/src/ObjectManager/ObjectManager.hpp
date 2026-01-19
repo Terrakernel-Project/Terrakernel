@@ -9,6 +9,7 @@
 #define HANDLE_TYPE_CONSOLE_R   3
 #define HANDLE_TYPE_CONSOLE_W   4
 #define HANDLE_TYPE_PROC        5
+#define HANDLE_TYPE_FRAMEBUFFER 6
 
 #define FLAG_FILE_LOAD_MEMORY    (1 << 31)
 #define FLAG_FILE_NEEDS_SYNC     (1 << 30)
@@ -76,6 +77,15 @@ typedef struct objman_handle {
             uint64_t  PoolSize;
             uint64_t  UsedSize;
         } MemoryPool;
+
+        struct {
+            void     *BaseAddress;
+            uint64_t  Width;
+            uint64_t  Height;
+            uint64_t  Pitch;
+            uint64_t  BitsPerPixel;
+            uint64_t  Stride;
+        } Framebuffer;
 
     } Payload;
 } Handle;
