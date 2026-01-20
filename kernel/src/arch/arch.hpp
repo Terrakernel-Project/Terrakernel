@@ -2,6 +2,8 @@
 #define ARCH_HPP 1
 
 #include <cstdint>
+#include <cstdio>
+#include <panic.hpp>
 
 struct interrupt_frame {
     uint64_t rip;
@@ -188,6 +190,35 @@ namespace misc {
 			: "a"(func), "c"(subleaf)
 		);
 	}
+
+	static inline uint64_t tsc_ticks_per_ms() {
+	    cpuid_ret r;
+	
+	    r = arch::x86_64::misc::cpuid(0x80000007, 0);
+	    if (!(r.edx & (1u << 8))) {
+	        Log::warnf("TSC: CPU does not have invariant TSC!");
+	        panic("Unreliable TSC error");
+	    }
+	
+	    r = arch::x86_64::misc::cpuid(0x15, 0);
+	    if (r.eax != 0 && r.ebx != 0) {
+	        uint64_t crystal_hz = (uint64_t)r.ecx;
+	        if (crystal_hz == 0) crystal_hz = 100000000ULL;
+	        uint64_t tsc_hz = crystal_hz * (uint64_t)r.ebx / (uint64_t)r.eax;
+	        return tsc_hz / 1000ULL;
+	    }
+	
+	    r = arch::x86_64::misc::cpuid(0x16, 0);
+	    if (r.eax != 0) {
+	        return (uint64_t)r.eax * 1000ULL;
+	    }
+	
+	    Log::warnf("TSC: Cannot determine reliable TSC frequency!");
+	    panic("Unreliable TSC error");
+	
+	    return 0;
+	}
+
 }
 }
 }

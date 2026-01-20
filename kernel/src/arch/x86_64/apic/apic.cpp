@@ -255,6 +255,7 @@ void initialise() {
     enabled = true;
 
 	arch::x86_64::cpu::idt::set_descriptor(IPI_VECTOR, (uint64_t)ipi_handle, 0x8E);
+	
 }
 
 void cleanup() {
@@ -376,21 +377,28 @@ namespace drivers::timers::apic {
 #endif
 
 uint64_t calibrate_pit() {
+	drivers::timers::pit::initialise();
+	Log::printf_status("OK", "PIT Reinitialised");
+
+	uint64_t initial_rtc_secs = arch::x86_64::cpu::rtc::get_seconds();
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, 0xFFFFFFFF);
-#ifdef CONFIG_APIC_INACCURACY_PROT
+/*#ifdef CONFIG_APIC_INACCURACY_PROT
     drivers::timers::pit::sleep_ms(CONFIG_APIC_INACCURACY_PROT_DELAY);
 #else
-    drivers::timers::pit::sleep_ms(1);
-#endif
+    drivers::timers::pit::sleep_ms(40);
+#endif*/
+
+	while (arch::x86_64::cpu::rtc::get_seconds() == initial_rtc_secs);
+
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, APIC_LVT_INT_MASKED);
 
-#ifdef CONFIG_APIC_INACCURACY_PROT
+/*#ifdef CONFIG_APIC_INACCURACY_PROT
 	uint32_t ticks_in_1ms = (0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT)) / CONFIG_APIC_INACCURACY_PROT_DELAY;
 #else
-    uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
-#endif
+    uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT) / 40;
+#endif*/
 
-	drivers::timers::pit::disable();
+	uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT) / 1000;
 
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, TIMER_VECTOR | APIC_LVT_TIMER_MODE_PERIODIC);
 	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_DIVIDE, 0x3);
@@ -406,9 +414,9 @@ uint64_t calibrate_pit() {
 void initialise() {
 	initialise_timer();
 
-	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_DIVIDE, 0x3);
-
 	give_timer_ticks(calibrate_pit());
+
+	printf("Kewl\n\r");
 }
 
 }

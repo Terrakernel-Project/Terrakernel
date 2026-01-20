@@ -6,13 +6,15 @@
 #endif
 #include <cstdio>
 
-extern "C" volatile uint64_t ticks = 0;
+volatile uint64_t ticks = 0;
 
-extern "C" void apic_timer_interrupt_handler();
-extern "C" uint64_t apic_timer_c_handler(uint64_t rsp) {
+__attribute__((interrupt))
+void apic_timer_interrupt_handler(void*) {
+	ticks++;
+
+	printf("ticks == %d\n\r", ticks);
+
 	arch::x86_64::cpu::idt::send_eoi(0);
-
-	return rsp; // do not change context
 }
 
 void initialise_timer() {
@@ -39,8 +41,10 @@ void sleep_ms(uint64_t ms) {
 	uint64_t curr = ticks;
 	uint64_t target = curr + ms;
 	asm ("sti");
-	while (get_ticks() < target) {
-		asm ("hlt");
+	while (ticks < target) {
+		Log::print_rtc_time("...");
+		printf("%d\n\r", ticks);
+		asm ("pause");
 	}
 }
 

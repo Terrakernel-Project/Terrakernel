@@ -17,6 +17,9 @@ namespace arch::x86_64::ioapic {
 
 void initialise() {
 	ioapic_base = (volatile uint32_t*)arch::x86_64::apic::get_ioapic_base();
+	ioapic_mask_irq(0);
+	ioapic_register_interrupt(0, 0x20);
+	ioapic_unmask_irq(0);
 }
 
 void ioapic_mask_irq(uint8_t irq) {

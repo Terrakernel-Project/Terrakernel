@@ -115,6 +115,7 @@ extern "C" void init() {
 
 	arch::x86_64::apic::initialise();
 	arch::x86_64::ioapic::initialise();
+	drivers::timers::apic::initialise();
 	Log::printf_status("OK", "APIC Initialised");
 
     Log::print_rtc_time("TIMER ON");
@@ -191,7 +192,7 @@ extern "C" void init() {
     if (ramfs::read(fd, exe_buf, s.st_size) != s.st_size) panic("failed to read full file");
     
     Log::print_rtc_time("BEGIN");
-    drivers::timers::apic::sleep_ms(10000);
+    drivers::timers::apic::sleep_ms(3000);
     Log::print_rtc_time("END");
     
     Log::end_kernel_messages(); // now no messages print
