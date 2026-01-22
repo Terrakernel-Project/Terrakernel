@@ -399,7 +399,7 @@ void HlWaitForInputConsole(Handle* portR) {
 
 int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count) {
     VALID_HNDL(portW, HANDLE_TYPE_CONSOLE_R, return -1)
-    return drivers::tty::ldisc::read(false, (char*)buf, count);
+    return drivers::tty::ldisc::read(true, (char*)buf, count);
 }
 
 int64_t HlWriteConsole(Handle* portR, const void* __restrict dat, size_t count) {

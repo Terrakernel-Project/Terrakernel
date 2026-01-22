@@ -1,40 +1,17 @@
 {
     "configurations": [
         {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "compilerPath": "C:\\Program Files\\LLVM\\bin\\clang.exe",
-            "cStandard": "c17",
-            "cppStandard": "c++14",
-            "intelliSenseMode": "windows-clang-x64"
-        },
-        {
             "name": "Linux",
             "includePath": [
-                "//wsl.localhost/Ubuntu/home/adam/Terrakernel/**"
+                "${workspaceFolder}/kernel/src/",
+                "${workspaceFolder}/kernel/src/libcxx",
+                "${workspaceFolder}/kernel/freestnd-c-hdrs/x86_64/include",
+                "${workspaceFolder}/kernel/freestnd-cxx-hdrs/x86_64/include"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "compilerPath": "\\\\wsl.localhost\\Ubuntu\\usr\\bin\\clang",
-            "cStandard": "c23",
-            "cppStandard": "c++26",
-            "intelliSenseMode": "linux-clang-x64",
-            "compilerPathInCppPropertiesJson": "C:\\Program Files\\LLVM\\bin\\clang.exe",
-            "mergeConfigurations": false,
-            "recursiveIncludes": {},
-            "browse": {
-                "limitSymbolsToIncludedHeaders": true
-            }
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++20",
+            "compilerPath": "/usr/bin/clang",
+            "intelliSenseMode": "linux-clang-x64"
         }
     ],
     "version": 4

@@ -69,6 +69,12 @@ int _start(void) {
     HlWriteConsole(ConW, "Listing root directory:\n", 24);
     list_dir("/", 0);
 
-    HlExit(0);
+	char buf[4096];
+	while (1) {
+		HlWriteConsole(ConW, "> ", 2);
+		int64_t read = HlReadConsole(ConR, buf, 4096);
+        HlWriteConsole(ConW, buf, read);
+	}
+
     __builtin_unreachable();
 }

@@ -8,17 +8,18 @@
 
 volatile uint64_t ticks = 0;
 
-__attribute__((interrupt))
-void apic_timer_interrupt_handler(void*) {
-	ticks++;
-
-	printf("ticks == %d\n\r", ticks);
-
+extern "C" void apic_timer_interrupt_handler();
+extern "C" uint64_t apic_timer_c_handler(uint64_t rsp) {
 	arch::x86_64::cpu::idt::send_eoi(0);
+
+	return rsp;
 }
 
 void initialise_timer() {
-	if (!apic_enabled) return;
+	if (!apic_enabled()) {
+		printf("APIC Timer: APIC not enabled\n\r");
+		return;
+	}
 
 	arch::x86_64::cpu::idt::set_descriptor(0xF1, (uint64_t)apic_timer_interrupt_handler, 0x8E);
 	arch::x86_64::cpu::idt::send_eoi(0);
@@ -42,8 +43,6 @@ void sleep_ms(uint64_t ms) {
 	uint64_t target = curr + ms;
 	asm ("sti");
 	while (ticks < target) {
-		Log::print_rtc_time("...");
-		printf("%d\n\r", ticks);
 		asm ("pause");
 	}
 }

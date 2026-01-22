@@ -1,0 +1,48 @@
+[2J[001;001H[=3h[2J[001;001H[2J[001;001H[8;042;160t[2J[001;001H[2J[001;001H[8;056;240t[2J[001;001HBdsDxe: loading Boot0002 "UEFI QEMU HARDDISK QM00013 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
+BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00013 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
+[2J[001;001H[001;001H[2J[001;001H[001;001HSTARTING: [H:M:S] 10:03:55 PM
+[90m[00000.000][0m [ [92mOK[0m ] Flanterm Initialised
+[90m[00000.000][0m [ [92mOK[0m ] Serial Initialised
+[90m[00000.000][0m [ [92mOK[0m ] GDT Initialised
+[90m[00000.000][0m [ [92mOK[0m ] IDT Initialised
+[90m[00000.000][0m [ [92mOK[0m ] PMM Initialised
+[90m[00000.000][0m [ [92mOK[0m ] VMM Initialised
+[90m[00000.000][0m [ [92mOK[0m ] Heap Initialised
+[90m[00000.000][0m [ [94mINFO[0m ]  Disabling COM1 serial output, falling back to graphical interface
+[2J[H[90m[00000.000][0m [ [92mOK[0m ] Serial Disabled
+[90m[00000.000][0m [ [92mOK[0m ] uACPI Initialised
+[90m[00000.000][0m [ [92mOK[0m ] PIT Initialised
+[90m[00000.000][0m [ [92mOK[0m ] APIC Initialised
+TIMER ON: [H:M:S] 10:03:56 PM
+[90m[00000.010][0m [ [92mOK[0m ] RamFS Initialised
+[90m[00000.096][0m [ [92mOK[0m ] Detected 7 PCI devices (Normal PCI is deprecated, use PCIe)
+[90m[00000.108][0m [ [92mOK[0m ] Detected 7 PCIe devices
+[90m[00000.109][0m [ [92mOK[0m ] Syscalls Initialised
+[90m[00000.111][0m [ [92mOK[0m ] PS2K Initialised
+[90m[00000.112][0m [ [92mOK[0m ] PS2M Initialised
+[90m[00000.112][0m [ [92mOK[0m ] Line Discipline Initialised
+[90m[00000.115][0m [ [92mOK[0m ] Syscall handlers Initialised, there are 34 valid syscalls
+FINISHED: [H:M:S] 10:03:56 PM
+FFFF800003BCB5D7
+STACK: 00007FFFFFFE7000
+STACK: 00007FFFFFFA5000
+STACK: 00007FFFFFF63000
+[Task A] Beginning iteration 0
+[Task A] Step 1/10
+[Task A] Step 1 done, computed value=5001
+[Task A] Beginning iteration 0
+[Task A] Step 1/10
+[Task A] Step 1 done, computed value=5001
+
+[91m========== EXCEPTION! ==========[0m
+check_exception v=0d e=0000 i=0 cpl=0 IP=0008:00000000000ac81b pc=00000000000ac81b CR2=ffff7fffadbd6081
+RAX= ffff800003bcb69f RBX= ffff800003bcb58f RCX= ffffffffffffffff RDX= ffff800003bcb5d7
+RSI= ffff800003bcb69f RDI= ffff800003bcb5da RBP= ffff800007e80f70 RSP= ffff800007e80f70
+R8=  0000000000000010 R9=  0000000000aaaaaa R10= 0000000000000000 R11= 0000000000000005
+R12= 0000000000000000 R13= 0000000000000000 R14= 0000000000000000 R15= 0000000000000000
+RIP= 00000000000ac81b RFL= 00240096 [---S-AP-] CPL=0
+ES=  0010 DS=  0010 SS=  0010 CS=  0008 FS=  0010 GS=  0010
+CR0= 80010011 CR2= ffff7fffadbd6081 CR3= 0000000007e70000 CR4= 00000020
+Exception: #GP (vector=13, error=0)
+Page Fault: caused by a non-present page during a read in supervisor mode.
+[91m========== END OF MSG ==========[0m

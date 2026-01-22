@@ -11,8 +11,6 @@ __attribute__((interrupt))
 void pit_interrupt_handler(void*) {
     ticks++;
 
-    printf("int\n\r");
-
     arch::x86_64::cpu::idt::send_eoi(0);
 }
 
@@ -34,24 +32,21 @@ void initialise() {
 
     arch::x86_64::cpu::idt::set_descriptor(0x20, (uint64_t)pit_interrupt_handler, 0x8E);
     arch::x86_64::cpu::idt::send_eoi(0);
-
-    printf("CONFIG_PIT_FREQUENCY = %d\n\rdivisor = %d\n\r", CONFIG_PIT_FREQUENCY, divisor);
+    arch::x86_64::cpu::idt::irq_clear_mask(0);
 }
 
 void sleep_ms(uint64_t ms) {
-	printf("Preparing for sleep\n\r");
     if (CONFIG_PIT_FREQUENCY == 0) {
-    	printf("CONFIG_PIT_FREQUENCY == 0\n\r");
     	return;
     }
+    asm ("sti");
+    arch::x86_64::cpu::idt::irq_clear_mask(0);
     
     uint64_t current_ticks = ticks;
     uint64_t blocking_ticks = (ms * CONFIG_PIT_FREQUENCY) / 1000;
     uint64_t final_ticks = current_ticks + blocking_ticks;
-	printf("current_ticks = %llu\n\rblocking_ticks = %llu\n\rfinal_ticks = %llu\n\r", current_ticks, blocking_ticks, final_ticks);
 
-    asm ("sti");
-    while (ticks < final_ticks);
+    while (ticks < final_ticks) asm ("pause");
 }
 
 uint64_t ns_elapsed_time() {

@@ -1,0 +1,13 @@
+{
+    "C_Cpp.default.compilerPath": "/usr/bin/clang",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/kernel/src",
+        "${workspaceFolder}/kernel/src/libcxx",
+        "${workspaceFolder}/kernel/src/lib",
+        "${workspaceFolder}/kernel/freestnd-c-hdrs/x86_64/include",
+        "${workspaceFolder}/kernel/freestnd-cxx-hdrs/x86_64/include"
+    ],
+    "C_Cpp.default.cStandard": "gnu11",
+    "C_Cpp.default.cppStandard": "gnu++20",
+    "C_Cpp.default.intelliSenseMode": "linux-clang-x64"
+}

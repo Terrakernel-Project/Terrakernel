@@ -60,6 +60,15 @@ struct madt_ioapic_entry {
     uint32_t gsi_base;
 } __attribute__((packed));
 
+struct madt_iso_entry {
+    uint8_t  type;
+    uint8_t  length;
+    uint8_t  bus;
+    uint8_t  source_irq;
+    uint32_t gsi;
+    uint16_t flags;
+} __attribute__((packed));
+
 struct acpi_sdt_hdr {
     char signature[4];
     uint32_t length;
@@ -78,6 +87,32 @@ struct madt_table {
     uint32_t flags;
     uint8_t entries[];
 } __attribute__((packed));
+
+struct iso_info {
+    uint8_t  irq;
+    uint32_t gsi;
+    uint16_t flags;
+};
+
+static iso_info iso_table[32];
+static bool iso_present[32];
+int isos = 0;
+
+static void add_new_iso(madt_iso_entry* iso) {
+    if (isos >= 31) return; // we support a maximum of 32 ISO entries
+
+	iso_info* inf = &iso_table[isos];
+	inf->irq = iso->source_irq;
+	inf->gsi = iso->gsi;
+	inf->flags = iso->flags;
+	iso_present[isos] = true;
+
+	isos++;
+
+#ifdef CONFIG_APIC_VERBOSE
+	printf("Created new ISO (ISO#%d) entry: inf->irq= %02X inf->gsi= %08X inf->flags= %04X\n\r", isos-1, inf->irq, inf->gsi, inf->flags);
+#endif
+}
 
 namespace arch::x86_64::apic {
 
@@ -118,10 +153,10 @@ uint32_t apic_read_reg(cpu_unit* cpu, uint32_t reg) {
             uint32_t msr = 0x800 + (reg >> 4);
             return (uint32_t)arch::x86_64::misc::rdmsr(msr);
         } else {
-            return ((volatile uint8_t*)cpu->lapic_base)[reg >> 2];
+            return ((volatile uint32_t*)cpu->lapic_base)[reg / 4];
         }
     } else {
-        return ((volatile uint8_t*)lapic_base)[reg >> 2];
+        return ((volatile uint32_t*)cpu->lapic_base)[reg / 4];
     }
 }
 
@@ -131,10 +166,10 @@ void apic_write_reg(cpu_unit* cpu, uint32_t reg, uint32_t value) {
             uint32_t msr = 0x800 + (reg >> 4);
             arch::x86_64::misc::wrmsr(msr, value);
         } else {
-            ((volatile uint8_t*)cpu->lapic_base)[reg >> 2] = value;
+            ((volatile uint32_t*)cpu->lapic_base)[reg / 4] = value;
         }
     } else {
-        ((volatile uint8_t*)lapic_base)[reg >> 2] = value;
+        ((volatile uint32_t*)cpu->lapic_base)[reg / 4] = value;
     }
 }
 
@@ -206,6 +241,14 @@ static void parse_madt_entries() {
 #endif
                 break;
             }
+            case MADT_ENTRY_ISO: {
+            	madt_iso_entry* iso = (madt_iso_entry*)ptr;
+            	add_new_iso(iso);
+#ifdef CONFIG_APIC_VERBOSE
+				printf("Found ISO entry\n\r");
+#endif
+				break;
+            }
         }
         
         ptr += length;
@@ -251,6 +294,8 @@ void initialise() {
 #ifdef CONFIG_APIC_VERBOSE    
     printf("Found %d CPUs\n", registry->num_units);
 #endif
+
+	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_SPURIOUS, 0x1FF);
 
     enabled = true;
 
@@ -360,63 +405,55 @@ void apic_send_eoi() {
 
 namespace drivers::timers::apic {
 
-#ifdef CONFIG_APIC_INACCURACY_PROT
-#   warning "CONFIG_APIC_INACCURACY_PROT = 1"
-#else
-#   warning "CONFIG_APIC_INACCURACY_PROT = 0"
-#endif
-
-#if CONFIG_APIC_INACCURACY_PROT == 0
-#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY = 0"
-#elif CONFIG_APIC_INACCURACY_PROT == 1
-#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY = 1"
-#elif CONFIG_APIC_INACCURACY_PROT > 1
-#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY > 1"
-#else
-#   warning "CONFIG_APIC_INACCURACY_PROT_DELAY not defined, defaulting to 0"
-#endif
-
 uint64_t calibrate_pit() {
-	drivers::timers::pit::initialise();
-	Log::printf_status("OK", "PIT Reinitialised");
-
-	uint64_t initial_rtc_secs = arch::x86_64::cpu::rtc::get_seconds();
-	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, 0xFFFFFFFF);
-/*#ifdef CONFIG_APIC_INACCURACY_PROT
+    arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_DIVIDE, 0x3);
+    
+    arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, APIC_LVT_INT_MASKED);
+    
+    arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, 0xFFFFFFFF);
+    
+#ifdef CONFIG_APIC_INACCURACY_PROT
     drivers::timers::pit::sleep_ms(CONFIG_APIC_INACCURACY_PROT_DELAY);
+    uint32_t elapsed = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
+    uint32_t ticks_in_1ms = elapsed / CONFIG_APIC_INACCURACY_PROT_DELAY;
 #else
     drivers::timers::pit::sleep_ms(40);
-#endif*/
-
-	while (arch::x86_64::cpu::rtc::get_seconds() == initial_rtc_secs);
-
-	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, APIC_LVT_INT_MASKED);
-
-/*#ifdef CONFIG_APIC_INACCURACY_PROT
-	uint32_t ticks_in_1ms = (0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT)) / CONFIG_APIC_INACCURACY_PROT_DELAY;
-#else
-    uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT) / 40;
-#endif*/
-
-	uint32_t ticks_in_1ms = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT) / 1000;
-
-	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, TIMER_VECTOR | APIC_LVT_TIMER_MODE_PERIODIC);
-	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_DIVIDE, 0x3);
-	arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, ticks_in_1ms);
-
-#ifdef CONFIG_APIC_VERBOSE
-	printf("Took %zu ticks for 1 milliseconds...\n\r", ticks_in_1ms);
+    uint32_t elapsed = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
+    uint32_t ticks_in_1ms = elapsed / 40;
 #endif
 
-	return ticks_in_1ms;
+    arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_LVT_TIMER, TIMER_VECTOR | APIC_LVT_TIMER_MODE_PERIODIC);
+    arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, ticks_in_1ms);
+
+#ifdef CONFIG_APIC_VERBOSE
+    printf("Calibrated: %u ticks for 1 millisecond\n\r", ticks_in_1ms);
+#endif
+
+    return ticks_in_1ms;
 }
 
 void initialise() {
 	initialise_timer();
 
 	give_timer_ticks(calibrate_pit());
-
-	printf("Kewl\n\r");
 }
 
+}
+
+uint32_t obtain_iso_gsi(uint8_t irq) {
+	for (int i = 0; i < isos; i++) {
+		if (iso_table[i].irq == irq) return iso_table[i].gsi;
+	}
+	return irq;
+}
+
+uint16_t obtain_iso_flags(uint8_t irq) {
+	for (int i = 0; i < isos; i++) {
+		if (iso_table[i].irq == irq) return iso_table[i].flags;
+	}
+	return 0;
+}
+
+uint32_t get_bsp_apic_id_u32() {
+	return (uint32_t)arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_ID);
 }

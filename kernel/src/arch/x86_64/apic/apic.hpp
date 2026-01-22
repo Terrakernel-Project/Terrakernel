@@ -56,6 +56,7 @@ void initialise();
 void ioapic_mask_irq(uint8_t irq);
 void ioapic_unmask_irq(uint8_t irq);
 void ioapic_register_interrupt(uint8_t irq, uint8_t vector);
+void ioapic_list_interrupts();
 
 }
 
@@ -69,5 +70,9 @@ namespace drivers::timers::apic {
 void initialise();
 
 }
+
+uint32_t obtain_iso_gsi(uint8_t irq);
+uint16_t obtain_iso_flags(uint8_t irq);
+uint32_t get_bsp_apic_id_u32();
 
 #endif

@@ -3,9 +3,10 @@
 ARCH := x86_64
 
 QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic #-serial stdio
-QEMUFLAGS_DINT := $(QEMUFLAGS) -d int
-QEMUFLAGS_GDB := $(QEMUFLAGS) -s -S
-QEMUFLAGS_A := $(QEMUFLAGS) -d int -s -S
+QEMUFLAGS_NORM := -rtc base=localtime -M q35 -m 6G
+QEMUFLAGS_DINT := $(QEMUFLAGS_NORM) -d int
+QEMUFLAGS_GDB := $(QEMUFLAGS_NORM) -s -S
+QEMUFLAGS_A := $(QEMUFLAGS_NORM) -d int -s -S
 
 override IMAGE_NAME := terra-$(ARCH)
 
@@ -67,6 +68,16 @@ run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 		-device ahci,id=ahci \
 		-device ide-hd,drive=disk0,bus=ahci.0 \
 		$(QEMUFLAGS)
+
+run-norm: edk2-ovmf $(IMAGE_NAME).iso
+	qemu-system-$(ARCH) \
+		-machine q35 \
+		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
+		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
+		-blockdev driver=raw,node-name=disk0,file=diskfile \
+		-device ahci,id=ahci \
+		-device ide-hd,drive=disk0,bus=ahci.0 \
+		$(QEMUFLAGS_NORM)
 
 run-dint: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \

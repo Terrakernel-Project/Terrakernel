@@ -80,9 +80,6 @@ extern "C" void init() {
 
     mem::heap::initialise();
     Log::printf_status("OK", "Heap Initialised");
-    
-    drivers::timers::pit::initialise();
-    Log::printf_status("OK", "PIT Initialised (FREQ=300)");
 
     Log::info("Disabling COM1 serial output, falling back to graphical interface");
     serial::serial_putc('\033');
@@ -115,28 +112,18 @@ extern "C" void init() {
 
 	arch::x86_64::apic::initialise();
 	arch::x86_64::ioapic::initialise();
+
+	drivers::timers::pit::initialise();
+	Log::printf_status("OK", "PIT Initialised");
+
+	asm ("sti");
 	drivers::timers::apic::initialise();
+	asm ("cli");
 	Log::printf_status("OK", "APIC Initialised");
 
-    Log::print_rtc_time("TIMER ON");
+	asm ("sti");
 
-    if (apic_enabled()) {
-        asm ("sti");
-        drivers::timers::apic::initialise();
-        Log::printf_status("OK", "APIC Timer Initialised");
-        asm ("cli");
-    } else {
-        for (int i = 0; i < 8; i++) {
-            if ((mask_master & (1 << i)) == 0) {
-                arch::x86_64::cpu::idt::irq_clear_mask(i);
-            }
-        }
-        for (int i = 0; i < 8; i++) {
-            if ((mask_slave & (1 << i)) == 0) {
-                arch::x86_64::cpu::idt::irq_clear_mask(i + 8);
-            }
-        }
-    }
+    Log::print_rtc_time("TIMER ON");
 
 	ramfs::initialise();
 	Log::printf_status("OK", "RamFS Initialised");
@@ -176,7 +163,7 @@ extern "C" void init() {
     karg_ctx->size = strlen((const char*)karg_ctx->base);
     karg_ctx->INIT_PATH_symbol = "INIT_PATH";
     karg_ctx->default_init_path = "/initrd/init";
-    
+
     int fd = ramfs::open(check_init_path(karg_ctx), O_RDONLY);
     if (fd < 0) {
         panic("could not find init");
@@ -190,10 +177,6 @@ extern "C" void init() {
     if (!exe_buf) panic("no memory");
     
     if (ramfs::read(fd, exe_buf, s.st_size) != s.st_size) panic("failed to read full file");
-    
-    Log::print_rtc_time("BEGIN");
-    drivers::timers::apic::sleep_ms(3000);
-    Log::print_rtc_time("END");
     
     Log::end_kernel_messages(); // now no messages print
 
