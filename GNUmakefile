@@ -16,13 +16,6 @@ HOST_CPPFLAGS := -g -O0 -pipe
 HOST_LDFLAGS := -g
 HOST_LIBS :=
 
-INIT_FLAGS := -ffreestanding -nolibc -nostdlib -isystem ./binaries/sys/ -I ./binaries/sys/ -e _start
-INIT_SOURCE := ./binaries/init/init.c
-INIT_LINKER_SCRIPT := ./binaries/init/linker.ld
-
-# INIT_LINKER := -T $(INIT_LINKER_SCRIPT)
-INIT_LINKER := -pie
-
 .PHONY: all-iso
 all-iso: $(IMAGE_NAME).iso
 
@@ -30,18 +23,13 @@ all-iso: $(IMAGE_NAME).iso
 all: $(IMAGE_NAME).hdd
 
 .PHONY: initrd
-initrd: compile_init
+initrd:
+	$(MAKE) -C ./binaries
 	@echo "Creating initrd.img..."
 	mkdir -p kernel/bin-$(ARCH)
 	rm -rf kernel/bin-$(ARCH)/initrd.img
 	cd initrd && tar -cf "../kernel/bin-$(ARCH)/initrd.img" -H ustar ./*
 	@echo "initrd.img created at kernel/bin-$(ARCH)/initrd.img"
-
-.PHONY: compile_init
-compile_init:
-	@gcc $(INIT_SOURCE) -fPIE -o init $(INIT_FLAGS) $(INIT_LINKER)
-	@mv init ./initrd/init
-	@echo "Created init executable"
 
 .PHONY: run
 run: run-$(ARCH)
@@ -141,7 +129,9 @@ kernel/.deps-obtained:
 	./kernel/get-deps
 
 .PHONY: kernel
-kernel: kernel/.deps-obtained genconfig compile_init initrd
+kernel: kernel/.deps-obtained genconfig
+	$(MAKE) -C ./binaries
+	$(initrd)
 	$(MAKE) -C kernel
 
 $(IMAGE_NAME).iso: limine/limine kernel initrd

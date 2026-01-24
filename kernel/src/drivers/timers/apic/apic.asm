@@ -1,4 +1,8 @@
 bits 64
+
+section .bss
+stor_rax: resq 1
+
 section .text
 global apic_timer_interrupt_handler
 extern apic_timer_c_handler

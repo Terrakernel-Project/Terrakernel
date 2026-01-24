@@ -3,6 +3,8 @@
 
 #include "printf.h"
 
+void print_time();
+
 namespace Log {
 	void errf(const char* fmt, ...);
 	void err(const char* s);

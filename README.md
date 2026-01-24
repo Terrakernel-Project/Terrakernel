@@ -25,11 +25,12 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write an APIC timer
 - [x] Switch to fully graphical (flanterm) messages and logs
 - [x] Port uACPI
-- [x] (Other) Write a VFS and TMPFS and parse a USTAR Initrd archive
+- [x] (Other) Write a VFS and RamFS and parse a USTAR Initrd archive
 - [ ] Scheduling and multithreading*
 - [x] Switching to userspace
 - [x] Write some basic syscalls
 - [x] Load x86_64 ELF binaries, static and relocatable (copy from old version of TK) (delayed)
+- [ ] (Probably) experiment with PE32+ (maybe keep it a feature too)
 - [ ] End of x86_64 stuff (almost) (almost)
 
 ### Other
@@ -57,24 +58,27 @@ Check [BUILD_INSTRUCTIONS.md](https://github.com/Terrakernel-Project/Terrakernel
 ### How many LoC?
 
 ```x86asm
-     258 text files.
-     237 unique files.
+     262 text files.
+     241 unique files.
        5 files ignored.
 
-github.com/AlDanial/cloc v 1.98  T=2.21 s (107.4 files/s, 38514.3 lines/s)
+github.com/AlDanial/cloc v 1.98  T=2.24 s (107.5 files/s, 38123.3 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               55           6540           4142          36391
-C/C++ Header                   141           3432          11642          15216
-C++                             35           1363             13           5948
-Assembly                         5             36              0            232
+C                               55           6545           4142          36403
+C/C++ Header                   143           3451          11642          15304
+C++                             36           1436             26           6219
+Assembly                         5             40              0            238
 CMake                            1              0              0             21
+Markdown                         1              0              0              2
 -------------------------------------------------------------------------------
-SUM:                           237          11371          15797          57808 (56632 old)
+SUM:                           241          11472          15810          58187 (57808 old)
 -------------------------------------------------------------------------------
 ```
 
 ### Screenshots
 
 ![Burn on flash drive](./images/recommended_burn.png)
+
+![TK Running with a userspace shell!](./images/TK_shell_running.png)

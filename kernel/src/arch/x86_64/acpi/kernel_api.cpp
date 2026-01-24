@@ -4,9 +4,11 @@
 #include <cstdio>
 #include <cstdarg>
 #include <arch/arch.hpp>
-#include <drivers/timers/pit/pit.hpp>
+#include <drivers/timers/apic/apic.hpp>
 #include <panic.hpp>
 #include <cstdint>
+#include <proc/spinlocks.hpp>
+#include "kernel_api.hpp"
 
 extern "C" {
 
@@ -20,28 +22,25 @@ volatile struct limine_rsdp_request rsdp_request = {
 uacpi_status uacpi_kernel_get_rsdp(uacpi_phys_addr *out_rsdp_address) {
     if (!rsdp_request.response || !rsdp_request.response->address) panic((char*)"K_NO_RSDP");
     *out_rsdp_address = reinterpret_cast<uacpi_phys_addr>(rsdp_request.response->address);
-
     return UACPI_STATUS_OK;
 }
 
-void* uacpi_kernel_map(uacpi_phys_addr addr, uacpi_size len) {
-    uint64_t virt_addr = mem::vmm::pa_to_va((uint64_t)addr);
-    
-    if (!mem::vmm::is_mapped((void*)(virt_addr & ~0xFFF))) {
-        void* phys_aligned = (void*)((uint64_t)addr & ~(0xFFF));
-        void* virt_aligned = (void*)(virt_addr & ~(0xFFF));
-        uint64_t pages = (len + 0xFFF) / 0x1000;
-        mem::vmm::mmap(phys_aligned, virt_aligned, pages, PAGE_PRESENT | PAGE_RW);
-    }
-    
-    return (void*)virt_addr;
+#define PAGE_FLOOR(addr) ((addr) & ~(0x1000 - 1ULL))
+
+void *uacpi_kernel_map(uacpi_phys_addr addr, uacpi_size len) {
+    void* base = (void*)PAGE_FLOOR((uint64_t)addr);
+    uint64_t pages = (len + ((uint64_t)addr & 0xFFF) + 0xFFF) / 0x1000;
+
+    mem::vmm::mmap((void*)base, (void*)base, pages, PAGE_PRESENT | PAGE_RW);
+
+    return (void*)((uint64_t)base + (addr & 0xFFF));
 }
 
 void uacpi_kernel_unmap(void *addr, uacpi_size len) {
-    void* _addr = (void*)((uint64_t)addr & ~(0xFFF));
-    uint64_t pages = (len + 0xFFF) / 0x1000;
-
-    mem::vmm::munmap(_addr, pages);
+    void* base = (void*)PAGE_FLOOR((uint64_t)addr);
+    uint64_t pages = (len + ((uint64_t)addr & 0xFFF) + 0xFFF) / 0x1000;
+    
+    mem::vmm::munmap(base, pages);
 }
 
 #include <config.hpp>
@@ -49,12 +48,14 @@ void uacpi_kernel_unmap(void *addr, uacpi_size len) {
 void uacpi_kernel_log(uacpi_log_level lvl, const uacpi_char* s) {
     (void)lvl;
 #ifdef CONFIG_ACPI_VERBOSE
+    print_time();
     printf("[ \x1b[95mUACPI\x1b[0m ] %s", s);
 #endif
 }
 #else
 void uacpi_kernel_log(uacpi_log_level lvl, const uacpi_char* s, ...) {
 #ifdef CONFIG_ACPI_VERBOSE
+    print_time();
     printf("[ \x1b[95mUACPI\x1b[0m ] ");
     va_list va;
     va_start(va, s);
@@ -64,34 +65,61 @@ void uacpi_kernel_log(uacpi_log_level lvl, const uacpi_char* s, ...) {
 }
 
 void uacpi_kernel_vlog(uacpi_log_level lvl, const uacpi_char* s, uacpi_va_list va) {
-    printf("[ UACPI ] ");
+#ifdef CONFIG_ACPI_VERBOSE
+    print_time();
+    printf("[ \x1b[95mUACPI\x1b[0m ] ");
     vprintf(s, va);
+#endif
 }
 #endif
 
-uacpi_status uacpi_kernel_initialize(uacpi_init_level current_init_lvl) {(void)current_init_lvl;return UACPI_STATUS_OK;}
+uacpi_status uacpi_kernel_initialize(uacpi_init_level current_init_lvl) {
+    (void)current_init_lvl;
+    return UACPI_STATUS_OK;
+}
+
 void uacpi_kernel_deinitialize(void) {}
 
+#define MAX_PCI_DEVICES 512
 struct pci_dev {
     uint8_t b, d, f;
+    bool in_use;
 };
+
+static pci_dev pci_devices[MAX_PCI_DEVICES];
+
+pci_dev* pci_get_free_slot() {
+    for (int i = 0; i < MAX_PCI_DEVICES; i++) {
+        if (!pci_devices[i].in_use) {
+            pci_devices[i].in_use = true;
+            return &pci_devices[i];
+        }
+    }
+    return nullptr;
+}
+
+void pci_close_slot(pci_dev* dev) {
+    if (dev >= pci_devices && dev < pci_devices + MAX_PCI_DEVICES) {
+        dev->in_use = false;
+    }
+}
 
 uacpi_status uacpi_kernel_pci_device_open(
     uacpi_pci_address address, uacpi_handle *out_handle
 ) {
-    pci_dev* dev = (pci_dev*)mem::heap::malloc(sizeof(pci_dev));
+    pci_dev* dev = pci_get_free_slot();
     if (!dev) return UACPI_STATUS_OUT_OF_MEMORY;
-    *out_handle = dev;
 
     dev->b = address.bus;
     dev->d = address.device;
     dev->f = address.function;
-
+    
+    *out_handle = dev;
     return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_pci_device_close(uacpi_handle handle) {
-    mem::heap::free(handle);
+    pci_close_slot((pci_dev*)handle);
 }
 
 uint32_t uacpi_pci_read_helper(int sz_order, uint8_t bus, uint8_t device, uint8_t func, uacpi_size offset) {
@@ -147,9 +175,7 @@ uacpi_status uacpi_kernel_pci_read8(
     uacpi_handle device, uacpi_size offset, uacpi_u8 *value
 ) {
     pci_dev* dev = (pci_dev*)device;
-
     *value = uacpi_pci_read_helper(0, dev->b, dev->d, dev->f, offset);
-
     return UACPI_STATUS_OK;
 }
 
@@ -157,9 +183,7 @@ uacpi_status uacpi_kernel_pci_read16(
     uacpi_handle device, uacpi_size offset, uacpi_u16 *value
 ) {
     pci_dev* dev = (pci_dev*)device;
-
     *value = uacpi_pci_read_helper(1, dev->b, dev->d, dev->f, offset);
-
     return UACPI_STATUS_OK;
 }
 
@@ -167,9 +191,7 @@ uacpi_status uacpi_kernel_pci_read32(
     uacpi_handle device, uacpi_size offset, uacpi_u32 *value
 ) {
     pci_dev* dev = (pci_dev*)device;
-
     *value = uacpi_pci_read_helper(2, dev->b, dev->d, dev->f, offset);
-
     return UACPI_STATUS_OK;
 }
 
@@ -177,9 +199,7 @@ uacpi_status uacpi_kernel_pci_write8(
     uacpi_handle device, uacpi_size offset, uacpi_u8 value
 ) {
     pci_dev* dev = (pci_dev*)device;
-
     uacpi_pci_write_helper(0, dev->b, dev->d, dev->f, offset, value);
-
     return UACPI_STATUS_OK;
 }
 
@@ -187,9 +207,7 @@ uacpi_status uacpi_kernel_pci_write16(
     uacpi_handle device, uacpi_size offset, uacpi_u16 value
 ) {
     pci_dev* dev = (pci_dev*)device;
-
     uacpi_pci_write_helper(1, dev->b, dev->d, dev->f, offset, value);
-
     return UACPI_STATUS_OK;
 }
 
@@ -197,106 +215,69 @@ uacpi_status uacpi_kernel_pci_write32(
     uacpi_handle device, uacpi_size offset, uacpi_u32 value
 ) {
     pci_dev* dev = (pci_dev*)device;
-
     uacpi_pci_write_helper(2, dev->b, dev->d, dev->f, offset, value);
-
     return UACPI_STATUS_OK;
 }
 
-struct io_entry {
-    uacpi_io_addr base;
-    uacpi_size len;
-};
-
 uacpi_status uacpi_kernel_io_map(uacpi_io_addr base, uacpi_size len, uacpi_handle *out_handle) {
-    io_entry* e = (io_entry*)mem::heap::malloc(sizeof(io_entry));
-    if (!e) return UACPI_STATUS_OUT_OF_MEMORY;
-    e->base = base;
-    e->len = len;
-    *out_handle = e;
-
+    (void)len;
+    *out_handle = (uacpi_handle)base;
     return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_io_unmap(uacpi_handle handle) {
-    mem::heap::free(handle);
+    (void)handle;
 }
 
 uacpi_status uacpi_kernel_io_read8(
     uacpi_handle handle, uacpi_size offset, uacpi_u8 *out_value
 ) {
-    io_entry* e = (io_entry*)handle;
-
-    if (offset > e->len) panic((char*)"K_IO_OUT_OF_BOUND");
-
-    *out_value = arch::x86_64::io::inb(e->base + offset);
+    *out_value = arch::x86_64::io::inb((uint16_t)((uintptr_t)handle + offset));
     return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_read16(
     uacpi_handle handle, uacpi_size offset, uacpi_u16 *out_value
 ) {
-    io_entry* e = (io_entry*)handle;
-
-    if (offset > e->len) panic((char*)"K_IO_OUT_OF_BOUND");
-
-    *out_value = arch::x86_64::io::inw(e->base + offset);
+    *out_value = arch::x86_64::io::inw((uint16_t)((uintptr_t)handle + offset));
     return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_read32(
     uacpi_handle handle, uacpi_size offset, uacpi_u32 *out_value
 ) {
-    io_entry* e = (io_entry*)handle;
-
-    if (offset > e->len) panic((char*)"K_IO_OUT_OF_BOUND");
-
-    *out_value = arch::x86_64::io::inl(e->base + offset);
+    *out_value = arch::x86_64::io::inl((uint16_t)((uintptr_t)handle + offset));
     return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_write8(
     uacpi_handle handle, uacpi_size offset, uacpi_u8 in_value
 ) {
-    io_entry* e = (io_entry*)handle;
-
-    if (offset > e->len) panic((char*)"K_IO_OUT_OF_BOUND");
-
-    arch::x86_64::io::outb(e->base + offset, in_value);
+    arch::x86_64::io::outb((uint16_t)((uintptr_t)handle + offset), in_value);
     return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_write16(
     uacpi_handle handle, uacpi_size offset, uacpi_u16 in_value
 ) {
-    io_entry* e = (io_entry*)handle;
-
-    if (offset > e->len) panic((char*)"K_IO_OUT_OF_BOUND");
-
-    arch::x86_64::io::outw(e->base + offset, in_value);
+    arch::x86_64::io::outw((uint16_t)((uintptr_t)handle + offset), in_value);
     return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_io_write32(
     uacpi_handle handle, uacpi_size offset, uacpi_u32 in_value
 ) {
-    io_entry* e = (io_entry*)handle;
-
-    if (offset > e->len) panic((char*)"K_IO_OUT_OF_BOUND");
-
-    arch::x86_64::io::outl(e->base + offset, in_value);
+    arch::x86_64::io::outl((uint16_t)((uintptr_t)handle + offset), in_value);
     return UACPI_STATUS_OK;
 }
 
 void* uacpi_kernel_alloc(uacpi_size size) {
-    void* ptr = mem::heap::malloc(size);
-    return ptr;
+    return mem::heap::malloc(size);
 }
 
 #ifdef UACPI_NATIVE_ALLOC_ZEROED
 void* uacpi_kernel_alloc_zeroed(uacpi_size size) {
-    void* ptr = mem::heap::calloc(1, size);
-    return ptr;
+    return mem::heap::calloc(1, size);
 }
 #endif
 
@@ -306,33 +287,44 @@ void uacpi_kernel_free(void* mem) {
 }
 #else
 void uacpi_kernel_free(void* mem, uacpi_size size_hint) {
+    (void)size_hint;
     mem::heap::free(mem);
 }
 #endif
 
 uacpi_u64 uacpi_kernel_get_nanoseconds_since_boot(void) {
-    uint64_t ns = drivers::timers::pit::ns_elapsed_time();
-    return ns;
+    return drivers::timers::apic::ns_elapsed_time();
 }
 
 void uacpi_kernel_stall(uacpi_u8 usec) {
     if (usec == 0) return;
-    drivers::timers::pit::sleep_ms(usec / 1000);
+    
+    uint64_t start = uacpi_kernel_get_nanoseconds_since_boot();
+    uint64_t end = start + ((uint64_t)usec * 1000ULL);
+
+    while (uacpi_kernel_get_nanoseconds_since_boot() < end) {
+        __asm__ __volatile__("pause");
+    }
 }
 
 void uacpi_kernel_sleep(uacpi_u64 msec) {
-    drivers::timers::pit::sleep_ms(msec);
+    uint64_t duration_ns = msec * 1000000ULL;
+    uint64_t start = uacpi_kernel_get_nanoseconds_since_boot();
+    uint64_t end = start + duration_ns;
+
+    while (uacpi_kernel_get_nanoseconds_since_boot() < end) {
+        __asm__ __volatile__("pause");
+    }
 }
 
 struct mutex {
-    bool locked;
+    volatile bool locked;
 };
 
 uacpi_handle uacpi_kernel_create_mutex(void) {
     mutex* m = (mutex*)mem::heap::malloc(sizeof(mutex));
     if (!m) return nullptr;
     m->locked = false;
-
     return m;
 }
 
@@ -341,14 +333,13 @@ void uacpi_kernel_free_mutex(uacpi_handle handle) {
 }
 
 struct event {
-    bool signaled;
+    volatile bool signaled;
 };
 
 uacpi_handle uacpi_kernel_create_event(void) {
     event* e = (event*)mem::heap::malloc(sizeof(event));
     if (!e) return nullptr;
     e->signaled = false;
-
     return e;
 }
 
@@ -361,81 +352,103 @@ uacpi_thread_id uacpi_kernel_get_thread_id(void) {
 }
 
 uacpi_status uacpi_kernel_acquire_mutex(uacpi_handle handle, uacpi_u16 timeout) {
-    uint64_t current_nsec = drivers::timers::pit::ns_elapsed_time();
-    uint64_t target_nsec = current_nsec + (timeout * 1000);
-    bool op_successful = false;
+    mutex* m = (mutex*)handle;
+    if (!m) return UACPI_STATUS_NOT_FOUND;
+
     if (timeout == 0x0000) {
-        mutex* e = (mutex*)handle;
-        if (e->locked == true) return UACPI_STATUS_TIMEOUT;
-        else return UACPI_STATUS_OK;
-    } else if (timeout == 0xFFFF) {
-        target_nsec = (uint64_t)-1;
-    }
-    while (drivers::timers::pit::ns_elapsed_time() < target_nsec) {
-        mutex* e = (mutex*)handle;
-        if (e->locked == true) continue;
-        else {
-            op_successful = true;
-            break;
+        if (!m->locked) {
+            m->locked = true;
+            return UACPI_STATUS_OK;
         }
+        return UACPI_STATUS_TIMEOUT;
     }
 
-    if (!op_successful) return UACPI_STATUS_TIMEOUT;
+    if (timeout == 0xFFFF) {
+        while (m->locked) {
+            __asm__ __volatile__("pause");
+        }
+        m->locked = true;
+        return UACPI_STATUS_OK;
+    }
 
+    uint64_t start_ns = uacpi_kernel_get_nanoseconds_since_boot();
+    uint64_t timeout_ns = (uint64_t)timeout * 1000000ULL;
+
+    while (m->locked) {
+        uint64_t now_ns = uacpi_kernel_get_nanoseconds_since_boot();
+        if (now_ns - start_ns >= timeout_ns) {
+            return UACPI_STATUS_TIMEOUT;
+        }
+        __asm__ __volatile__("pause");
+    }
+
+    m->locked = true;
     return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_release_mutex(uacpi_handle handle) {
     mutex* m = (mutex*)handle;
-    m->locked = false;
+    if (m) m->locked = false;
 }
 
 uacpi_bool uacpi_kernel_wait_for_event(uacpi_handle handle, uacpi_u16 timeout) {
-    uint64_t current_nsec = drivers::timers::pit::ns_elapsed_time();
-    uint64_t target_nsec = current_nsec + (timeout * 1000);
-    bool op_successful = false;
+    event* e = (event*)handle;
+    if (!e) return false;
+
     if (timeout == 0x0000) {
-        event* e = (event*)handle;
-        if (e->signaled == true) return false;
-        else return true;
-    } else if (timeout == 0xFFFF) {
-        target_nsec = (uint64_t)-1;
-    }
-    while (drivers::timers::pit::ns_elapsed_time() < target_nsec) {
-        event* e = (event*)handle;
-        if (e->signaled == false) continue;
-        else {
-            op_successful = true;
-            break;
-        }
+        return e->signaled;
     }
 
-    if (!op_successful) return false;
+    if (timeout == 0xFFFF) {
+        while (!e->signaled) {
+            __asm__ __volatile__("pause");
+        }
+        return true;
+    }
+
+    uint64_t start_ns = uacpi_kernel_get_nanoseconds_since_boot();
+    uint64_t timeout_ns = (uint64_t)timeout * 1000000ULL;
+
+    while (!e->signaled) {
+        uint64_t now_ns = uacpi_kernel_get_nanoseconds_since_boot();
+        if (now_ns - start_ns >= timeout_ns) {
+            return false;
+        }
+        __asm__ __volatile__("pause");
+    }
 
     return true;
 }
 
 void uacpi_kernel_signal_event(uacpi_handle handle) {
     event* e = (event*)handle;
-    e->signaled = true;
+    if (e) e->signaled = true;
 }
 
 void uacpi_kernel_reset_event(uacpi_handle handle) {
     event* e = (event*)handle;
-    e->signaled = false;
+    if (e) e->signaled = false;
 }
 
 uacpi_status uacpi_kernel_handle_firmware_request(uacpi_firmware_request* request) {
-    (void)request;
+    if (request->type == UACPI_FIRMWARE_REQUEST_TYPE_BREAKPOINT) {
+    } else if (request->type == UACPI_FIRMWARE_REQUEST_TYPE_FATAL) {
+        panic((char*)"UACPI_FIRMWARE_REQUEST_TYPE_FATAL");
+    }
     return UACPI_STATUS_OK;
 }
+
+#define MAX_CACHED_INTERRUPTS 32
 
 struct interrupt {
     uint8_t vector;
     uint8_t irq;
-    bool is_irq;
+    uacpi_interrupt_handler handler;
     uacpi_handle ctx;
+    bool active;
 };
+
+static interrupt cached_interrupts[MAX_CACHED_INTERRUPTS];
 
 uacpi_status uacpi_kernel_install_interrupt_handler(
     uacpi_u32 irq, uacpi_interrupt_handler handler, uacpi_handle ctx,
@@ -443,16 +456,31 @@ uacpi_status uacpi_kernel_install_interrupt_handler(
 ) {
     uint8_t vector = irq + 0x20;
 
-    interrupt *i = (interrupt*)mem::heap::malloc(sizeof(interrupt));
+    interrupt* i = nullptr;
+    int idx = 0;
+    for (; idx < MAX_CACHED_INTERRUPTS; idx++) {
+        if (!cached_interrupts[idx].active) {
+            i = &cached_interrupts[idx];
+            break;
+        }
+    }
+    
     if (!i) return UACPI_STATUS_OUT_OF_MEMORY;
+    
     i->vector = vector;
     i->irq = irq;
-    i->is_irq = true;
+    i->handler = handler;
     i->ctx = ctx;
+    i->active = true;
 
     *out_irq_handle = i;
 
     arch::x86_64::cpu::idt::set_descriptor(vector, (uint64_t)handler, 0x8E);
+
+#ifdef CONFIG_ACPI_VERBOSE
+    Log::infof("Loaded and cached interrupt: cache_id=%d vector=0x%02X handle=0x%016X attr=0x%02X", idx, i->vector, (uint64_t)i->handler, 0x8E);
+#endif
+
     return UACPI_STATUS_OK;
 }
 
@@ -461,59 +489,71 @@ uacpi_status uacpi_kernel_uninstall_interrupt_handler(
 ) {
     (void)unused;
     interrupt* i = (interrupt*)irq_handle;
-    arch::x86_64::cpu::idt::clear_descriptor(i->vector);
-
-    mem::heap::free(irq_handle);
+    if (i && i->active) {
+        arch::x86_64::cpu::idt::clear_descriptor(i->vector);
+        i->active = false;
+    }
     return UACPI_STATUS_OK;
 }
 
-struct spinlock {
-    bool locked;
-};
+void acpi_reload_interrupts() {
+    for (int idx = 0; idx < MAX_CACHED_INTERRUPTS; idx++) {
+        if (cached_interrupts[idx].active) {
+            interrupt* i = &cached_interrupts[idx];
+            arch::x86_64::cpu::idt::set_descriptor(i->vector, (uint64_t)i->handler, 0x8E);
+#ifdef CONFIG_ACPI_VERBOSE
+            Log::infof("Reloaded interrupt: cache_id=%d vector=0x%02X handle=0x%016X attr=0x%02X", idx, i->vector, (uint64_t)i->handler, 0x8E);
+#endif
+        }
+    }
+}
 
 uacpi_handle uacpi_kernel_create_spinlock(void) {
-    spinlock* s = (spinlock*)mem::heap::malloc(sizeof(spinlock));
-    if (!s) return nullptr;
-    s->locked = false;
-
-    return s;
+    return (uacpi_handle)new_spinlock("uacpi");
 }
 
 void uacpi_kernel_free_spinlock(uacpi_handle handle) {
-    mem::heap::free(handle);
+    delete_spinlock((spinlock*)handle);
 }
 
 uacpi_cpu_flags uacpi_kernel_lock_spinlock(uacpi_handle handle) {
-    spinlock* s = (spinlock*)handle;
-    while (s->locked == true);
-    s->locked = true;
-
+    acquire_spinlock((spinlock*)handle);
     return 0;
 }
 
 void uacpi_kernel_unlock_spinlock(uacpi_handle handle, uacpi_cpu_flags flags) {
     (void)flags;
-    spinlock* s = (spinlock*)handle;
-    s->locked = false;
+    release_spinlock((spinlock*)handle);
 }
 
+#define MAX_WORK 32
+
 struct work {
-    bool signaled;
     uacpi_work_type type;
     uacpi_work_handler handler;
+    uacpi_handle ctx;
+    bool active;
 };
+
+static work work_queue[MAX_WORK];
 
 uacpi_status uacpi_kernel_schedule_work(
     uacpi_work_type type, uacpi_work_handler handler, uacpi_handle ctx
 ) {
-    (void)ctx;
-    work* w = (work*)mem::heap::malloc(sizeof(work));
-    if (!w) return UACPI_STATUS_OUT_OF_MEMORY;
-    w->signaled = false;
-    w->type = type;
-    w->handler = handler;
+    for (int i = 0; i < MAX_WORK; i++) {
+        if (!work_queue[i].active) {
+            work_queue[i].type = type;
+            work_queue[i].handler = handler;
+            work_queue[i].ctx = ctx;
+            work_queue[i].active = true;
 
-    return UACPI_STATUS_OK;
+            handler(ctx);
+            
+            work_queue[i].active = false;
+            return UACPI_STATUS_OK;
+        }
+    }
+    return UACPI_STATUS_OUT_OF_MEMORY;
 }
 
 uacpi_status uacpi_kernel_wait_for_work_completion(void) {

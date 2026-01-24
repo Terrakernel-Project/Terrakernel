@@ -35,56 +35,58 @@ typedef struct objman_handle {
 
     union {
         struct {
-            int64_t   FileDescriptor;
-            uint64_t  FileOffset;
-            uint64_t  FileSize;
+            const char* FilePath;
+            int64_t     FileDescriptor;
+            uint64_t    FileOffset;
+            uint64_t    FileSize;
 
-            void     *MappedAddress;
-            uint64_t  MappedSize;
+            void       *MappedAddress;
+            uint64_t    MappedSize;
 
-            uint32_t  OpenFlags;
-            uint32_t  FileSystemID;
+            uint32_t    OpenFlags;
+            uint32_t    FileSystemID;
         } File;
 
         struct {
-            int64_t   DirDescriptor;
-            uint64_t  ReadOffset;
-            uint32_t  EntryCountCache;
-            uint32_t  Reserved;
+            const char* DirPath;
+            int64_t     DirDescriptor;
+            uint64_t    ReadOffset;
+            uint32_t    EntryCountCache;
+            uint32_t    Reserved;
         } Directory;
 
         struct {
-            uint32_t  ConsoleID;
-            uint32_t  Mode;
-            uint64_t  LineBufferSize;
-            void     *LineBuffer;
+            uint32_t    ConsoleID;
+            uint32_t    Mode;
+            uint64_t    LineBufferSize;
+            void       *LineBuffer;
         } Console;
 
         struct {
-            uint32_t  ProcessID;
-            uint32_t  ParentPID;
-            uint32_t  ProtectionLevel;
+            uint32_t    ProcessID;
+            uint32_t    ParentPID;
+            uint32_t    ProtectionLevel;
 
-            uint32_t  State;
-            uint64_t  ExitCode;
+            uint32_t    State;
+            uint64_t    ExitCode;
 
-            void     *AddressSpace;
-            void     *MainThread;
+            void       *AddressSpace;
+            void       *MainThread;
         } Process;
 
         struct {
-            void     *BaseAddress;
-            uint64_t  PoolSize;
-            uint64_t  UsedSize;
+            void       *BaseAddress;
+            uint64_t    PoolSize;
+            uint64_t    UsedSize;
         } MemoryPool;
 
         struct {
-            void     *BaseAddress;
-            uint64_t  Width;
-            uint64_t  Height;
-            uint64_t  Pitch;
-            uint64_t  BitsPerPixel;
-            uint64_t  Stride;
+            void       *BaseAddress;
+            uint64_t    Width;
+            uint64_t    Height;
+            uint64_t    Pitch;
+            uint64_t    BitsPerPixel;
+            uint64_t    Stride;
         } Framebuffer;
 
     } Payload;

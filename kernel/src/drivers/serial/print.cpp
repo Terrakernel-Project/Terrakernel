@@ -95,6 +95,8 @@ namespace Log {
 	void print_rtc_time(const char* message) {
 		if (kmsg_done) return;
 
+		print_time();
+
 		uint8_t hours = arch::x86_64::cpu::rtc::get_hours();
 		uint8_t minutes = arch::x86_64::cpu::rtc::get_minutes();
 		uint8_t seconds = arch::x86_64::cpu::rtc::get_seconds();

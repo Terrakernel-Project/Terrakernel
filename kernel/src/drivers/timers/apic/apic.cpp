@@ -9,10 +9,10 @@
 volatile uint64_t ticks = 0;
 
 extern "C" void apic_timer_interrupt_handler();
-extern "C" uint64_t apic_timer_c_handler(uint64_t rsp) {
+extern "C" ApicCpuContext* apic_timer_c_handler(ApicCpuContext* ctx) {
 	arch::x86_64::cpu::idt::send_eoi(0);
 
-	return rsp;
+	return ctx;
 }
 
 void initialise_timer() {

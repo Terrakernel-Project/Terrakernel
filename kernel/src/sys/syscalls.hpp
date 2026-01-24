@@ -8,6 +8,8 @@ Handle* HlCreateNewHandle();
 void HlDestroyHandle(Handle* hptr);
 void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags);
 void HlCloseFile(Handle* hptr);
+uint64_t HlStatFileSize(Handle* hptr);
+int64_t HlSeekFile(Handle* hptr, int64_t offset, int whence);
 int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count);
 int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count);
 int64_t HlPositionedWriteFile(Handle* hptr, size_t offset, const void* __restrict dat, size_t count);
@@ -29,14 +31,16 @@ void HlMemorySetAttributes(void* ptr, size_t npages, uint64_t attributes);
 int64_t HlCreateNewProcess();
 void HlKillProcess(int64_t pid);
 void HlTerminateProcess(int64_t pid);
-void HlLoadElf(const void* __restrict datbase);
-void HlExit(int exit_code);
+int64_t HlExec(const char* __restrict path);
+void HlExit(int error_code);
 void HlOpenConsole(Handle* portR, Handle* portW);
 void HlWaitForInputConsole(Handle* portR);
 int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count);
 int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count);
 void HlObtainFramebuffer(Handle* hptr);
 void HlStatFramebuffer(Handle* hptr, void* buf);
+void* HlRetrieveFileMappedMemory(Handle* hptr);
+uint64_t HlRetrieveMappedFileSize(Handle* hptr);
 
 void HlPrepareInitReturn(void* init_load_addr);
 

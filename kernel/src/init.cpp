@@ -23,6 +23,7 @@
 #include <arch/x86_64/apic/apic.hpp>
 #include <drivers/timers/apic/apic.hpp>
 #include <parse_karg.hpp>
+#include <arch/x86_64/acpi/kernel_api.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -60,8 +61,6 @@ extern "C" void init() {
 
     flanterm_initialise();
 
-    Log::print_rtc_time("STARTING");
-
     serial::serial_enable();
     Log::printf_status("OK", "Flanterm Initialised"); // late
     Log::printf_status("OK", "Serial Initialised");
@@ -81,7 +80,7 @@ extern "C" void init() {
     mem::heap::initialise();
     Log::printf_status("OK", "Heap Initialised");
 
-    Log::info("Disabling COM1 serial output, falling back to graphical interface");
+    Log::infof("Disabling COM1 serial output, falling back to graphical interface");
     serial::serial_putc('\033');
     serial::serial_putc('[');
     serial::serial_putc('2');
@@ -94,17 +93,6 @@ extern "C" void init() {
 
     uacpi_status uacpi_result = uacpi_initialize(0);
     UACPI_ERROR("Initialise", 1);
-    
-    //asm ("sti");
-    //uacpi_result = uacpi_namespace_load();
-    //UACPI_ERROR("namespace loade", 1);
-	//asm ("cli");
-    
-    //uacpi_result = uacpi_namespace_initialize();
-    //UACPI_ERROR("namespace", 0);
-
-    //uacpi_result = uacpi_finalize_gpe_initialization();
-    //UACPI_ERROR("GPE", 0);
 
     uint8_t mask_master = arch::x86_64::io::inb(0x21);
     uint8_t mask_slave  = arch::x86_64::io::inb(0xA1);
@@ -114,16 +102,15 @@ extern "C" void init() {
 	arch::x86_64::ioapic::initialise();
 
 	drivers::timers::pit::initialise();
-	Log::printf_status("OK", "PIT Initialised");
+    Log::printf_status("OK", "PIT Initialised");
 
 	asm ("sti");
 	drivers::timers::apic::initialise();
-	asm ("cli");
 	Log::printf_status("OK", "APIC Initialised");
+	asm ("cli");
 
-	asm ("sti");
-
-    Log::print_rtc_time("TIMER ON");
+	//acpi_reload_interrupts();
+	//Log::printf_status("OK", "Reloaded all ACPI interrupts");
 
 	ramfs::initialise();
 	Log::printf_status("OK", "RamFS Initialised");
@@ -154,7 +141,40 @@ extern "C" void init() {
 	size_t nsc = initialise_syscall_handlers();
 	Log::printf_status("OK", "Syscall handlers Initialised, there are %zu valid syscalls", nsc);
 
-    Log::print_rtc_time("FINISHED");
+    auto list_dirs = [&](const char *path, const auto& self) -> void {
+        DIR *dir = ramfs::opendir(path);
+        if (!dir)
+            return;
+
+        printf("%s\n\r", path);
+
+        dirent *entry;
+        char fullpath[4096];
+
+        while ((entry = ramfs::readdir(dir)) != nullptr) {
+            // Skip . and ..
+            if (strcmp(entry->d_name, ".") == 0 ||
+                strcmp(entry->d_name, "..") == 0)
+                continue;
+
+            snprintf(fullpath, sizeof(fullpath),
+                    "%s/%s", path, entry->d_name);
+
+            // Print entry (file or directory)
+            printf("  %s\n\r", fullpath);
+
+            // Recurse only if it's a directory
+            DIR *sub = ramfs::opendir(fullpath);
+            if (sub) {
+                ramfs::closedir(sub);
+                self(fullpath, self);
+            }
+        }
+
+        ramfs::closedir(dir);
+    };
+
+    list_dirs("/", list_dirs);
 
     karg_context* karg_ctx = (karg_context*)mem::heap::malloc(sizeof(karg_context));
     if (!karg_ctx) panic("no memory");
@@ -169,6 +189,8 @@ extern "C" void init() {
         panic("could not find init");
     }
 
+    Log::printf_status("OK", "Parsed command-line");
+
     stat s;
     ramfs::fstat(fd, &s);
     if (s.st_size < 1) panic("file empty");
@@ -178,7 +200,11 @@ extern "C" void init() {
     
     if (ramfs::read(fd, exe_buf, s.st_size) != s.st_size) panic("failed to read full file");
     
-    Log::end_kernel_messages(); // now no messages print
+	Log::infof("Entering userspace-init process");
+
+    //Log::end_kernel_messages(); // now no messages print
+
+	asm ("sti");
 
     run_elf(exe_buf, s.st_size, true);
 

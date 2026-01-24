@@ -42,17 +42,32 @@ void HlDestroyHandle(Handle* hptr) {
 }
 
 void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
-    if (hptr->HandleType != HANDLE_TYPE_GENERIC) return; // cannot replace // buf fix, it was == which meant you could never open files
+    //if (hptr->HandleType != HANDLE_TYPE_GENERIC) {
+    //    printf("Expected handle of type HANDLE_TYPE_GENERIC\n\r");
+    //    return;
+    //} allow handle smashing for now
+    
+    stat s;
+    if (ramfs::stat(path, &s) != 0) {
+        hptr->LastError = -1;
+        return;
+    }
+
     hptr->HandleType = HANDLE_TYPE_FILEIO;
     hptr->Flags = OpenFlags;
-    hptr->RefCount = 1; // because HlOpenFile references this handle
+    hptr->RefCount = 1;
     hptr->OwnerPID = 0;
     hptr->LastError = 0;
 
-    stat s;
-    ramfs::stat(path, &s);
-
+    hptr->Payload.File.FilePath = path;
     hptr->Payload.File.FileDescriptor = ramfs::open(path, OpenFlags);
+    
+    if (hptr->Payload.File.FileDescriptor < 0) {
+        hptr->HandleType = HANDLE_TYPE_GENERIC;
+        hptr->LastError = -1;
+        return;
+    }
+    
     hptr->Payload.File.FileOffset = 0;
     hptr->Payload.File.FileSize = s.st_size;
 
@@ -60,10 +75,15 @@ void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
         size_t npages = (s.st_size + 0xFFF) / 0x1000;
         hptr->Payload.File.MappedAddress = mem::usr::alloc(npages);
         hptr->Payload.File.MappedSize = npages;
+        
+        ramfs::lseek(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
+        ramfs::read(hptr->Payload.File.FileDescriptor, 
+                   hptr->Payload.File.MappedAddress, 
+                   s.st_size);
     }
 
     hptr->Payload.File.OpenFlags = OpenFlags;
-    hptr->Payload.File.FileSystemID = 0; // TODO make it work
+    hptr->Payload.File.FileSystemID = 0;
 
     ramfs::lseek(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
 }
@@ -80,6 +100,24 @@ void HlCloseFile(Handle* hptr) {
     }
 
     hptr->HandleType = HANDLE_TYPE_GENERIC;
+}
+
+uint64_t HlStatFileSize(Handle* hptr) {
+    VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return (uint64_t)-1)
+
+    stat s;
+    ramfs::fstat(hptr->Payload.File.FileDescriptor, &s);
+
+    return s.st_size;
+}
+
+int64_t HlSeekFile(Handle* hptr, int64_t offset, int whence) {
+    VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
+    int64_t result = ramfs::lseek(hptr->Payload.File.FileDescriptor, offset, whence);
+    if (result >= 0) {
+        hptr->Payload.File.FileOffset = result;
+    }
+    return result;
 }
 
 int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
@@ -218,19 +256,27 @@ void HlSyncFile(Handle* hptr) {
     if (hptr->Payload.File.OpenFlags & FLAG_FILE_LOAD_MEMORY) {
         int64_t off = ramfs::tell(hptr->Payload.File.FileDescriptor);
         ramfs::lseek(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
+        
+        ramfs::ftruncate(hptr->Payload.File.FileDescriptor, hptr->Payload.File.FileSize);
         ramfs::write(
             hptr->Payload.File.FileDescriptor,
             hptr->Payload.File.MappedAddress,
             hptr->Payload.File.FileSize
         );
+        
         ramfs::lseek(hptr->Payload.File.FileDescriptor, off, SEEK_SET);
+        
+        stat s;
+        if (ramfs::fstat(hptr->Payload.File.FileDescriptor, &s) == 0) {
+            hptr->Payload.File.FileSize = s.st_size;
+        }
     }
 }
 
 void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
     (void)OpenFlags;
 
-    VALID_HNDL(hptr, HANDLE_TYPE_GENERIC, return)
+    if (hptr->HandleType != HANDLE_TYPE_GENERIC) return;
 
     DIR* dir = ramfs::opendir(path);
     if (!dir) {
@@ -244,6 +290,7 @@ void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFla
     hptr->OwnerPID = 0;
     hptr->LastError = 0;
 
+    hptr->Payload.Directory.DirPath = path;
     hptr->Payload.Directory.DirDescriptor = (int64_t)dir;
     hptr->Payload.Directory.ReadOffset = 0;
     hptr->Payload.Directory.EntryCountCache = 0;
@@ -304,10 +351,20 @@ void HlResetDirectoryReadOffset(Handle* hptr) {
     if (!dir)
         return;
 
+    const char* path = hptr->Payload.Directory.DirPath;
+    
     ramfs::closedir(dir);
-    hptr->Payload.Directory.DirDescriptor = 0;
+    
+    dir = ramfs::opendir(path);
+    if (!dir) {
+        hptr->Payload.Directory.DirDescriptor = 0;
+        hptr->LastError = -1;
+        return;
+    }
+    
+    hptr->Payload.Directory.DirDescriptor = (int64_t)dir;
     hptr->Payload.Directory.ReadOffset = 0;
-    hptr->LastError = -1; // caller must reopen
+    hptr->LastError = 0;
 }
 
 void* HlMemoryPoolAllocate(size_t n) {
@@ -370,12 +427,29 @@ void HlLoadElf(const void* __restrict datbase) {
     run_elf((void*)datbase, 0, true);
 }
 
-void HlExit(int exit_code) {
-    (void)exit_code;
-    if (curr_pid == 0) {
-        Log::panic("kernel init process attempted to call HlExit()...");
-        panic("no processes remaining... halting...");
+int64_t HlExec(const char* __restrict path) {
+    int fd = ramfs::open(path, O_RDONLY);
+
+    if (fd < 0) {
+        return -1;
     }
+
+    stat s;
+    ramfs::fstat(fd, &s);
+
+    void* buf = mem::heap::malloc(s.st_size);
+
+    ramfs::read(fd, buf, s.st_size);
+
+    run_elf(buf, s.st_size, true);
+
+    return 0; // TODO make it return PID
+}
+
+void HlExit(int error_code) {
+    (void)error_code;
+    Log::warnf("HlExit is a stub");
+    while (1) asm ("hlt");
 }
 
 void HlOpenConsole(Handle* portR, Handle* portW) {
@@ -432,4 +506,16 @@ void HlStatFramebuffer(Handle* hptr, void* buf) {
     VALID_HNDL(hptr, HANDLE_TYPE_FRAMEBUFFER, buf = nullptr; return);
 
     mem::memcpy(buf, &hptr->Payload.Framebuffer, sizeof(void*) + (5*sizeof(uint64_t)));
+}
+
+void* HlRetrieveFileMappedMemory(Handle* hptr) {
+    VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return nullptr);
+    
+    return hptr->Payload.File.MappedAddress;
+}
+
+uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
+    VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return 0);
+
+    return hptr->Payload.File.MappedSize;
 }

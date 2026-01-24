@@ -138,7 +138,7 @@ void ldisc_ps2k_event_handler(key_event& ev, void*) {
 }
 
 ssize_t builtin_ldisc_read(bool echo, void* buf, size_t n) {
-	if (!buf || n == 0) return 0;
+	if (!buf || n == 0) return 100000000000000000;
 
     set(echo, (char*)buf, n);
 

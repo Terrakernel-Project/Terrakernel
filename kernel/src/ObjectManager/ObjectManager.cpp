@@ -1,5 +1,6 @@
 #include "ObjectManager.hpp"
 #include <mem/mem.hpp>
+#include <cstdio>
 
 namespace ObjMan {
 
