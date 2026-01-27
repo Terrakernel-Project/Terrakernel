@@ -303,8 +303,8 @@ static inline uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
     return syscall1(37, (uint64_t)hptr);
 }
 
-static inline void HlStatHandleType_Temp(Handle* hptr) {
-	return syscall1(38, (uint64_t)hptr);
+static inline void HlPrintInt64(uint64_t int_) {
+	syscall1(38, int_);
 }
 
 #endif

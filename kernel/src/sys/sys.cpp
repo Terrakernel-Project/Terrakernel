@@ -68,6 +68,6 @@ void initialise_syscalls() {
 	set_handler(36, HlRetrieveFileMappedMemory, 1);
 	set_handler(37, HlRetrieveMappedFileSize, 1);
 
-	set_handler(38, HlStatHandleType_Temp, 1);
+	set_handler(38, HlPrintInt64, 1);
 }
 

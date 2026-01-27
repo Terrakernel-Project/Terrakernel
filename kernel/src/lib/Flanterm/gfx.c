@@ -43,7 +43,7 @@ void flanterm_initialise() {
     g_scr_width = fb->width;
 }
 
-__attribute__((always_inline, hot))
+__attribute__((hot))
 uint32_t lerpRGB(uint32_t src, uint32_t dst, uint8_t intensity) {
     uint32_t sr = (src >> 16) & 0xFF;
     uint32_t sg = (src >>  8) & 0xFF;
@@ -60,7 +60,7 @@ uint32_t lerpRGB(uint32_t src, uint32_t dst, uint8_t intensity) {
     return (r << 16) | (g << 8) | b;
 }
 
-__attribute__((always_inline, hot))
+__attribute__((hot))
 void putpx(int x, int y, uint32_t colour) {
 	if (x > g_scr_width-1 || y > g_scr_height-1 || x < 0 || y < 0) return;
 	//uint32_t currcolour = ((volatile uint32_t *)fb->address)[y * (fb->pitch/4) + x];

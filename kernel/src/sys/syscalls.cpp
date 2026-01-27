@@ -153,6 +153,7 @@ int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
 int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count) {
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
 
+
     if (hptr->Payload.File.OpenFlags & FLAG_FILE_LOAD_MEMORY) {
         size_t off = hptr->Payload.File.FileOffset;
         size_t max = hptr->Payload.File.FileSize;
@@ -518,4 +519,8 @@ uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return 0);
 
     return hptr->Payload.File.MappedSize;
+}
+
+void HlPrintInt64(uint64_t int_) {
+	printf("%lu\n\r", int_);
 }

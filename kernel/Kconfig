@@ -181,3 +181,20 @@ config ENABLE_KERNEL_MESSAGES
 	default y
 
 endmenu
+
+menu "MISC"
+
+menu "Boot Resources"
+
+menu "BGRT"
+
+config BGRT_SLEEP_TIME_MS
+	int "BGRT display time milliseconds"
+	default 2500
+	range 1000 10000
+
+endmenu
+
+endmenu
+
+endmenu

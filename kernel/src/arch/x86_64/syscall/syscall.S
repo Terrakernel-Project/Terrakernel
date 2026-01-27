@@ -8,7 +8,6 @@ syscall_func:
     pushq %rcx
     pushq %r11
 
-    pushq %rax
     pushq %rdi
     pushq %rsi
     pushq %rdx
@@ -25,7 +24,6 @@ syscall_func:
     popq %rdx
     popq %rsi
     popq %rdi
-    popq %rax
 
     popq %r11
     popq %rcx

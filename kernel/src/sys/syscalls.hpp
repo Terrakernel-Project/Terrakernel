@@ -41,6 +41,7 @@ void HlObtainFramebuffer(Handle* hptr);
 void HlStatFramebuffer(Handle* hptr, void* buf);
 void* HlRetrieveFileMappedMemory(Handle* hptr);
 uint64_t HlRetrieveMappedFileSize(Handle* hptr);
+void HlPrintInt64(uint64_t int_);
 
 void HlPrepareInitReturn(void* init_load_addr);
 

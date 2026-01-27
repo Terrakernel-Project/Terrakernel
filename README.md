@@ -31,6 +31,7 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write some basic syscalls
 - [x] Load x86_64 ELF binaries, static and relocatable (copy from old version of TK) (delayed)
 - [ ] (Probably) experiment with PE32+ (maybe keep it a feature too)
+- [x] BGRT table
 - [ ] End of x86_64 stuff (almost) (almost)
 
 ### Other

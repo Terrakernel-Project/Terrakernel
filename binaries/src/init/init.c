@@ -94,6 +94,8 @@ void parse_prompt(const char* tmpl, const char* user, const char* host, const ch
    ========================= */
 
 void HlMain(void) {
+	char* errmsg;
+
     ConR = HlCreateNewHandle();
     ConW = HlCreateNewHandle();
     HlOpenConsole(ConR, ConW);
@@ -106,7 +108,11 @@ void HlMain(void) {
 
     /* ---- Open config file ---- */
     Handle* cfg = HlCreateNewHandle();
-    if (!cfg) { print("Failed to create config handle\n\r"); return -1; }
+    if (!cfg) {
+    	errmsg = "Failed to create config handle\n\r";
+    	goto err;
+    }
+    
     HlOpenFile(cfg, "/initrd/init_conf.conf", O_RDWR);
 
     char cfg_buf[4096];
@@ -114,15 +120,15 @@ void HlMain(void) {
 
     int64_t rd = HlReadFile(cfg, cfg_buf, sizeof(cfg_buf) - 1);
     if (rd <= 0) {
-        print("Failed to read init_conf.conf\n\r");
-        HlCloseFile(cfg);
-        HlDestroyHandle(cfg);
-        return -1;
+        errmsg = "Failed to read init_conf.conf\n\r";
+        //HlCloseFile(cfg);
+        //HlDestroyHandle(cfg);
+        goto err;
     }
     cfg_buf[rd] = '\0';
 
-    HlCloseFile(cfg);
-    HlDestroyHandle(cfg);
+    //HlCloseFile(cfg);
+    //HlDestroyHandle(cfg);
 
     /* ---- Parse config with debug prints ---- */
     char* line = cfg_buf;
@@ -202,6 +208,12 @@ void HlMain(void) {
         int64_t n = HlReadConsole(ConR, buf, sizeof(buf) - 1);
         if (n > 0) { print(buf); print("\n\r"); }
     }
+
+err:
+	print("Error: ");
+	print(errmsg);
+
+done:
 
     __builtin_unreachable();
 }

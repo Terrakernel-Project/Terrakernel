@@ -1,7 +1,7 @@
-INIT_FLAGS := -ffreestanding -nolibc -nostdlib -isystem ./__sys/ -I ./__sys/ -e HlMain
+INIT_FLAGS := -g -ffreestanding -fno-pie -nostdlib -nostartfiles -Wl,-Ttext=0x401000 -e HlMain -isystem ./__sys/ -I ./__sys/
 
-# INIT_LINKER := -T $(INIT_LINKER_SCRIPT)
-INIT_LINKER := -pie
+INIT_LINKER := -fno-pie -no-pie
+# INIT_LINKER := -pie
 
 SRC_DIR := ./src
 INITRD := ../initrd
