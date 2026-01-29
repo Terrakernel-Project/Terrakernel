@@ -26,6 +26,7 @@
 #include <arch/x86_64/acpi/kernel_api.hpp>
 #include <boot_resources/bgrt/bgrt.hpp>
 #include <config.hpp>
+#include <boot_resources/loading/loading.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -152,6 +153,8 @@ extern "C" void init() {
 	size_t nsc = initialise_syscall_handlers();
 	Log::printf_status("OK", "Syscall handlers Initialised, there are %zu valid syscalls", nsc);
 
+	asm ("sti");
+
     karg_context* karg_ctx = (karg_context*)mem::heap::malloc(sizeof(karg_context));
     if (!karg_ctx) panic("no memory");
 
@@ -178,17 +181,31 @@ extern "C" void init() {
     
 	Log::infof("Entering userspace-init process");
 
-	drivers::timers::apic::sleep_ms(3000);
-
 #ifndef CONFIG_PRINT_INFO
 #ifndef CONFIG_PRINT_STATUS
+	printf("\033[?25l");
+
+    extern uint64_t g_scr_height, g_scr_width;
+
+	int theta = 0;
+	int count = 0;
+	int time = 3000; // millisecond wait
+	while ((count++) < (time/2)) {
+		if (theta >= 360) theta = 0;
+		boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0xFFFFFFFF, theta);
+		theta++;
+		drivers::timers::apic::sleep_ms(2);
+	}
+
     boot_resources::bgrt::clear_bgrt();
+
+    fb_clrscr(0);
+
+    boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0, 0);
 #endif
 #endif
 
     Log::end_kernel_messages(); // now no messages print
-
-	asm ("sti");
 
     run_elf(exe_buf, s.st_size, true);
 

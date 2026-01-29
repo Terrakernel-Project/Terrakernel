@@ -36,6 +36,12 @@ void initialise() {
     if (uacpi_unlikely_error(status))
         return;
     bgrt = (bgrt_table*)bgrt_handle.ptr;
+    
+    if (bgrt) {
+        Log::infof("BGRT found: version=%u status=0x%02x type=%u addr=%p offset=(%u,%u)",
+                   bgrt->version, bgrt->status, bgrt->image_type,
+                   bgrt->image_address, bgrt->image_offset_x, bgrt->image_offset_y);
+    }
 }
 
 #pragma pack(push,1)
@@ -66,26 +72,62 @@ static inline uint32_t argb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) {
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-void display_bgrt() {
+static bool validate_bgrt() {
     if (!bgrt) {
         Log::warnf("BGRT unavailable");
-        return;
+        return false;
     }
 
-    if (!(bgrt->status & 1)) {
-        Log::warnf("Invalid BGRT resource");
+    if (!bgrt->image_address) {
+        Log::warnf("BGRT image address is NULL");
+        return false;
+    }
+
+    if (bgrt->status & 0x02) {
+        Log::warnf("BGRT status indicates orientation offset not valid (status=0x%02x)", bgrt->status);
+        return false;
+    }
+
+    return true;
+}
+
+static bool parse_bmp_headers(uint8_t* image, bmp_file_header** out_fh, 
+                             bmp_info_header** out_ih) {
+    bmp_file_header* fh = (bmp_file_header*)image;
+    if (fh->type != 0x4D42) {
+        Log::warnf("BGRT image is not BMP (magic=0x%04x)", fh->type);
+        return false;
+    }
+
+    bmp_info_header* ih = (bmp_info_header*)(image + sizeof(bmp_file_header));
+
+    if (ih->bpp != 24 && ih->bpp != 32) {
+        Log::warnf("Unsupported BMP bpp: %u", ih->bpp);
+        return false;
+    }
+
+    if (ih->compression != 0) {
+        Log::warnf("Compressed BMP not supported (compression=%u)", ih->compression);
+        return false;
+    }
+
+    *out_fh = fh;
+    *out_ih = ih;
+    return true;
+}
+
+void display_bgrt() {
+    if (!validate_bgrt()) {
         return;
     }
 
     uint8_t* image = (uint8_t*)(uintptr_t)bgrt->image_address;
 
-    bmp_file_header* fh = (bmp_file_header*)image;
-    if (fh->type != 0x4D42) { // "BM"
-        Log::warnf("BGRT image is not BMP");
+    bmp_file_header* fh;
+    bmp_info_header* ih;
+    if (!parse_bmp_headers(image, &fh, &ih)) {
         return;
     }
-
-    bmp_info_header* ih = (bmp_info_header*)(image + sizeof(bmp_file_header));
 
     int width  = ih->width;
     int height = ih->height;
@@ -98,13 +140,7 @@ void display_bgrt() {
 
     uint8_t* pixels = image + fh->off_bits;
     uint32_t bytes_per_pixel = ih->bpp / 8;
-
     uint32_t stride = ((width * bytes_per_pixel) + 3) & ~3;
-
-    if (ih->bpp != 24 && ih->bpp != 32) {
-        Log::warnf("Unsupported BMP bpp: %u", ih->bpp);
-        return;
-    }
 
     for (int y = 0; y < height; y++) {
         int src_y = top_down ? y : (height - 1 - y);
@@ -130,25 +166,17 @@ void display_bgrt() {
 }
 
 void clear_bgrt() {
-    if (!bgrt) {
-        Log::warnf("BGRT unavailable");
-        return;
-    }
-
-    if (!(bgrt->status & 1)) {
-        Log::warnf("Invalid BGRT resource");
+    if (!validate_bgrt()) {
         return;
     }
 
     uint8_t* image = (uint8_t*)(uintptr_t)bgrt->image_address;
 
-    bmp_file_header* fh = (bmp_file_header*)image;
-    if (fh->type != 0x4D42) { // "BM"
-        Log::warnf("BGRT image is not BMP");
+    bmp_file_header* fh;
+    bmp_info_header* ih;
+    if (!parse_bmp_headers(image, &fh, &ih)) {
         return;
     }
-
-    bmp_info_header* ih = (bmp_info_header*)(image + sizeof(bmp_file_header));
 
     int width  = ih->width;
     int height = ih->height;
@@ -159,30 +187,11 @@ void clear_bgrt() {
         top_down = true;
     }
 
-    uint8_t* pixels = image + fh->off_bits;
     uint32_t bytes_per_pixel = ih->bpp / 8;
-
     uint32_t stride = ((width * bytes_per_pixel) + 3) & ~3;
 
-    if (ih->bpp != 24 && ih->bpp != 32) {
-        Log::warnf("Unsupported BMP bpp: %u", ih->bpp);
-        return;
-    }
-
     for (int y = 0; y < height; y++) {
-        int src_y = top_down ? y : (height - 1 - y);
-        uint8_t* row = pixels + src_y * stride;
-
         for (int x = 0; x < width; x++) {
-            uint8_t* px = row + x * bytes_per_pixel;
-
-            uint8_t b = px[0];
-            uint8_t g = px[1];
-            uint8_t r = px[2];
-            uint8_t a = (ih->bpp == 32) ? px[3] : 0xFF;
-
-            uint32_t color = argb(a, r, g, b);
-
             putpx(
                 bgrt->image_offset_x + x,
                 bgrt->image_offset_y + y,
@@ -192,4 +201,4 @@ void clear_bgrt() {
     }
 }
 
-} 
+}

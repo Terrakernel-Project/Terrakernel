@@ -86,6 +86,9 @@ constexpr uint64_t R_X86_64_SIZE32     = 32;
 constexpr uint64_t R_X86_64_SIZE64     = 33;
 constexpr uint64_t R_X86_64_IRELATIVE  = 37;
 
+constexpr size_t GUARD_PAGES = 1;
+constexpr size_t GUARD_SIZE = GUARD_PAGES * PAGE_SIZE;
+
 static inline uint64_t align_down(uint64_t addr, uint64_t alignment) {
     return addr & ~(alignment - 1);
 }
@@ -444,37 +447,116 @@ static bool process_relocations(uint64_t load_base, Elf64_Phdr* phdrs, uint16_t 
     return true;
 }
 
-static bool map_segment_pages(uint64_t segment_base, size_t segment_size, uint64_t page_flags) {
-    uint64_t page_start = align_down(segment_base, PAGE_SIZE);
-    uint64_t page_end = align_up(segment_base + segment_size, PAGE_SIZE);
-    size_t num_pages = (page_end - page_start) / PAGE_SIZE;
+static bool validate_elf_header(const Elf64_Ehdr* ehdr, size_t file_size) {
+    if (file_size < sizeof(Elf64_Ehdr)) {
+        Log::errf("File too small to contain ELF header");
+        return false;
+    }
+    
+    if (!is_valid_elf_magic(ehdr)) {
+        Log::errf("Invalid ELF magic number");
+        return false;
+    }
+    
+    if (ehdr->e_ident[4] != 2) {
+        Log::errf("Not a 64-bit ELF");
+        return false;
+    }
+    
+    if (ehdr->e_ident[5] != 1) {
+        Log::errf("Not little-endian ELF");
+        return false;
+    }
+    
+    if (ehdr->e_machine != 62) {
+        Log::errf("Not an x86-64 ELF");
+        return false;
+    }
+    
+    if (ehdr->e_type != ET_EXEC && ehdr->e_type != ET_DYN) {
+        Log::errf("ELF type must be ET_EXEC or ET_DYN");
+        return false;
+    }
+    
+    if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > file_size) {
+        Log::errf("Program headers extend beyond file size");
+        return false;
+    }
+    
+    return true;
+}
 
-    for (size_t i = 0; i < num_pages; i++) {
-        void* virtual_addr = reinterpret_cast<void*>(page_start + i * PAGE_SIZE);
-        
-        void* physical_page = mem::pmm::palloc(1);
-        if (!physical_page) {
-            Log::errf("Failed to allocate physical memory for segment at %p", virtual_addr);
+static bool calculate_load_size(const Elf64_Ehdr* ehdr, const Elf64_Phdr* phdrs,
+                                uint64_t& out_min_vaddr, uint64_t& out_max_vaddr) {
+    out_min_vaddr = UINT64_MAX;
+    out_max_vaddr = 0;
+    
+    bool found_load = false;
+    
+    for (uint16_t i = 0; i < ehdr->e_phnum; i++) {
+        if (phdrs[i].p_type == PT_LOAD) {
+            found_load = true;
+            
+            uint64_t seg_start = phdrs[i].p_vaddr;
+            uint64_t seg_end = phdrs[i].p_vaddr + phdrs[i].p_memsz;
+            
+            if (seg_start < out_min_vaddr) {
+                out_min_vaddr = seg_start;
+            }
+            if (seg_end > out_max_vaddr) {
+                out_max_vaddr = seg_end;
+            }
+        }
+    }
+    
+    if (!found_load) {
+        Log::errf("No loadable segments found");
+        return false;
+    }
+    
+    out_min_vaddr = align_down(out_min_vaddr, PAGE_SIZE);
+    out_max_vaddr = align_up(out_max_vaddr, PAGE_SIZE);
+    
+    return true;
+}
+
+static bool allocate_address_space(uint64_t load_base, size_t total_size, 
+                                   bool user_mode, size_t& out_num_pages) {
+    out_num_pages = total_size / PAGE_SIZE;
+    
+    Log::infof("Allocating %zu pages (%zu bytes) at base %p", 
+               out_num_pages, total_size, (void*)load_base);
+    
+    for (size_t i = 0; i < out_num_pages; i++) {
+        void* phys_page = mem::pmm::palloc(1);
+        if (!phys_page) {
+            Log::errf("Failed to allocate physical page %zu/%zu", i, out_num_pages);
             
             for (size_t j = 0; j < i; j++) {
-                void* cleanup_va = reinterpret_cast<void*>(page_start + j * PAGE_SIZE);
-                uint64_t cleanup_pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(cleanup_va));
-                mem::vmm::munmap(cleanup_va, 1);
-                mem::pmm::free(reinterpret_cast<void*>(cleanup_pa), 1);
+                void* va = reinterpret_cast<void*>(load_base + j * PAGE_SIZE);
+                uint64_t pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(va));
+                mem::vmm::munmap(va, 1);
+                mem::pmm::free(reinterpret_cast<void*>(pa), 1);
             }
             return false;
         }
         
-        uint64_t phys_as_va = mem::vmm::pa_to_va(reinterpret_cast<uint64_t>(physical_page));
+        uint64_t phys_as_va = mem::vmm::pa_to_va(reinterpret_cast<uint64_t>(phys_page));
         mem::memset(reinterpret_cast<void*>(phys_as_va), 0, PAGE_SIZE);
         
-        uint64_t result = mem::vmm::mmap(physical_page, virtual_addr, 1, page_flags);
+        void* va = reinterpret_cast<void*>(load_base + i * PAGE_SIZE);
+        uint64_t flags = PAGE_PRESENT | PAGE_RW;
+        if (user_mode) {
+            flags |= PAGE_USER;
+        }
+        
+        uint64_t result = mem::vmm::mmap(phys_page, va, 1, flags);
         if (result == 0) {
-            Log::errf("Failed to map page at virtual address %p", virtual_addr);
-            mem::pmm::free(physical_page, 1);
+            Log::errf("Failed to map page %zu at %p", i, va);
+            mem::pmm::free(phys_page, 1);
             
             for (size_t j = 0; j < i; j++) {
-                void* cleanup_va = reinterpret_cast<void*>(page_start + j * PAGE_SIZE);
+                void* cleanup_va = reinterpret_cast<void*>(load_base + j * PAGE_SIZE);
                 uint64_t cleanup_pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(cleanup_va));
                 mem::vmm::munmap(cleanup_va, 1);
                 mem::pmm::free(reinterpret_cast<void*>(cleanup_pa), 1);
@@ -486,24 +568,15 @@ static bool map_segment_pages(uint64_t segment_base, size_t segment_size, uint64
     return true;
 }
 
-static bool load_elf_segment(const Elf64_Phdr* phdr, uint64_t load_base, 
-                             const uint8_t* elf_data, bool user_mode) {
-    uint64_t segment_vaddr = (load_base != 0) 
-                            ? load_base + phdr->p_vaddr 
-                            : phdr->p_vaddr;
-    
-    uint64_t page_flags = convert_flags_to_page_flags(phdr->p_flags, user_mode);
+static void load_segment_data(uint64_t load_base, const Elf64_Phdr* phdr, 
+                              const uint8_t* elf_data) {
+    uint64_t segment_vaddr = load_base + phdr->p_vaddr;
     
     Log::infof("Loading segment: vaddr=%p memsz=%zu filesz=%zu flags=%c%c%c",
                (void*)segment_vaddr, phdr->p_memsz, phdr->p_filesz,
                (phdr->p_flags & PF_R) ? 'R' : '-',
                (phdr->p_flags & PF_W) ? 'W' : '-',
                (phdr->p_flags & PF_X) ? 'X' : '-');
-    
-    if (!map_segment_pages(segment_vaddr, phdr->p_memsz, page_flags)) {
-        Log::errf("Failed to map segment pages");
-        return false;
-    }
     
     if (phdr->p_filesz > 0) {
         mem::memcpy(reinterpret_cast<void*>(segment_vaddr),
@@ -516,12 +589,179 @@ static bool load_elf_segment(const Elf64_Phdr* phdr, uint64_t load_base,
         mem::memset(reinterpret_cast<void*>(segment_vaddr + phdr->p_filesz), 
                    0, bss_size);
     }
+}
+
+static void update_segment_permissions(uint64_t load_base, const Elf64_Phdr* phdr, 
+                                       bool user_mode) {
     
-    return true;
+}
+
+static void categorize_segment(const Elf64_Phdr* phdr, uint64_t load_base,
+                               proc_address_space& addr_space) {
+    uint64_t seg_start = load_base + phdr->p_vaddr;
+    uint64_t seg_end = seg_start + phdr->p_memsz;
+    size_t seg_size = phdr->p_memsz;
+    
+    if (phdr->p_flags & PF_X) {
+        if (!addr_space.code_base) {
+            addr_space.code_base = reinterpret_cast<void*>(seg_start);
+            addr_space.code_size = seg_size;
+        } else {
+            uint64_t current_end = reinterpret_cast<uint64_t>(addr_space.code_base) + addr_space.code_size;
+            if (seg_end > current_end) {
+                addr_space.code_size = seg_end - reinterpret_cast<uint64_t>(addr_space.code_base);
+            }
+        }
+    }
+    else if (phdr->p_flags & PF_W) {
+        if (!addr_space.data_base) {
+            addr_space.data_base = reinterpret_cast<void*>(seg_start);
+            addr_space.data_size = seg_size;
+        } else {
+            uint64_t current_end = reinterpret_cast<uint64_t>(addr_space.data_base) + addr_space.data_size;
+            if (seg_end > current_end) {
+                addr_space.data_size = seg_end - reinterpret_cast<uint64_t>(addr_space.data_base);
+            }
+        }
+    }
+    else {
+        if (!addr_space.extra_base) {
+            addr_space.extra_base = reinterpret_cast<void*>(seg_start);
+            addr_space.extra_size = seg_size;
+        } else {
+            uint64_t current_end = reinterpret_cast<uint64_t>(addr_space.extra_base) + addr_space.extra_size;
+            if (seg_end > current_end) {
+                addr_space.extra_size = seg_end - reinterpret_cast<uint64_t>(addr_space.extra_base);
+            }
+        }
+    }
+}
+
+proc_address_space* load_elf_to_address_space(void* elf_base, size_t elf_file_size, 
+                                              bool user_mode) {
+    auto* ehdr = reinterpret_cast<Elf64_Ehdr*>(elf_base);
+    
+    if (!validate_elf_header(ehdr, elf_file_size)) {
+        return nullptr;
+    }
+    
+    Log::infof("Loading %s ELF into contiguous address space", 
+               ehdr->e_type == ET_EXEC ? "ET_EXEC" : "ET_DYN (PIE)");
+    
+    const uint8_t* elf_data = reinterpret_cast<const uint8_t*>(elf_base);
+    Elf64_Phdr* phdrs = reinterpret_cast<Elf64_Phdr*>(
+        const_cast<uint8_t*>(elf_data + ehdr->e_phoff)
+    );
+    
+    bool is_pie = (ehdr->e_type == ET_DYN);
+    
+    uint64_t min_vaddr, max_vaddr;
+    if (!calculate_load_size(ehdr, phdrs, min_vaddr, max_vaddr)) {
+        return nullptr;
+    }
+    
+    size_t total_size = max_vaddr - min_vaddr;
+    size_t total_size_with_guard = total_size + GUARD_SIZE;
+    
+    Log::infof("ELF memory span: %p - %p (%zu bytes + %zu guard)", 
+               (void*)min_vaddr, (void*)max_vaddr, total_size, GUARD_SIZE);
+    
+    uint64_t load_base = 0;
+    
+    size_t num_pages;
+    if (!allocate_address_space(load_base + min_vaddr, total_size_with_guard, 
+                               user_mode, num_pages)) {
+        Log::errf("Failed to allocate address space");
+        return nullptr;
+    }
+    
+    proc_address_space* addr_space = (proc_address_space*)mem::heap::malloc(sizeof(proc_address_space));
+    if (!addr_space) {
+        Log::errf("Failed to allocate address space structure");
+        // TODO: Cleanup allocated memory
+        return nullptr;
+    }
+    
+    mem::memset(addr_space, 0, sizeof(proc_address_space));
+    
+    addr_space->base = reinterpret_cast<void*>(load_base + min_vaddr);
+    addr_space->total_size = total_size_with_guard;
+    addr_space->num_pages = num_pages;
+    
+    for (uint16_t i = 0; i < ehdr->e_phnum; i++) {
+        if (phdrs[i].p_type == PT_LOAD) {
+            load_segment_data(load_base, &phdrs[i], elf_data);
+            update_segment_permissions(load_base, &phdrs[i], user_mode);
+            categorize_segment(&phdrs[i], load_base, *addr_space);
+        }
+    }
+    
+    if (is_pie) {
+        Log::infof("Processing relocations for PIE binary");
+        if (!process_relocations(load_base, phdrs, ehdr->e_phnum)) {
+            Log::errf("Failed to process relocations");
+            mem::heap::free(addr_space);
+            // TODO: Cleanup allocated memory
+            return nullptr;
+        }
+    }
+    
+    addr_space->heap_base = reinterpret_cast<void*>(max_vaddr);
+    addr_space->heap_size = 0;
+    
+    void* stack_top = stack_manager_get_new_stack(64, user_mode);
+    if (!stack_top) {
+        Log::errf("Failed to allocate stack");
+        mem::heap::free(addr_space);
+        // TODO: Cleanup allocated memory
+        return nullptr;
+    }
+    
+    addr_space->stack_base = stack_top;
+    addr_space->stack_size = 64 * PAGE_SIZE;
+    
+    uint64_t entry_point = is_pie ? (load_base + ehdr->e_entry) : ehdr->e_entry;
+    
+    Log::infof("ELF loaded successfully:");
+    Log::infof("  Base:       %p", addr_space->base);
+    Log::infof("  Total size: %zu bytes (%zu pages)", addr_space->total_size, addr_space->num_pages);
+    Log::infof("  Code:       %p - %p (%zu bytes)", 
+               addr_space->code_base, 
+               (void*)((uint64_t)addr_space->code_base + addr_space->code_size),
+               addr_space->code_size);
+    Log::infof("  Data:       %p - %p (%zu bytes)", 
+               addr_space->data_base,
+               (void*)((uint64_t)addr_space->data_base + addr_space->data_size),
+               addr_space->data_size);
+    if (addr_space->extra_size > 0) {
+        Log::infof("  Extra:      %p - %p (%zu bytes)", 
+                   addr_space->extra_base,
+                   (void*)((uint64_t)addr_space->extra_base + addr_space->extra_size),
+                   addr_space->extra_size);
+    }
+    Log::infof("  Heap base:  %p", addr_space->heap_base);
+    Log::infof("  Stack base: %p", addr_space->stack_base);
+    Log::infof("  Entry:      %p", (void*)entry_point);
+    
+    return addr_space;
+}
+
+void free_address_space(proc_address_space* addr_space) {
+    if (!addr_space) return;
+    
+    uint64_t base = reinterpret_cast<uint64_t>(addr_space->base);
+    
+    for (size_t i = 0; i < addr_space->num_pages; i++) {
+        void* va = reinterpret_cast<void*>(base + i * PAGE_SIZE);
+        uint64_t pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(va));
+        mem::vmm::munmap(va, 1);
+        mem::pmm::free(reinterpret_cast<void*>(pa), 1);
+    }
+    
+    mem::heap::free(addr_space);
 }
 
 constexpr uint64_t STACK_START = 0x7FFFFFFF0000ULL;
-constexpr size_t   GUARD_PAGES = 1;
 
 struct stack_entry {
     void* bottom;
@@ -600,7 +840,9 @@ static stack_entry* allocate_stack_entry(size_t num_pages, bool user) {
             1,
             PAGE_PRESENT | PAGE_RW | (user ? PAGE_USER : 0)
         );
-        mem::memset(va, 0, PAGE_SIZE);
+        
+        uint64_t phys_as_va = mem::vmm::pa_to_va(reinterpret_cast<uint64_t>(phys));
+        mem::memset(reinterpret_cast<void*>(phys_as_va), 0, PAGE_SIZE);
     }
 
     e->bottom = (void*)stack_bottom;
@@ -655,98 +897,40 @@ bool destroy_stack(void* stack_top) {
     return false;
 }
 
-static bool validate_elf_header(const Elf64_Ehdr* ehdr, size_t file_size) {
-    if (file_size < sizeof(Elf64_Ehdr)) {
-        Log::errf("File too small to contain ELF header");
-        return false;
-    }
-    
-    if (!is_valid_elf_magic(ehdr)) {
-        Log::errf("Invalid ELF magic number");
-        return false;
-    }
-    
-    if (ehdr->e_ident[4] != 2) {
-        Log::errf("Not a 64-bit ELF");
-        return false;
-    }
-    
-    if (ehdr->e_ident[5] != 1) {
-        Log::errf("Not little-endian ELF");
-        return false;
-    }
-    
-    if (ehdr->e_machine != 62) {
-        Log::errf("Not an x86-64 ELF");
-        return false;
-    }
-    
-    if (ehdr->e_type != ET_EXEC && ehdr->e_type != ET_DYN) {
-        Log::errf("ELF type must be ET_EXEC or ET_DYN");
-        return false;
-    }
-    
-    if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > file_size) {
-        Log::errf("Program headers extend beyond file size");
-        return false;
-    }
-    
-    return true;
-}
-
-void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
+void* get_entry_point_from_elf(void* elf_base, size_t elf_file_size) {
     auto* ehdr = reinterpret_cast<Elf64_Ehdr*>(elf_base);
     
     if (!validate_elf_header(ehdr, elf_file_size)) {
-        return;
+        return nullptr;
     }
     
-    Log::infof("Loading %s ELF binary", ehdr->e_type == ET_EXEC ? "ET_EXEC" : "ET_DYN (PIE)");
-    
-    const uint8_t* elf_data = reinterpret_cast<const uint8_t*>(elf_base);
-    Elf64_Phdr* phdrs = reinterpret_cast<Elf64_Phdr*>(
-        const_cast<uint8_t*>(elf_data + ehdr->e_phoff)
-    );
-    
-    uint64_t load_base = 0;
     bool is_pie = (ehdr->e_type == ET_DYN);
-    
-    int load_count = 0;
-    for (uint16_t i = 0; i < ehdr->e_phnum; i++) {
-        if (phdrs[i].p_type == PT_LOAD) {
-            if (!load_elf_segment(&phdrs[i], load_base, elf_data, user_mode)) {
-                Log::errf("Failed to load segment %u", i);
-                return;
-            }
-            load_count++;
-        }
-    }
-    
-    Log::infof("Loaded %d segments", load_count);
-    
-    if (is_pie) {
-        Log::infof("Processing relocations for PIE binary");
-        if (!process_relocations(load_base, phdrs, ehdr->e_phnum)) {
-            Log::errf("Failed to process relocations");
-            return;
-        }
-    }
+    uint64_t load_base = 0;
     
     uint64_t entry_point = is_pie ? (load_base + ehdr->e_entry) : ehdr->e_entry;
-    
-    void* stack_top = stack_manager_get_new_stack(64, user_mode);
-    if (!stack_top) {
-        Log::errf("Failed to allocate stack");
+    return reinterpret_cast<void*>(entry_point);
+}
+
+void execute_elf(proc_address_space* addr_space, void* elf_base, 
+                 size_t elf_file_size, bool user_mode) {
+    if (!addr_space) {
+        Log::errf("Invalid address space");
         return;
     }
-
-    Log::infof("ELF ready: entry=%p stack=%p mode=%s", 
-               (void*)entry_point, stack_top, user_mode ? "user" : "kernel");
+    
+    void* entry_point = get_entry_point_from_elf(elf_base, elf_file_size);
+    if (!entry_point) {
+        Log::errf("Failed to get entry point");
+        return;
+    }
+    
+    Log::infof("Executing ELF: entry=%p stack=%p mode=%s", 
+               entry_point, addr_space->stack_base, user_mode ? "user" : "kernel");
     
     if (user_mode) {
         arch::x86_64::ringctl::execute_ring3(
             reinterpret_cast<void(*)()>(entry_point),
-            reinterpret_cast<uint8_t*>(stack_top)
+            reinterpret_cast<uint8_t*>(addr_space->stack_base)
         );
     } else {
         uint64_t saved_rsp;
@@ -757,7 +941,7 @@ void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
             "call *%1\n"
             "mov %2, %%rsp"
             :
-            : "r"(reinterpret_cast<uint64_t>(stack_top)),
+            : "r"(reinterpret_cast<uint64_t>(addr_space->stack_base)),
               "r"(entry_point),
               "r"(saved_rsp)
             : "memory"
@@ -765,57 +949,13 @@ void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
     }
 }
 
-void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, 
-                                void* stack_top, void** ret_stack_top) {
-    auto* ehdr = reinterpret_cast<Elf64_Ehdr*>(elf_base);
-    
-    if (!validate_elf_header(ehdr, elf_file_size)) {
-        return nullptr;
+void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
+    proc_address_space* addr_space = load_elf_to_address_space(elf_base, elf_file_size, user_mode);
+    if (!addr_space) {
+        Log::errf("Failed to load ELF");
+        return;
     }
     
-    Log::infof("Preparing user-mode ELF: %s", 
-               ehdr->e_type == ET_EXEC ? "ET_EXEC" : "ET_DYN");
+    execute_elf(addr_space, elf_base, elf_file_size, user_mode);
     
-    const uint8_t* elf_data = reinterpret_cast<const uint8_t*>(elf_base);
-    Elf64_Phdr* phdrs = reinterpret_cast<Elf64_Phdr*>(
-        const_cast<uint8_t*>(elf_data + ehdr->e_phoff)
-    );
-    
-    uint64_t load_base = 0;
-    bool is_pie = (ehdr->e_type == ET_DYN);
-    
-    for (uint16_t i = 0; i < ehdr->e_phnum; i++) {
-        if (phdrs[i].p_type == PT_LOAD) {
-            if (!load_elf_segment(&phdrs[i], load_base, elf_data, true)) {
-                Log::errf("Failed to load segment %u", i);
-                return nullptr;
-            }
-        }
-    }
-    
-    if (is_pie) {
-        if (!process_relocations(load_base, phdrs, ehdr->e_phnum)) {
-            Log::errf("Relocation processing failed");
-            return nullptr;
-        }
-    }
-    
-    uint64_t entry_point = is_pie ? (load_base + ehdr->e_entry) : ehdr->e_entry;
-
-    if (!stack_top) {    
-        stack_top = stack_manager_get_new_stack(64, true);
-        if (!stack_top) {
-            Log::errf("Failed to allocate user stack");
-            return nullptr;
-        }
-    }
-    
-    Log::infof("User ELF loaded: entry=%p stack=%p", 
-               (void*)entry_point, stack_top);
-
-    if (ret_stack_top) {
-        *ret_stack_top = stack_top;
-    }
-    
-    return reinterpret_cast<void*>(entry_point);
 }

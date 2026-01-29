@@ -76,4 +76,26 @@ void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, void* stack
 void* stack_manager_get_new_stack(size_t num_pages = 2, bool user = true);
 bool destroy_stack(void* stack_top);
 
+struct proc_address_space {
+    void* base;
+    size_t total_size;
+    
+    void* code_base;
+    size_t code_size;
+    
+    void* data_base;
+    size_t data_size;
+
+    void* extra_base;
+    size_t extra_size;
+    
+    void* heap_base;
+    size_t heap_size;
+    
+    void* stack_base;
+    size_t stack_size;
+    
+    size_t num_pages;
+};
+
 #endif
