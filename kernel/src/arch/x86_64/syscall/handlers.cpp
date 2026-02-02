@@ -1,5 +1,5 @@
 #include "handlers.hpp"
-#include "proc/spinlocks.hpp"
+#include <proc/spinlocks.hpp>
 #include <cstring>
 #include <cstdint>
 #include <cstdio>
@@ -27,11 +27,12 @@ struct syscall_entry {
 
 struct {
     syscall_entry entry[NUM_SYSCALLS];
-    spinlock* lock;
+
+    Spinlock* lock;
 } syscall_table;
 
 size_t initialise_syscall_handlers() {
-    syscall_table.lock = new_spinlock("SC_TABLE.LOCK");
+    syscall_table.lock = new Spinlock("Syscall.Lock");
     initialise_syscalls();
     return registered_syscalls;
 }
@@ -75,7 +76,7 @@ void register_syscall(uint64_t vector, void* handler, uint64_t num_args,
         return;
 #endif
 
-    acquire_spinlock(syscall_table.lock);
+    syscall_table.lock->acquire();
     syscall_table.entry[vector].allocated = true;
     syscall_table.entry[vector].handler.raw = handler;
     syscall_table.entry[vector].num_args = static_cast<uint8_t>(num_args);
@@ -89,5 +90,5 @@ void register_syscall(uint64_t vector, void* handler, uint64_t num_args,
     syscall_table.entry[vector].cpp_pretty_func[sizeof(syscall_table.entry[vector].cpp_pretty_func)-1] = 0;
 
     registered_syscalls++;
-    release_spinlock(syscall_table.lock);
+    syscall_table.lock->release();
 }

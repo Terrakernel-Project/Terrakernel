@@ -317,19 +317,14 @@ void uacpi_kernel_sleep(uacpi_u64 msec) {
     }
 }
 
-struct mutex {
-    volatile bool locked;
-};
-
+// Use Spinlock instead of raw mutex
 uacpi_handle uacpi_kernel_create_mutex(void) {
-    mutex* m = (mutex*)mem::heap::malloc(sizeof(mutex));
-    if (!m) return nullptr;
-    m->locked = false;
-    return m;
+    Spinlock* lock = new Spinlock("uacpi_mutex");
+    return (uacpi_handle)lock;
 }
 
 void uacpi_kernel_free_mutex(uacpi_handle handle) {
-    mem::heap::free(handle);
+    delete (Spinlock*)handle;
 }
 
 struct event {
@@ -352,29 +347,28 @@ uacpi_thread_id uacpi_kernel_get_thread_id(void) {
 }
 
 uacpi_status uacpi_kernel_acquire_mutex(uacpi_handle handle, uacpi_u16 timeout) {
-    mutex* m = (mutex*)handle;
-    if (!m) return UACPI_STATUS_NOT_FOUND;
+    Spinlock* lock = (Spinlock*)handle;
+    if (!lock) return UACPI_STATUS_NOT_FOUND;
 
     if (timeout == 0x0000) {
-        if (!m->locked) {
-            m->locked = true;
+        // Try to acquire
+        if (lock->try_acquire()) {
             return UACPI_STATUS_OK;
         }
         return UACPI_STATUS_TIMEOUT;
     }
 
     if (timeout == 0xFFFF) {
-        while (m->locked) {
-            __asm__ __volatile__("pause");
-        }
-        m->locked = true;
+        // Wait forever
+        lock->acquire();
         return UACPI_STATUS_OK;
     }
 
+    // Timed wait
     uint64_t start_ns = uacpi_kernel_get_nanoseconds_since_boot();
     uint64_t timeout_ns = (uint64_t)timeout * 1000000ULL;
 
-    while (m->locked) {
+    while (!lock->try_acquire()) {
         uint64_t now_ns = uacpi_kernel_get_nanoseconds_since_boot();
         if (now_ns - start_ns >= timeout_ns) {
             return UACPI_STATUS_TIMEOUT;
@@ -382,13 +376,12 @@ uacpi_status uacpi_kernel_acquire_mutex(uacpi_handle handle, uacpi_u16 timeout) 
         __asm__ __volatile__("pause");
     }
 
-    m->locked = true;
     return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_release_mutex(uacpi_handle handle) {
-    mutex* m = (mutex*)handle;
-    if (m) m->locked = false;
+    Spinlock* lock = (Spinlock*)handle;
+    if (lock) lock->release();
 }
 
 uacpi_bool uacpi_kernel_wait_for_event(uacpi_handle handle, uacpi_u16 timeout) {
@@ -508,22 +501,23 @@ void acpi_reload_interrupts() {
     }
 }
 
+// Use Spinlock class directly
 uacpi_handle uacpi_kernel_create_spinlock(void) {
-    return (uacpi_handle)new_spinlock("uacpi");
+    return (uacpi_handle)(new Spinlock("uacpi"));
 }
 
 void uacpi_kernel_free_spinlock(uacpi_handle handle) {
-    delete_spinlock((spinlock*)handle);
+    delete (Spinlock*)handle;
 }
 
 uacpi_cpu_flags uacpi_kernel_lock_spinlock(uacpi_handle handle) {
-    acquire_spinlock((spinlock*)handle);
+    ((Spinlock*)handle)->acquire();
     return 0;
 }
 
 void uacpi_kernel_unlock_spinlock(uacpi_handle handle, uacpi_cpu_flags flags) {
     (void)flags;
-    release_spinlock((spinlock*)handle);
+    ((Spinlock*)handle)->release();
 }
 
 #define MAX_WORK 32

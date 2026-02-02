@@ -12,8 +12,24 @@ void print_time() {
 }
 
 bool kmsg_done = false;
+#ifdef CONFIG_PRINT_INFO
+bool __cfg_print_info = true;
+#else
+bool __cfg_print_info = false;
+#endif
+
+#ifdef CONFIG_PRINT_STATUS
+bool __cfg_print_status = true;
+#else
+bool __cfg_print_status = false;
+#endif
 
 namespace Log {
+	void force_enable() {
+		__cfg_print_info = true;
+		__cfg_print_status = true;
+	}
+
 	void errf(const char* fmt, ...) {
 		if (kmsg_done) return;
 		print_time();
@@ -48,7 +64,7 @@ namespace Log {
 	
 	void infof(const char* fmt, ...) {
 		if (kmsg_done) return;
-#ifdef CONFIG_PRINT_INFO
+		if (!__cfg_print_info) return;
 		print_time();
 		printf("[ \x1b[94mINFO\x1b[0m ]  ");
 		va_list args;
@@ -56,19 +72,16 @@ namespace Log {
 		vprintf(fmt, args);
 		va_end(args);
 		printf("\n\r");
-#endif
 	}
 
 	void info(const char* s) {
 		if (kmsg_done) return;
-#ifdef CONFIG_PRINT_INFO
 		infof("%s", s);
-#endif
 	}
 	
 	void printf_status(const char* status, const char* fmt, ...) {
 		if (kmsg_done) return;
-#ifdef CONFIG_PRINT_STATUS
+		if (!__cfg_print_status) return;
 		print_time();
 		printf("[ \x1b[92m%s\x1b[0m ] ", status);
 		va_list args;
@@ -76,18 +89,14 @@ namespace Log {
 		vprintf(fmt, args);
 		va_end(args);
 		printf("\n\r");
-#endif
 	}
 
 	void print_status(const char* status, const char* s) {
 		if (kmsg_done) return;
-#ifdef CONFIG_PRINT_STATUS
 		printf_status(status, "%s", s);
-#endif
 	}
 
 	void panic(const char* message) {
-		if (kmsg_done) return;
 		print_time();
 		printf("[ \x1b[1;31mPANIC!\x1b[0m ] %s\n\r", message);
 	}

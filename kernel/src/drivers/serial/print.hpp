@@ -6,6 +6,7 @@
 void print_time();
 
 namespace Log {
+	void force_enable();
 	void errf(const char* fmt, ...);
 	void err(const char* s);
 	void warnf(const char* fmt, ...);

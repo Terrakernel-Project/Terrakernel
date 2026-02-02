@@ -26,11 +26,11 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Switch to fully graphical (flanterm) messages and logs
 - [x] Port uACPI
 - [x] (Other) Write a VFS and RamFS and parse a USTAR Initrd archive
+- [x] Multiprocessing (kinda works cuz we can give CPUs a task)
 - [ ] Scheduling and multithreading*
 - [x] Switching to userspace
 - [x] Write some basic syscalls
 - [x] Load x86_64 ELF binaries, static and relocatable (copy from old version of TK) (delayed)
-- [ ] (Probably) experiment with PE32+ (maybe keep it a feature too)
 - [x] BGRT table
 - [ ] End of x86_64 stuff (almost) (almost)
 
@@ -39,9 +39,6 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write a PCI driver (PCIe as well)
 - [x] Write a PS2 keyboard driver and PS2 mouse driver
 - [x] Line discipline
-- [ ] Try to write an XHCI driver for USB device support (optional)
-- [ ] Write some disk drivers, probably AHCI only for now
-- [ ] Some filesystem drivers, probably FAT32 and maybe, maybe, maybe EXT3 or EXT4
 - [ ] End of other
 
 ### Porting software
@@ -59,22 +56,22 @@ Check [BUILD_INSTRUCTIONS.md](https://github.com/Terrakernel-Project/Terrakernel
 ### How many LoC?
 
 ```x86asm
-     262 text files.
-     241 unique files.
+     265 text files.
+     244 unique files.
        5 files ignored.
 
-github.com/AlDanial/cloc v 1.98  T=2.24 s (107.5 files/s, 38123.3 lines/s)
+github.com/AlDanial/cloc v 1.98  T=1.89 s (128.8 files/s, 45417.2 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               55           6545           4142          36403
-C/C++ Header                   143           3451          11642          15304
-C++                             36           1436             26           6219
-Assembly                         5             40              0            238
+C                               55           6546           4143          36419
+C/C++ Header                   145           3474          11642          15373
+C++                             37           1522             30           6601
+Assembly                         5             40              0            236
 CMake                            1              0              0             21
 Markdown                         1              0              0              2
 -------------------------------------------------------------------------------
-SUM:                           241          11472          15810          58187 (57808 old)
+SUM:                           244          11582          15815          58652 (58187 old / +465 lines)
 -------------------------------------------------------------------------------
 ```
 

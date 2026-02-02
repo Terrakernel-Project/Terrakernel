@@ -27,6 +27,7 @@
 #include <boot_resources/bgrt/bgrt.hpp>
 #include <config.hpp>
 #include <boot_resources/loading/loading.hpp>
+#include <proc/spinlocks.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -52,6 +53,22 @@ volatile struct limine_executable_cmdline_request executable_cmdline_request = {
     .revision = 0,
     .response = nullptr,
 };
+
+__attribute__((section(".limine_requests")))
+volatile struct limine_mp_request mp_request = {
+	.id = LIMINE_MP_REQUEST_ID,
+};
+
+Spinlock* console_lock = nullptr;
+
+extern "C" void cpu_entry(struct limine_mp_info *cpu_info) {
+    console_lock->acquire(cpu_info->processor_id);
+    Log::force_enable();
+    Log::printf_status("OK", "CPU#%d Online", cpu_info->processor_id + 1);
+    console_lock->release();
+    
+    asm volatile ("cli; hlt");
+}
 
 extern "C" void init() {
 	asm ("cli");
@@ -204,6 +221,21 @@ extern "C" void init() {
     boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0, 0);
 #endif
 #endif
+
+	console_lock = new Spinlock("CONSOLE.LOCK");
+
+	printf("Got %d CPUs\n\r", (int)mp_request.response->cpu_count);
+
+	Log::force_enable();
+
+	Log::infof("CPU#0 is already online (BSP/Boostrap Processor)");
+
+	console_lock->release();
+	for (int i = 0; i < (int)mp_request.response->cpu_count; i++) {
+		if (mp_request.response->cpus[i]->lapic_id == mp_request.response->bsp_lapic_id) continue;
+		mp_request.response->cpus[i]->goto_address = (limine_goto_address)cpu_entry;
+		drivers::timers::apic::sleep_ms(5);
+	}
 
     Log::end_kernel_messages(); // now no messages print
 

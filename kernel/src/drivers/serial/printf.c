@@ -851,6 +851,24 @@ static int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen, const
         format++;
         break;
 
+	  // CUSTOM - NON-STANDARD
+	  case 'B' :
+	  	int boolean = va_arg(va, int);
+	  	const char* true_ = "true";
+	  	const char* false_ = "false";
+	  	if (boolean) {
+	  		while (*true_) {
+	  			out(*true_, buffer, idx++, maxlen);
+	  			true_++;
+	  		}
+	  	} else {
+	  		while (*false_) {
+	  			out(*false_, buffer, idx++, maxlen);
+	  			false_++;
+	  		}
+	  	}
+	  	format++;
+
       default :
         out(*format, buffer, idx++, maxlen);
         format++;
