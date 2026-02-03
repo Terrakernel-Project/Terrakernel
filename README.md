@@ -41,6 +41,7 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write a PCI driver (PCIe as well)
 - [x] Write a PS2 keyboard driver and PS2 mouse driver
 - [x] Line discipline
+- [x] EDID driver
 - [ ] End of other
 
 ### Porting software
