@@ -1,6 +1,7 @@
 #include <mem/mem.hpp>
 #include <mem/heap.hpp>
 #include <cstdio>
+#include <panic.hpp>
 
 void* heap_base = nullptr;
 size_t heap_size = 0;
@@ -83,7 +84,8 @@ void* malloc(size_t n) {
     }
 
     if (best_fit == nullptr) {
-        Log::errf("Malloc: No suitable free block found for %zu bytes", n);
+        // Log::errf("Malloc: No suitable free block found for %zu bytes", n);
+        panic("no memory");
         return nullptr;
     }
 
@@ -106,7 +108,9 @@ void* malloc(size_t n) {
 }
 
 void* malloc_aligned(size_t n, size_t alignment) {
-    if ((alignment & (alignment - 1)) != 0) return nullptr;
+    if ((alignment & (alignment - 1)) != 0) {
+        return nullptr;
+    }
 
     heap_block* current = (heap_block*)heap_base;
     heap_block* best_fit = nullptr;
@@ -121,7 +125,8 @@ void* malloc_aligned(size_t n, size_t alignment) {
     }
 
     if (best_fit == nullptr) {
-        Log::errf("malloc_aligned: No suitable free block found for %zu bytes", n);
+        // Log::errf("malloc_aligned: No suitable free block found for %zu bytes", n);
+        panic("no memory");
         return nullptr;
     }
 
@@ -131,6 +136,7 @@ void* malloc_aligned(size_t n, size_t alignment) {
 
     if (padding > 0) {
         if (best_fit->length <= padding + sizeof(heap_block)) {
+            panic("no memory");
             return nullptr;
         }
 
@@ -188,13 +194,15 @@ void* realloc(void* ptr, size_t n) {
                 return new_ptr;
             }
 
-            Log::errf("Realloc: Failed to allocate %zu bytes", n);
+            // Log::errf("Realloc: Failed to allocate %zu bytes", n);
+            panic("no memory");
             return nullptr;
         }
         current = current->next;
     }
 
-    Log::errf("Realloc: Failed to find memory block for %p", ptr);
+    // Log::errf("Realloc: Failed to find memory block for %p", ptr);
+    panic("no memory");
     return nullptr;
 }
 

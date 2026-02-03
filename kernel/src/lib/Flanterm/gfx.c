@@ -11,8 +11,8 @@ volatile struct limine_framebuffer_request fb_request = {
     .revision = 0
 };
 
-struct limine_framebuffer* fb;
-struct flanterm_context *ft_ctx;
+static struct limine_framebuffer* fb;
+static struct flanterm_context *ft_ctx;
 
 uint64_t g_scr_height, g_scr_width;
 
@@ -158,3 +158,6 @@ uint64_t get_stride() {
     return get_pitch() / get_bpp();
 }
 
+struct limine_framebuffer* get_fb() {
+    return fb;
+}

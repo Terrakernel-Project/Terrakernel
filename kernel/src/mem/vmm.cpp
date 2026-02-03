@@ -1,4 +1,6 @@
 #include <mem/mem.hpp>
+#include <mem/vmm.hpp>
+#include <mem/pmm_private.hpp>
 #include <cstdio>
 
 uint64_t original_PML4 = 0;
@@ -141,19 +143,19 @@ uint64_t mmap(void* paddr, void* vaddr, size_t npages, uint64_t attributes) {
 
         uint64_t* pdpt = ensure_table_exists(pml4, pml4_idx, is_user);
         if (!pdpt) {
-            printf("Failed to allocate PDPT for VA %p\n\r", (void*)va);
+            Log::warnf("Failed to allocate PDPT for VA %p\n\r", (void*)va);
             return 0;
         }
         
         uint64_t* pd = ensure_table_exists(pdpt, get_pdpt_index(va), is_user);
         if (!pd) {
-            printf("Failed to allocate PD for VA %p\n\r", (void*)va);
+            Log::warnf("Failed to allocate PD for VA %p\n\r", (void*)va);
             return 0;
         }
         
         uint64_t* pt = ensure_table_exists(pd, get_pd_index(va), is_user);
         if (!pt) {
-            printf("Failed to allocate PT for VA %p\n\r", (void*)va);
+            Log::warnf("Failed to allocate PT for VA %p\n\r", (void*)va);
             return 0;
         }
 
@@ -209,6 +211,16 @@ void reset_pagetable() {
 
 uint64_t get_cr3() {
 	return current_PML4;
+}
+
+void remap_fb() {
+    void* base = fb_base();
+    size_t pages = fb_size_pages();
+
+    void* va = (void*)pa_to_va((uint64_t)base);
+    void* pa = (void*)va_to_pa((uint64_t)base);
+
+    mmap(va, pa, pages, PAGE_PRESENT | PAGE_RW | PAGE_WC);
 }
 
 }

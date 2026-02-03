@@ -28,6 +28,7 @@
 #include <config.hpp>
 #include <boot_resources/loading/loading.hpp>
 #include <proc/spinlocks.hpp>
+#include <drivers/display/edid/edid.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -61,12 +62,26 @@ volatile struct limine_mp_request mp_request = {
 
 Spinlock* console_lock = nullptr;
 
+struct bootstrap_args {
+    uint64_t cr3;
+    uint64_t gdtr;
+    uint64_t idtr;
+};
+
+extern "C" void prepare_cpu_asm(uint64_t cr3, uint64_t gdtr, uint64_t idtr);
+extern "C" uint64_t get_cpu_idtr();
+extern "C" uint64_t get_cpu_gdtr();
+
 extern "C" void cpu_entry(struct limine_mp_info *cpu_info) {
     console_lock->acquire(cpu_info->processor_id);
+    bootstrap_args* args = (bootstrap_args*)cpu_info->extra_argument;
+    
+    //prepare_cpu_asm(args->cr3, args->gdtr, args->idtr);
+
     Log::force_enable();
     Log::printf_status("OK", "CPU#%d Online", cpu_info->processor_id + 1);
-    console_lock->release();
     
+    console_lock->release();
     asm volatile ("cli; hlt");
 }
 
@@ -92,6 +107,9 @@ extern "C" void init() {
 
     mem::vmm::initialise();
     Log::printf_status("OK", "VMM Initialised");
+
+    mem::vmm::remap_fb();
+    Log::printf_status("OK", "Framebuffer remapped, write combining enabled");
 
     mem::heap::initialise();
     Log::printf_status("OK", "Heap Initialised");
@@ -138,15 +156,15 @@ extern "C" void init() {
 	Log::printf_status("OK", "APIC Timer Initialised");
 	asm ("cli");
 
-	//acpi_reload_interrupts();
-	//Log::printf_status("OK", "Reloaded all ACPI interrupts");
-
 	ramfs::initialise();
 	Log::printf_status("OK", "RamFS Initialised");
 	ramfs::mkdir("/dev", 0777);
 	const int stdin = ramfs::open("/dev/stdin", O_CREAT | O_RDWR);
 	const int stdout = ramfs::open("/dev/stdout", O_CREAT | O_RDWR);
 	const int stderr = ramfs::open("/dev/stderr", O_CREAT | O_RDWR);
+
+    Log::infof("stdin fd = %d\n\rstdout fd = %d\n\r stderr fd = %d\n\r", stdin, stdout, stderr);
+
 	ramfs::load_archive(LOAD_ARCHIVE_TYPE_USTAR, module_request.response->modules[0]->address, module_request.response->modules[0]->size, "/initrd/");
 
     uint64_t npci = pci::initialise();
@@ -169,6 +187,11 @@ extern "C" void init() {
 
 	size_t nsc = initialise_syscall_handlers();
 	Log::printf_status("OK", "Syscall handlers Initialised, there are %zu valid syscalls", nsc);
+
+    drivers::display::edid::initialise();
+    Log::printf_status("OK", "EDID Driver Initialised");
+
+    // Finished bootstrapping
 
 	asm ("sti");
 
@@ -230,16 +253,26 @@ extern "C" void init() {
 
 	Log::infof("CPU#0 is already online (BSP/Boostrap Processor)");
 
+    bootstrap_args* args = (bootstrap_args*)mem::heap::malloc(sizeof(bootstrap_args));
+    if (!args) {
+        panic("no memory");
+    }
+
+    uint64_t cr3 = mem::vmm::get_cr3(), gdtr = get_cpu_gdtr(), idtr = get_cpu_idtr();
+
+    args->cr3 = cr3;
+    args->gdtr = gdtr;
+    args->idtr = idtr;
+
 	console_lock->release();
 	for (int i = 0; i < (int)mp_request.response->cpu_count; i++) {
 		if (mp_request.response->cpus[i]->lapic_id == mp_request.response->bsp_lapic_id) continue;
+        mp_request.response->cpus[i]->extra_argument = (uint64_t)args;
 		mp_request.response->cpus[i]->goto_address = (limine_goto_address)cpu_entry;
 		drivers::timers::apic::sleep_ms(5);
 	}
 
     Log::end_kernel_messages(); // now no messages print
-
-    run_elf(exe_buf, s.st_size, true);
 
     while (1) {
         asm volatile("hlt");

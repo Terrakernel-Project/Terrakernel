@@ -1,4 +1,6 @@
 #include <mem/mem.hpp>
+#include <mem/pmm.hpp>
+#include <mem/pmm_private.hpp>
 #include <cstdio>
 #include <limine.h>
 #include <cstring>
@@ -320,4 +322,34 @@ void free(void* ptr, size_t npages) {
 	mem::pmm::free(ptr, npages);
 }
 
+}
+
+size_t fb_memmap_entry_index = (size_t)-1;
+
+void* fb_base() {
+	if (fb_memmap_entry_index != (size_t)-1) {
+		return (void*)memmap_request.response->entries[fb_memmap_entry_index]->base;
+	}
+	
+	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
+		if (memmap_request.response->entries[i]->type == LIMINE_MEMMAP_FRAMEBUFFER) {
+			fb_memmap_entry_index = i;
+			return (void*)memmap_request.response->entries[i]->base;
+		}
+	}
+	return nullptr;
+}
+
+size_t fb_size_pages() {
+	if (fb_memmap_entry_index != (size_t)-1) {
+		return (((size_t)memmap_request.response->entries[fb_memmap_entry_index]->length + 0xFFF) / 0x1000);
+	}
+	
+	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
+		if (memmap_request.response->entries[i]->type == LIMINE_MEMMAP_FRAMEBUFFER) {
+			return (((size_t)memmap_request.response->entries[i]->length + 0xFFF) / 0x1000);
+		}
+	}
+
+	return 0;
 }

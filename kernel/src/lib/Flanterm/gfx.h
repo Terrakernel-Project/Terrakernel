@@ -1,7 +1,8 @@
-#ifndef FTCTX_H
-#define FTCTX_H 1
+#ifndef GFX_H
+#define GFX_H 1
 
 #include <stdint.h>
+#include <limine.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,9 +23,10 @@ uint64_t get_base_fb();
 uint64_t get_pitch();
 uint64_t get_bpp();
 uint64_t get_stride();
+struct limine_framebuffer* get_fb();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* FTCTX_H */
+#endif

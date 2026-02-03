@@ -9,13 +9,13 @@
 #include <mem/heap.hpp>
 
 enum PageAttributes {
-	PAGE_PRESENT = 0x1,
-	PAGE_RW = 0x2,
-	PAGE_USER = 0x4,
-	PAGE_PCD = 0x10,
-	PAGE_SIZE_2MB = 0x80,
+    PAGE_PRESENT    = 0x1,
+    PAGE_RW         = 0x2,
+    PAGE_USER       = 0x4,
+    PAGE_PCD        = 0x10,
+    PAGE_SIZE_2MB   = 0x80,
+    PAGE_WC         = 0x100
 };
-
 namespace mem {
 	namespace pmm {
 		void initialise();
@@ -40,6 +40,8 @@ namespace mem {
 		bool is_mapped(void* vaddr);
 
 		uint64_t get_cr3();
+
+		void remap_fb();
 	}
 
 	namespace usr {

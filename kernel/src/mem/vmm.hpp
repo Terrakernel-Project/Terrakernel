@@ -27,6 +27,8 @@ bool is_mapped(void* vaddr);
 
 uint64_t get_cr3();
 
+void remap_fb();
+
 }
 
 #endif /* VMM_HPP */

@@ -32,6 +32,8 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write some basic syscalls
 - [x] Load x86_64 ELF binaries, static and relocatable (copy from old version of TK) (delayed)
 - [x] BGRT table
+- [x] Remap the framebuffer with Write Combining for maximum performance
+- [x] A kewl loading cirle :^)
 - [ ] End of x86_64 stuff (almost) (almost)
 
 ### Other
@@ -56,27 +58,38 @@ Check [BUILD_INSTRUCTIONS.md](https://github.com/Terrakernel-Project/Terrakernel
 ### How many LoC?
 
 ```x86asm
-     265 text files.
-     244 unique files.
+     270 text files.
+     249 unique files.
        5 files ignored.
 
-github.com/AlDanial/cloc v 1.98  T=1.89 s (128.8 files/s, 45417.2 lines/s)
+github.com/AlDanial/cloc v 1.98  T=1.26 s (198.1 files/s, 68745.7 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               55           6546           4143          36419
-C/C++ Header                   145           3474          11642          15373
-C++                             37           1522             30           6601
-Assembly                         5             40              0            236
+C                               55           6546           4143          36422
+C/C++ Header                   148           3490          11642          15400
+C++                             38           1568             35           6822
+Assembly                         6             54              0            273
 CMake                            1              0              0             21
 Markdown                         1              0              0              2
 -------------------------------------------------------------------------------
-SUM:                           244          11582          15815          58652 (58187 old / +465 lines)
+SUM:                           249          11658          15820          58940 (58652 old / +288)
 -------------------------------------------------------------------------------
 ```
+
+### Kernel logos are in `logos/`
+
+Logos are PNG, there is a BMP in initrd/ but it is 256x256
+
+![Logo 256x256](./logos/256x256.png)
+![Logo 1024x1024](./logos/1024x1024.png)
+![Logo 4096x4096](./logos/4096x4096.png)
+
+![Used as template for the logo](https://www.flaticon.com/free-icons/global)
 
 ### Screenshots
 
 ![Burn on flash drive](./images/recommended_burn.png)
 
 ![TK Running with a userspace shell!](./images/TK_shell_running.png)
+
