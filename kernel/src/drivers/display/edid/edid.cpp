@@ -140,10 +140,10 @@ void initialise() {
 
     for (uint64_t i = 0; i < fb->mode_count; i++) {
         add_video_mode(fb->modes[i]);
-        printf("Discovered %zux%zux%zu mode\n\r", fb->modes[i]->width, fb->modes[i]->height, fb->modes[i]->bpp);
+        Log::infof("Discovered %zux%zux%zu mode\n\r", fb->modes[i]->width, fb->modes[i]->height, fb->modes[i]->bpp);
     }
 
-    printf("EDID purely discovers modes and is not able to change video modes\n\r");
+    Log::warnf("EDID purely discovers modes and is not able to change video modes\n\r");
 }
 
 }

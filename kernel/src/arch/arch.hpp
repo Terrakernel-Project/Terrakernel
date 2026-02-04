@@ -120,6 +120,9 @@ namespace cpu {
 		void irq_set_mask(uint8_t irq);
 		void send_eoi(uint8_t irq);
 
+		void irq_temp_set_all_mask();
+		void irq_temp_clear_all_mask();
+
 		void* get_base();
 	}
 

@@ -7,6 +7,7 @@
 #include <arch/x86_64/apic/apic.hpp>
 
 bool idt_set_vectors[256] = {false};
+bool irq_vectors[16] = {false};
 
 const char* exception_names[] = {
 	"#DE", "#DB", "#NMI", "#BP", "#OF", "#BR",
@@ -384,6 +385,7 @@ static void pic_remap(int offset1, int offset2) {
 }
 
 void irq_clear_mask(uint8_t irq) {
+	irq_vectors[irq] = true;
 	if (apic_enabled()) {
 		arch::x86_64::ioapic::ioapic_unmask_irq(irq);
 		return;	
@@ -396,6 +398,7 @@ void irq_clear_mask(uint8_t irq) {
 }
 
 void irq_set_mask(uint8_t irq) {
+	irq_vectors[irq] = false;
 	if (apic_enabled()) {
 		arch::x86_64::ioapic::ioapic_mask_irq(irq);
 		return;
@@ -405,10 +408,6 @@ void irq_set_mask(uint8_t irq) {
 	else { port = PIC2_DATA; irq -= 8; }
 	uint8_t value = arch::x86_64::io::inb(port) | (1 << irq);
 	arch::x86_64::io::outb(port, value);
-}
-
-__attribute__((interrupt)) void int80_handler(void*) {
-	printf("INT 80h from user proc\n\r");
 }
 
 void initialise() {
@@ -426,8 +425,6 @@ void initialise() {
 	pic_remap(0x20, 0x28);
 
 	irq_clear_mask(0);
-
-	set_descriptor(0x80, (uint64_t)int80_handler, 0xEE);
 
 	load_idt();
 }	
@@ -469,6 +466,20 @@ void send_eoi(uint8_t irq) {
 	}
 	if (irq >= 8) arch::x86_64::io::outb(PIC2_COMMAND, PIC_EOI);
 	arch::x86_64::io::outb(PIC1_COMMAND, PIC_EOI);
+}
+
+void irq_temp_set_all_mask() {
+	for (int i = 0; i < 16; i++) {
+		irq_set_mask(i);
+	}
+}
+
+void irq_temp_clear_all_mask() {
+	for (int i = 0; i < 16; i++) {
+		if (irq_vectors[i]) {
+			irq_clear_mask(i);
+		}
+	}
 }
 
 void* get_base() {

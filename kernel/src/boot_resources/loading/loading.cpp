@@ -53,15 +53,16 @@ static inline int normalize_angle(int a) {
 }
 
 static inline int point_angle_deg(int x, int y) {
-    int ax = x < 0 ? -x : x;
-    int ay = y < 0 ? -y : y;
-
-    int base = (ay * 45) / (ax + ay + 1);
-
-    if (x >= 0 && y >= 0) return base;
-    if (x < 0  && y >= 0) return 180 - base;
-    if (x < 0  && y < 0)  return 180 + base;
-    return 360 - base;
+    if (x == 0 && y == 0) return 0;
+    int ax = x >= 0 ? x : -x;
+    int ay = y >= 0 ? y : -y;
+    int angle;
+    if (ax > ay) angle = (ay * 45) / ax;
+    else angle = 90 - (ax * 45) / ay;
+    if (x >= 0 && y >= 0) return angle;
+    if (x < 0  && y >= 0) return 180 - angle;
+    if (x < 0  && y < 0)  return 180 + angle;
+    return 360 - angle;
 }
 
 static void draw_arc(
@@ -89,20 +90,18 @@ static void draw_arc(
             if (diff > 180) diff = 360 - diff;
 
             if (diff <= 30) {
-                int fade = 255 - (diff * 220) / 30;
+                int fade = 255 - (diff * 255) / 30;
                 uint32_t c =
                     ((br * fade / 255) << 16) |
                     ((bg * fade / 255) << 8)  |
                     (bb * fade / 255);
-
                 draw_circle_point(cx, cy, xs[i], ys[i], c);
             }
         }
 
         y++;
-        if (d <= 0) {
-            d += 2 * y + 1;
-        } else {
+        if (d <= 0) d += 2 * y + 1;
+        else {
             x--;
             d += 2 * (y - x) + 1;
         }

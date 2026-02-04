@@ -142,6 +142,10 @@ void fb_clrscr(int no_cur) {
     }
 }
 
+void full_refresh() {
+	flanterm_full_refresh(ft_ctx);
+}
+
 uint64_t get_base_fb() {
     return (uint64_t)fb->address;
 }

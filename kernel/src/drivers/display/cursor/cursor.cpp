@@ -1,0 +1,62 @@
+#include "cursor.hpp"
+#include <drivers/display/gfx.hpp>
+
+#define CURSOR_WIDTH 32
+#define CURSOR_HEIGHT 32
+
+#define PxW 0xFFFFFFFF
+#define PxB 0xFF000000
+#define PxE 0 // empty
+
+uint32_t cursor_buffer[CURSOR_WIDTH][CURSOR_HEIGHT] = {0};
+uint64_t prev_x = 0, prev_y = 0;
+bool first_render = true;
+
+const uint32_t cursor_image[CURSOR_WIDTH][CURSOR_HEIGHT] = {
+    {PxB},
+    {PxB,PxB},
+    {PxB,PxW,PxB},
+    {PxB,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxB,PxB,PxB,PxB,PxB},
+    {PxB,PxW,PxW,PxW,PxB,PxW,PxW,PxB},
+    {PxB,PxW,PxW,PxB,PxB,PxW,PxW,PxB},
+    {PxB,PxW,PxB,PxE,PxE,PxB,PxW,PxW,PxB},
+    {PxB,PxB,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
+    {PxB,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
+    {PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
+    {PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
+    {PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
+    {PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxB,PxW},
+};
+
+namespace drivers::display::cursor {
+
+void render(uint64_t x, uint64_t y) {
+    if (!first_render) {
+        for (size_t xx = prev_x; xx < prev_x + CURSOR_WIDTH; xx++) {
+            for (size_t yy = prev_y; yy < prev_y + CURSOR_HEIGHT; yy++) {
+                ppx(xx, yy, cursor_buffer[xx-prev_x][yy-prev_y]);
+            }
+        }
+    }
+    
+    first_render = false;
+    
+    for (size_t xx = x; xx < x + CURSOR_WIDTH; xx++) {
+        for (size_t yy = y; yy < y + CURSOR_HEIGHT; yy++) {
+            cursor_buffer[xx-x][yy-y] = replace_pixel(xx, yy, cursor_image[yy-y][xx-x], true);
+        }
+    }
+    
+    prev_x = x;
+    prev_y = y;
+}
+
+}

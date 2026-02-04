@@ -2,11 +2,11 @@ menu "Logging"
 
 config PRINT_INFO
 	bool "Verbose information logs"
-	default y
+	default n
 
 config PRINT_STATUS
 	bool "Verbose status logs"
-	default y
+	default n
 
 endmenu
 
@@ -16,15 +16,15 @@ menu "PS2 Keyboard"
 
 config PS2K_INITIAL_BUF_SIZE
     int "Initial buffer size"
-    default 512
+    default 16384
 
 config PS2K_DEBUG
     bool "Debugging"
     default n
 
 config PS2K_ALLOC_BUF_MALLOC
-    bool "Use malloc over Valloc"
-    default y
+    bool "Use malloc over valloc"
+    default n
 
 config PS2K_ALLOC_BUF
     bool "Allocate buffer"
@@ -48,7 +48,7 @@ menu "ACPI"
 
 config ACPI_VERBOSE
     bool "Verbose Logging"
-    default y
+    default n
 
 endmenu
 
@@ -66,7 +66,7 @@ menu "PIT - Deprecated (Unused)"
 
 config PIT_FREQUENCY
 	int "PIT Timer Frequency"
-	default 300
+	default 25
 
 endmenu
 
@@ -105,17 +105,17 @@ config EXCEPTIONS_NESTING_THRESHOLD
 
 config EXCEPTIONS_RUN_DEBUGGER
 	bool "Run the debugger when an exception occurs"
-	default y
+	default n
 
 menu "Default menu"
 
 config EXCEPTION_SHOW_DEFAULT_MENU
 	bool "Show the default menu"
-	default y
+	default n
 
 config EXCEPTION_DEFAULT
 	int "Default menu"
-	default 0
+	default 1
 	range 0 5
 	help
 		0: DISASM ONLY
@@ -135,7 +135,7 @@ config EXCEPTION_DEBUGGER_SYNTAX
 
 config DISASM_STOP_AT_RET
 	bool "Make the disassembler stop at any kind of return"
-	default y
+	default n
 	help
 		If enabled the disassembler will stop showing more disassembly and will stop at the ret instruction
 		This includes all of the following instructions:
@@ -162,7 +162,7 @@ config ALLOW_SYSCALL_REGISTRATION_OVERRIDE
 
 config CONFIG_VERBOSE_SYSCALL_CREATION
 	bool "Verbose Logging"
-	default y
+	default n
 
 endmenu
 
@@ -170,7 +170,7 @@ menu "APIC"
 
 config APIC_VERBOSE
 	bool "Verbose Logging"
-	default y
+	default n
 
 endmenu
 
@@ -190,7 +190,7 @@ menu "BGRT"
 
 config BGRT_SLEEP_TIME_MS
 	int "BGRT display time milliseconds"
-	default 2500
+	default 3000
 	range 1000 10000
 
 endmenu

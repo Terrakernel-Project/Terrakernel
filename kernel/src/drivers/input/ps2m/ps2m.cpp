@@ -1,7 +1,7 @@
 #include "ps2m.hpp"
 #include <arch/arch.hpp>
 #include <cstdio>
-#include <lib/Flanterm/gfx.h>
+#include <drivers/display/cursor/cursor.hpp>
 
 extern int g_scr_width, g_scr_height;
 
@@ -139,7 +139,7 @@ void process_mouse() {
     if (mouse_pos.y < 0) mouse_pos.y = 0;
     if (mouse_pos.y > g_scr_height) mouse_pos.y = g_scr_height;
     
-    draw_mouse_pointer(mouse_pos_old.x, mouse_pos_old.y, mouse_pos.x, mouse_pos.y, mouse_packet[0] & PS2Leftbutton, mouse_packet[0] & PS2Middlebutton, mouse_packet[0] & PS2Rightbutton);
+    drivers::display::cursor::render(mouse_pos.x, mouse_pos.y);
 
     mouse_packet_ready = false;
     mouse_pos_old = mouse_pos;
