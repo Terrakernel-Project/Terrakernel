@@ -133,6 +133,18 @@ void process_mouse() {
         }
     }
 
+    bool mLmb = false, mMmb = false, mRmb = false;
+
+    if (mouse_packet[0] & PS2Leftbutton) mLmb = true;
+    else mLmb = false;
+    
+    if (mouse_packet[0] & PS2Middlebutton) mMmb = true;
+    else mMmb = false;
+    
+    if (mouse_packet[0] & PS2Rightbutton) mRmb = true;
+    else mRmb = false;
+    
+
     if (mouse_pos.x < 0) mouse_pos.x = 0;
     if (mouse_pos.x > g_scr_width) mouse_pos.x = g_scr_width;
     
@@ -140,6 +152,10 @@ void process_mouse() {
     if (mouse_pos.y > g_scr_height) mouse_pos.y = g_scr_height;
     
     drivers::display::cursor::render(mouse_pos.x, mouse_pos.y);
+
+#ifdef CONFIG_DEBUG_MOUSE
+	printf("Mouse input! %zu:%zu LMB=%B MMB=%B RMB=%B\n\r", mouse_pos.x, mouse_pos.y, mLmb, mMmb, mRmb);
+#endif
 
     mouse_packet_ready = false;
     mouse_pos_old = mouse_pos;

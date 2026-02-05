@@ -77,7 +77,7 @@ static void free_fd(int fd) {
     }
 }
 
-static void normalize_path(const char* path, char* result) {
+static void normalise_path(const char* path, char* result) {
     char temp[PATH_MAX];
     char* segments[128];
     int segment_count = 0;
@@ -139,15 +139,15 @@ static void normalize_path(const char* path, char* result) {
 }
 
 static Inode* find_inode(const char* pathname) {
-    char normalized[PATH_MAX];
-    normalize_path(pathname, normalized);
+    char normalised[PATH_MAX];
+    normalise_path(pathname, normalised);
     
-    if (strcmp(normalized, "/") == 0) {
+    if (strcmp(normalised, "/") == 0) {
         return root_inode;
     }
     
     Inode* current = root_inode;
-    char* path = normalized + 1;
+    char* path = normalised + 1;
     char name_buf[NAME_MAX + 1];
     
     while (*path) {
@@ -181,29 +181,29 @@ static Inode* find_inode(const char* pathname) {
 }
 
 static Inode* find_parent_and_name(const char* pathname, char* name_out) {
-    char normalized[PATH_MAX];
-    normalize_path(pathname, normalized);
+    char normalised[PATH_MAX];
+    normalise_path(pathname, normalised);
     
-    if (strcmp(normalized, "/") == 0) {
+    if (strcmp(normalised, "/") == 0) {
         return nullptr;
     }
     
     char* last_slash = nullptr;
-    char* ptr = normalized;
+    char* ptr = normalised;
     while (*ptr) {
         if (*ptr == '/') last_slash = ptr;
         ptr++;
     }
     
-    if (last_slash == normalized) {
-        strncpy(name_out, normalized + 1, NAME_MAX + 1);
+    if (last_slash == normalised) {
+        strncpy(name_out, normalised + 1, NAME_MAX + 1);
         return root_inode;
     }
     
     *last_slash = '\0';
     strncpy(name_out, last_slash + 1, NAME_MAX + 1);
     
-    return find_inode(normalized);
+    return find_inode(normalised);
 }
 
 static void add_child(Inode* parent, Inode* child) {
@@ -615,7 +615,7 @@ int chdir(const char* path) {
         return -1;
     }
     
-    normalize_path(path, current_dir);
+    normalise_path(path, current_dir);
     return 0;
 }
 

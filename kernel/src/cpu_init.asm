@@ -5,7 +5,6 @@ store_reg: resq 2
 
 section .text
 global prepare_cpu_asm
-global get_cpu_idtr
 global get_cpu_gdtr
 
 prepare_cpu_asm:
@@ -13,7 +12,8 @@ prepare_cpu_asm:
 
     mov     cr3, rdi
     lgdt    [rsi]
-    lidt    [rdx]
+
+	; DO NOT LOAD AN IDT, INTERRUPTS ARE ONLY HANDLED BY THE BSP
 
     mov ax, 0x10
     mov ds, ax
@@ -33,13 +33,6 @@ prepare_cpu_asm:
 
 .flush:
     mov rax, 0
-
-    ret
-
-get_cpu_idtr:
-    sidt [store_reg]
-    
-    mov rax, [store_reg]
 
     ret
 

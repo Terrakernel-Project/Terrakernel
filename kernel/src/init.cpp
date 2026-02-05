@@ -30,7 +30,6 @@
 #include <proc/spinlocks.hpp>
 #include <drivers/display/edid/edid.hpp>
 #include <drivers/display/gfx.hpp>
-#include <lib/Flanterm/gfx.h>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -67,18 +66,16 @@ Spinlock* console_lock = nullptr;
 struct bootstrap_args {
     uint64_t cr3;
     uint64_t gdtr;
-    uint64_t idtr;
 };
 
-extern "C" void prepare_cpu_asm(uint64_t cr3, uint64_t gdtr, uint64_t idtr);
-extern "C" uint64_t get_cpu_idtr();
+extern "C" void prepare_cpu_asm(uint64_t cr3, uint64_t gdtr);
 extern "C" uint64_t get_cpu_gdtr();
 
 extern "C" void cpu_entry(struct limine_mp_info *cpu_info) {
     console_lock->acquire(cpu_info->processor_id);
-    //bootstrap_args* args = (bootstrap_args*)cpu_info->extra_argument;
+    bootstrap_args* args = (bootstrap_args*)cpu_info->extra_argument;
     
-    //prepare_cpu_asm(args->cr3, args->gdtr, args->idtr);
+    prepare_cpu_asm(args->cr3, args->gdtr);
 
     Log::force_enable();
     Log::printf_status("OK", "CPU#%d Online", cpu_info->processor_id + 1);
@@ -113,18 +110,20 @@ extern "C" void init() {
     mem::vmm::remap_fb();
     Log::printf_status("OK", "Framebuffer remapped, write combining enabled");
 
-    for (size_t x = 0; x < fbx(); x++) {
+	for (size_t x = 0; x < fbx(); x++) {
     	for (size_t y = 0; y < fby(); y++) {
     		ppx(x, y, 0);
     	}
     }
     full_refresh();
 
+skip_redraw:;
+
     mem::heap::initialise();
     Log::printf_status("OK", "Heap Initialised");
     
     drivers::timers::pit::initialise();
-    Log::printf_status("OK", "PIT Driver Initialised");
+    Log::printf_status("OK", "PIT Initialised (FREQ=300)");
     
     Log::info("Disabling COM1 serial output, falling back to graphical interface");
     serial::serial_putc('\033');
@@ -158,11 +157,11 @@ extern "C" void init() {
 	Log::printf_status("OK", "APIC Initialised");
 
 	drivers::timers::pit::initialise();
-	Log::printf_status("OK", "PIT Driver Reinitialised");
+	Log::printf_status("OK", "PIT Reinitialised");
 
 	asm ("sti");
 	drivers::timers::apic::initialise();
-	Log::printf_status("OK", "APIC Timer Driver Initialised");
+	Log::printf_status("OK", "APIC Timer Initialised");
 	asm ("cli");
 
 	ramfs::initialise();
@@ -186,13 +185,13 @@ extern "C" void init() {
     Log::printf_status("OK", "Syscalls Initialised");
 
 	drivers::input::ps2k::initialise();
-	Log::printf_status("OK", "PS2K Driver Initialised");
+	Log::printf_status("OK", "PS2K Initialised");
 
     drivers::input::ps2m::initialise();
-    Log::printf_status("OK", "PS2M Driver Initialised");
+    Log::printf_status("OK", "PS2M Initialised");
 
 	drivers::tty::ldisc::initialise();
-	Log::printf_status("OK", "Line Discipline Driver Initialised");
+	Log::printf_status("OK", "Line Discipline Initialised");
 
 	size_t nsc = initialise_syscall_handlers();
 	Log::printf_status("OK", "Syscall handlers Initialised, there are %zu valid syscalls", nsc);
@@ -202,6 +201,8 @@ extern "C" void init() {
 
     // Finished bootstrapping
 
+	asm ("sti");
+
     karg_context* karg_ctx = (karg_context*)mem::heap::malloc(sizeof(karg_context));
     if (!karg_ctx) panic("no memory");
 
@@ -210,9 +211,14 @@ extern "C" void init() {
     karg_ctx->INIT_PATH_symbol = "INIT_PATH";
     karg_ctx->default_init_path = "/initrd/init";
 
-    const char* init_path = check_init_path(karg_ctx);
+    int fd = ramfs::open(check_init_path(karg_ctx), O_RDONLY);
+    if (fd < 0) {
+        panic("could not find init");
+    }
 
-    #ifndef CONFIG_PRINT_INFO
+    Log::printf_status("OK", "Parsed command-line");
+
+#ifndef CONFIG_PRINT_INFO
 #ifndef CONFIG_PRINT_STATUS
 	printf("\033[?25l");
 
@@ -221,19 +227,12 @@ extern "C" void init() {
 	int theta = 0;
 	int count = 0;
 	int time = CONFIG_BGRT_SLEEP_TIME_MS; // millisecond wait
-
-	asm ("sti");
-	arch::x86_64::cpu::idt::irq_temp_set_all_mask();
-	
-	while ((count++) < time/2) {
+	while ((count++) < (time/2)) {
 		if (theta >= 360) theta = 0;
-		boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0xFFAAAAEE, theta);
+		boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0xFFFFFFFF, theta);
 		theta++;
 		drivers::timers::apic::sleep_ms(2);
 	}
-
-	asm ("cli");
-	arch::x86_64::cpu::idt::irq_temp_clear_all_mask();
 
     boot_resources::bgrt::clear_bgrt();
 
@@ -256,18 +255,14 @@ extern "C" void init() {
         panic("no memory");
     }
 
-    uint64_t cr3 = mem::vmm::get_cr3(), gdtr = get_cpu_gdtr(), idtr = get_cpu_idtr();
+    uint64_t cr3 = mem::vmm::get_cr3(), gdtr = get_cpu_gdtr();
 
     args->cr3 = cr3;
     args->gdtr = gdtr;
-    args->idtr = idtr;
 
 	console_lock->release();
 	for (int i = 0; i < (int)mp_request.response->cpu_count; i++) {
-		if (mp_request.response->cpus[i]->lapic_id == mp_request.response->bsp_lapic_id) {
-			printf("Skipping CPU[%d] due to it having a matching lapic ID as the bootstrap processor\n\r", i);
-			continue;
-		}
+		if (mp_request.response->cpus[i]->lapic_id == mp_request.response->bsp_lapic_id) continue;
         mp_request.response->cpus[i]->extra_argument = (uint64_t)args;
 		mp_request.response->cpus[i]->goto_address = (limine_goto_address)cpu_entry;
 		drivers::timers::apic::sleep_ms(5);
@@ -275,9 +270,11 @@ extern "C" void init() {
 
     Log::end_kernel_messages(); // now no messages print
 
-	asm ("sti");
-
+	char buf[4096];
     while (1) {
+    	size_t read = drivers::tty::ldisc::read(true, buf, 4096);
+    	if (read) printf("> %s\n\r", buf);
+    	else printf("> ?\n\r");
         asm volatile("hlt");
     }
     
