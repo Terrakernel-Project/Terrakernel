@@ -144,10 +144,12 @@ skip_redraw:;
 
 #ifndef CONFIG_PRINT_INFO
 #ifndef CONFIG_PRINT_STATUS
+#ifndef CONFIG_DEV_MODE
     fb_clrscr(0);
 
     boot_resources::bgrt::initialise();
     boot_resources::bgrt::display_bgrt();
+#endif
 #endif
 #endif
 
@@ -221,6 +223,7 @@ skip_redraw:;
 
 #ifndef CONFIG_PRINT_INFO
 #ifndef CONFIG_PRINT_STATUS
+#ifndef CONFIG_DEV_MODE
 	printf("\033[?25l");
 
     extern uint64_t g_scr_height, g_scr_width;
@@ -240,6 +243,7 @@ skip_redraw:;
     fb_clrscr(0);
 
     boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0, 0);
+#endif
 #endif
 #endif
 

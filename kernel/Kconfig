@@ -197,4 +197,10 @@ endmenu
 
 endmenu
 
+config DEV_MODE
+	bool "Enable DEV Mode"
+	default n
+	help
+		If enabled disables wait-time processes such as BGRT_SLEEP_TIME_MS ("BGRT display time milliseconds")
+
 endmenu
