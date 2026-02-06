@@ -425,7 +425,7 @@ void HlTerminateProcess(int64_t pid) {
 }
 
 void HlLoadElf(const void* __restrict datbase) {
-    run_elf((void*)datbase, 0, true);
+    //run_elf((void*)datbase, 0, true);
 }
 
 int64_t HlExec(const char* __restrict path) {
@@ -442,7 +442,7 @@ int64_t HlExec(const char* __restrict path) {
 
     ramfs::read(fd, buf, s.st_size);
 
-    run_elf(buf, s.st_size, true);
+    //run_elf(buf, s.st_size, true);
 
     return 0; // TODO make it return PID
 }

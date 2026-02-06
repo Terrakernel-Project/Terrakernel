@@ -912,7 +912,9 @@ void* get_entry_point_from_elf(void* elf_base, size_t elf_file_size) {
 }
 
 void execute_elf(proc_address_space* addr_space, void* elf_base, 
-                 size_t elf_file_size, bool user_mode) {
+                 size_t elf_file_size, bool user_mode,
+                 const char* argv[], const char* envp[])
+{
     if (!addr_space) {
         Log::errf("Invalid address space");
         return;
@@ -924,13 +926,77 @@ void execute_elf(proc_address_space* addr_space, void* elf_base,
         return;
     }
     
-    Log::infof("Executing ELF: entry=%p stack=%p mode=%s", 
-               entry_point, addr_space->stack_base, user_mode ? "user" : "kernel");
+    int argc = 0;
+    while (argv && argv[argc]) argc++;
+    
+    int envc = 0;
+    while (envp && envp[envc]) envc++;
+    
+    Log::infof("Executing ELF: entry=%p stack=%p user_mode=%B argc=%d envc=%d", 
+               entry_point, addr_space->stack_base, user_mode,
+               argc, envc);
+    
+    uint64_t stack_ptr = reinterpret_cast<uint64_t>(addr_space->stack_base);
+    
+    uint64_t* envp_user_ptrs = (uint64_t*)mem::heap::malloc(sizeof(uint64_t)*(envc+1));
+    for (int i = envc - 1; i >= 0; i--) {
+        size_t len = strlen(envp[i]) + 1;
+        stack_ptr -= len;
+        mem::memcpy(reinterpret_cast<void*>(stack_ptr), envp[i], len);
+        envp_user_ptrs[i] = stack_ptr;
+    }
+    envp_user_ptrs[envc] = 0;
+    
+    uint64_t* argv_user_ptrs = (uint64_t*)mem::heap::malloc(sizeof(uint64_t)*(argc+1));
+    for (int i = argc - 1; i >= 0; i--) {
+        size_t len = strlen(argv[i]) + 1;
+        stack_ptr -= len;
+        mem::memcpy(reinterpret_cast<void*>(stack_ptr), argv[i], len);
+        argv_user_ptrs[i] = stack_ptr;
+    }
+    argv_user_ptrs[argc] = 0;
+    
+    size_t total_ptr_bytes = 8 + 8 * (argc + 1) + 8 * (envc + 1);
+    
+    stack_ptr &= ~0xFULL;
+    
+    if ((stack_ptr - total_ptr_bytes) % 16 != 0) {
+        stack_ptr -= 8;
+    }
+    
+    for (int i = envc; i >= 0; i--) {
+        stack_ptr -= 8;
+        *reinterpret_cast<uint64_t*>(stack_ptr) = envp_user_ptrs[i];
+    }
+    uint64_t envp_ptr = stack_ptr;
+    
+    for (int i = argc; i >= 0; i--) {
+        stack_ptr -= 8;
+        *reinterpret_cast<uint64_t*>(stack_ptr) = argv_user_ptrs[i];
+    }
+    uint64_t argv_ptr = stack_ptr;
+    
+    stack_ptr -= 8;
+    *reinterpret_cast<uint64_t*>(stack_ptr) = argc;
+    
+    mem::heap::free(argv_user_ptrs);
+    mem::heap::free(envp_user_ptrs);
+    
+    if (stack_ptr % 16 != 0) {
+        Log::errf("Stack misaligned! RSP=%p (should be 16-byte aligned)", 
+                  reinterpret_cast<void*>(stack_ptr));
+    }
+    
+    Log::infof("Stack setup complete: RSP=%p argc=%d argv=%p envp=%p", 
+               reinterpret_cast<void*>(stack_ptr),
+               argc,
+               reinterpret_cast<void*>(argv_ptr),
+               reinterpret_cast<void*>(envp_ptr));
     
     if (user_mode) {
         arch::x86_64::ringctl::execute_ring3(
             reinterpret_cast<void(*)()>(entry_point),
-            reinterpret_cast<uint8_t*>(addr_space->stack_base)
+            reinterpret_cast<uint8_t*>(stack_ptr)
         );
     } else {
         uint64_t saved_rsp;
@@ -941,7 +1007,7 @@ void execute_elf(proc_address_space* addr_space, void* elf_base,
             "call *%1\n"
             "mov %2, %%rsp"
             :
-            : "r"(reinterpret_cast<uint64_t>(addr_space->stack_base)),
+            : "r"(stack_ptr),
               "r"(entry_point),
               "r"(saved_rsp)
             : "memory"
@@ -949,13 +1015,13 @@ void execute_elf(proc_address_space* addr_space, void* elf_base,
     }
 }
 
-void run_elf(void* elf_base, size_t elf_file_size, bool user_mode) {
-    proc_address_space* addr_space = load_elf_to_address_space(elf_base, elf_file_size, user_mode);
+void run_elf(void* base, size_t filesz, bool user, const char* argv[], const char* envp[]) {
+    proc_address_space* addr_space = load_elf_to_address_space(base, filesz, user);
     if (!addr_space) {
         Log::errf("Failed to load ELF");
         return;
     }
     
-    execute_elf(addr_space, elf_base, elf_file_size, user_mode);
+    execute_elf(addr_space, base, filesz, user, argv, envp);
     
 }

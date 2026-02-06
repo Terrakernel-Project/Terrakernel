@@ -56,27 +56,28 @@ __attribute__((interrupt, hot))
 void ps2m_interrupt_handler(void*) {
     uint8_t data = arch::x86_64::io::inb(0x60);
 
-    process_mouse();
     static bool skip = true;
     if (skip) { skip = false; goto end; }
-
     switch(mouse_cycle) {
         case 0:
-           
-            if ((data & 0b00001000) == 0) break;
+            if ((data & 0b00001000) == 0) {
+            	printf("Misaligned byte\n\r");
+            	break;
+            }
             mouse_packet[0] = data;
             mouse_cycle++;
             break;
         case 1:
-           
             mouse_packet[1] = data;
             mouse_cycle++;
             break;
         case 2:
-            
             mouse_packet[2] = data;
             mouse_packet_ready = true;
             mouse_cycle = 0;
+
+            process_mouse();
+            
             break;
     }
 
@@ -166,6 +167,12 @@ namespace drivers::input::ps2m {
 void initialise() {
     arch::x86_64::io::outb(0x64, 0xA8);
 
+    while (arch::x86_64::io::inb(0x64) & 1)
+        arch::x86_64::io::inb(0x60);
+
+    arch::x86_64::cpu::idt::set_descriptor(0x2C, (uint64_t)ps2m_interrupt_handler, 0x8E);
+    arch::x86_64::cpu::idt::irq_set_mask(2);
+
     mouse_wait();
     arch::x86_64::io::outb(0x64, 0x20);
     mouse_waitinput();
@@ -176,14 +183,28 @@ void initialise() {
     mouse_wait();
     arch::x86_64::io::outb(0x60, status);
 
+    mouse_write(0xFF);
+    mouse_read();
+    mouse_read();
+
     mouse_write(0xF6);
     mouse_read();
+    mouse_write(0xF3);
+    mouse_read();
+    mouse_write(0xC8);
+    mouse_read();
+    mouse_write(0xE8);
+    mouse_read();
+    mouse_write(0x03);
+    mouse_read();
+
+    arch::x86_64::cpu::idt::irq_clear_mask(2);
 
     mouse_write(0xF4);
     mouse_read();
 
-    arch::x86_64::cpu::idt::set_descriptor(0x2C, (uint64_t)ps2m_interrupt_handler, 0x8E);
-    arch::x86_64::cpu::idt::irq_clear_mask(2);
+    mouse_pos.x = g_scr_width / 2;
+    mouse_pos.y = g_scr_height / 2;
 }
 
 }

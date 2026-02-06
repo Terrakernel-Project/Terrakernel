@@ -70,7 +70,7 @@ struct Elf64_Rel {
     uint64_t r_info;
 };
 
-void run_elf(void* base, size_t filesz, bool user);
+void run_elf(void* base, size_t filesz, bool user, const char* argv[], const char* envp[]);
 void* get_elf_entry_point_user(void* elf_base, size_t elf_file_size, void* stack_top = nullptr, void** ret_stack_top = nullptr);
 
 void* stack_manager_get_new_stack(size_t num_pages = 2, bool user = true);

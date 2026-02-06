@@ -30,6 +30,7 @@
 #include <proc/spinlocks.hpp>
 #include <drivers/display/edid/edid.hpp>
 #include <drivers/display/gfx.hpp>
+#include <proc/exec.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -75,7 +76,7 @@ extern "C" void cpu_entry(struct limine_mp_info *cpu_info) {
     console_lock->acquire(cpu_info->processor_id);
     bootstrap_args* args = (bootstrap_args*)cpu_info->extra_argument;
     
-    prepare_cpu_asm(args->cr3, args->gdtr);
+    //prepare_cpu_asm(args->cr3, args->gdtr);
 
     Log::force_enable();
     Log::printf_status("OK", "CPU#%d Online", cpu_info->processor_id + 1);
@@ -263,18 +264,37 @@ skip_redraw:;
 	console_lock->release();
 	for (int i = 0; i < (int)mp_request.response->cpu_count; i++) {
 		if (mp_request.response->cpus[i]->lapic_id == mp_request.response->bsp_lapic_id) continue;
-        mp_request.response->cpus[i]->extra_argument = (uint64_t)args;
-		mp_request.response->cpus[i]->goto_address = (limine_goto_address)cpu_entry;
+
+		__atomic_store_n(
+		    &mp_request.response->cpus[i]->extra_argument,
+		    (uint64_t)args,
+		    __ATOMIC_RELEASE
+		);
+		
+		__atomic_store_n(
+		    &mp_request.response->cpus[i]->goto_address,
+		    (uint64_t)cpu_entry,
+		    __ATOMIC_RELEASE
+		);
+		
 		drivers::timers::apic::sleep_ms(5);
 	}
 
     Log::end_kernel_messages(); // now no messages print
 
-	char buf[4096];
+	const char* argv[] = {
+	    "/initrd/init",
+	    "-adam_is_kewl=true",
+	    nullptr
+	};
+	
+	const char* envp[] = {
+	    nullptr
+	};
+
+	//proc::exec::execve("/initrd/init", argv, envp);
+
     while (1) {
-    	size_t read = drivers::tty::ldisc::read(true, buf, 4096);
-    	if (read) printf("> %s\n\r", buf);
-    	else printf("> ?\n\r");
         asm volatile("hlt");
     }
     

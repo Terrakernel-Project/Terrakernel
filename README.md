@@ -37,12 +37,12 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [ ] End of x86_64 stuff (almost) (almost)
 
 ### Other
-- [ ] Write a VFS and TMPFS and parse a USTAR Initrd archive
+- [x] Write a VFS and TMPFS and parse a USTAR Initrd archive
 - [x] Write a PCI driver (PCIe as well)
 - [x] Write a PS2 keyboard driver and PS2 mouse driver
 - [x] Line discipline
 - [x] EDID driver
-- [ ] End of other
+- [x] End of other (yay!!!)
 
 ### Porting software
 - [ ] Write or port a LibC
