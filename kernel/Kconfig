@@ -158,11 +158,15 @@ config ALLOW_SYSCALL_REGISTRATION_OVERRIDE
       Allow a system call to be registered even if its syscall
       number (vector) is already in use
 
-      This permits runtime replacement of syscall handlers
+      This permits runtime replacement of syscall handlers for some reason
 
-config CONFIG_VERBOSE_SYSCALL_CREATION
+config VERBOSE_SYSCALL_CREATION
 	bool "Verbose Logging"
 	default n
+
+config ENABLE_SYSCALL_DEBUGGING
+	bool "Enable syscall debugging"
+	default y
 
 endmenu
 

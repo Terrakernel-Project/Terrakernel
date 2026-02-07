@@ -31,7 +31,7 @@ void HlMemorySetAttributes(void* ptr, size_t npages, uint64_t attributes);
 int64_t HlCreateNewProcess();
 void HlKillProcess(int64_t pid);
 void HlTerminateProcess(int64_t pid);
-int64_t HlExec(const char* __restrict path);
+int HlExec(const char* __restrict path, const char* args[], const char* env_vars[]);
 void HlExit(int error_code);
 void HlOpenConsole(Handle* portR, Handle* portW);
 void HlWaitForInputConsole(Handle* portR);
@@ -41,8 +41,5 @@ void HlObtainFramebuffer(Handle* hptr);
 void HlStatFramebuffer(Handle* hptr, void* buf);
 void* HlRetrieveFileMappedMemory(Handle* hptr);
 uint64_t HlRetrieveMappedFileSize(Handle* hptr);
-void HlPrintInt64(uint64_t int_);
-
-void HlPrepareInitReturn(void* init_load_addr);
 
 #endif

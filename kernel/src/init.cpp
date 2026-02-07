@@ -95,6 +95,9 @@ extern "C" void init() {
     serial::serial_enable();
     Log::printf_status("OK", "Flanterm Initialised"); // late
     Log::printf_status("OK", "Serial Initialised");
+
+    switch_to_tty(0);
+    refresh_tty();
     
     arch::x86_64::cpu::gdt::initialise();
     Log::printf_status("OK", "GDT Initialised");
@@ -116,7 +119,7 @@ extern "C" void init() {
     		ppx(x, y, 0);
     	}
     }
-    full_refresh();
+    refresh_tty();
 
 skip_redraw:;
 
@@ -295,6 +298,21 @@ skip_redraw:;
 	const char* envp[] = {
 	    nullptr
 	};
+
+	switch_to_tty(0);
+	refresh_tty();
+	printf("TTY0\n\r");
+
+	drivers::timers::apic::sleep_ms(100);
+
+	switch_to_tty(1);
+	refresh_tty();
+	printf("TTY1\n\r");
+
+	drivers::timers::apic::sleep_ms(100);
+
+	switch_to_tty(0);
+	printf("Back to TTY0\n\r");
 
 	//proc::exec::execve("/initrd/init", argv, envp);
 

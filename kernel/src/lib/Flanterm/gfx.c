@@ -12,7 +12,13 @@ volatile struct limine_framebuffer_request fb_request = {
 };
 
 static struct limine_framebuffer* fb;
-static struct flanterm_context *ft_ctx;
+
+#define MAX_TTYS 6
+
+struct flanterm_context *ttys[MAX_TTYS];
+int active_tty = 0;
+
+static struct flanterm_context *active_tty_ctx;
 
 uint64_t g_scr_height, g_scr_width;
 
@@ -23,21 +29,27 @@ void flanterm_initialise() {
 
     fb = fb_request.response->framebuffers[0];
 
-    ft_ctx = flanterm_fb_init(
-        NULL,
-        NULL,
-        fb->address, fb->width, fb->height, fb->pitch,
-        fb->red_mask_size, fb->red_mask_shift,
-        fb->green_mask_size, fb->green_mask_shift,
-        fb->blue_mask_size, fb->blue_mask_shift,
-        NULL,
-        NULL, NULL,
-        NULL, NULL,
-        NULL, NULL,
-        NULL, 0, 0, 1,
-        0, 0,
-        5
-    );
+    for (int i = 0; i < MAX_TTYS; i++) {
+    	ttys[i] = flanterm_fb_init(
+	        NULL,
+	        NULL,
+	        fb->address, fb->width, fb->height, fb->pitch,
+	        fb->red_mask_size, fb->red_mask_shift,
+	        fb->green_mask_size, fb->green_mask_shift,
+	        fb->blue_mask_size, fb->blue_mask_shift,
+	        NULL,
+	        NULL, NULL,
+	        NULL, NULL,
+	        NULL, NULL,
+	        NULL, 0, 0, 1,
+	        0, 0,
+	        5
+	    );
+    }
+
+    active_tty_ctx = ttys[0];
+    flanterm_full_refresh(active_tty_ctx);
+    active_tty = 0;
 
     g_scr_height = fb->height;
     g_scr_width = fb->width;
@@ -74,7 +86,7 @@ uint32_t getpx(int x, int y) {
 	return ((volatile uint32_t *)fb->address)[y * (fb->pitch/4) + x];
 }
 
-void* get_ftctx() {return (void*)ft_ctx;}
+void* get_ftctx() {return (void*)active_tty_ctx;}
 
 #define POINTER_SIZE_X 13
 #define POINTER_SIZE_Y 18
@@ -132,18 +144,14 @@ void draw_mouse_pointer(int old_x, int old_y, int x, int y, int button_state_lmb
 }
 
 void fb_clrscr(int no_cur) {
-    flanterm_write(ft_ctx, "\033[2J\033[H", 7);
+    flanterm_write(active_tty_ctx, "\033[2J\033[H", 7);
     if (no_cur)
-        flanterm_write(ft_ctx, "\033[?25l", 6);
+        flanterm_write(active_tty_ctx, "\033[?25l", 6);
     else
-        flanterm_write(ft_ctx, "\033[?25h", 6);
+        flanterm_write(active_tty_ctx, "\033[?25h", 6);
     for (size_t i = 0; i < fb->height * fb->pitch; i++) {
         ((volatile uint32_t*)fb->address)[0] = 0;
     }
-}
-
-void full_refresh() {
-	flanterm_full_refresh(ft_ctx);
 }
 
 uint64_t get_base_fb() {
@@ -164,4 +172,19 @@ uint64_t get_stride() {
 
 struct limine_framebuffer* get_fb() {
     return fb;
+}
+
+void switch_to_tty(int tty) {
+    if (active_tty == tty && active_tty_ctx == ttys[tty]) return; // save time
+    if (tty >= MAX_TTYS || tty < 0) return;
+
+    printf("Switching from tty %d to tty %d\n", active_tty, tty);
+
+    active_tty_ctx = ttys[tty];
+    active_tty = tty;
+    flanterm_full_refresh(active_tty_ctx);
+}
+
+void refresh_tty() {
+	flanterm_full_refresh(active_tty_ctx);
 }

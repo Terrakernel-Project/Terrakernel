@@ -3,16 +3,16 @@ initrd/init:     file format elf64-x86-64
 initrd/init
 architecture: i386:x86-64, flags 0x00000112:
 EXEC_P, HAS_SYMS, D_PAGED
-start address 0x00000000004015b8
+start address 0x000000000040118a
 
 Program Header:
     LOAD off    0x0000000000000000 vaddr 0x0000000000400000 paddr 0x0000000000400000 align 2**12
          filesz 0x000000000000027c memsz 0x000000000000027c flags r--
     LOAD off    0x0000000000001000 vaddr 0x0000000000401000 paddr 0x0000000000401000 align 2**12
-         filesz 0x0000000000001099 memsz 0x0000000000001099 flags r-x
-    LOAD off    0x0000000000003000 vaddr 0x0000000000403000 paddr 0x0000000000403000 align 2**12
-         filesz 0x0000000000000508 memsz 0x0000000000000508 flags r--
-    LOAD off    0x0000000000000000 vaddr 0x0000000000404000 paddr 0x0000000000404000 align 2**12
+         filesz 0x00000000000001fd memsz 0x00000000000001fd flags r-x
+    LOAD off    0x0000000000002000 vaddr 0x0000000000402000 paddr 0x0000000000402000 align 2**12
+         filesz 0x00000000000001f4 memsz 0x00000000000001f4 flags r--
+    LOAD off    0x0000000000000000 vaddr 0x0000000000403000 paddr 0x0000000000403000 align 2**12
          filesz 0x0000000000000000 memsz 0x0000000000000010 flags rw-
     NOTE off    0x0000000000000238 vaddr 0x0000000000400238 paddr 0x0000000000400238 align 2**3
          filesz 0x0000000000000020 memsz 0x0000000000000020 flags r--
@@ -20,42 +20,40 @@ Program Header:
          filesz 0x0000000000000024 memsz 0x0000000000000024 flags r--
 0x6474e553 off    0x0000000000000238 vaddr 0x0000000000400238 paddr 0x0000000000400238 align 2**3
          filesz 0x0000000000000020 memsz 0x0000000000000020 flags r--
-EH_FRAME off    0x0000000000003198 vaddr 0x0000000000403198 paddr 0x0000000000403198 align 2**2
-         filesz 0x00000000000000b4 memsz 0x00000000000000b4 flags r--
+EH_FRAME off    0x0000000000002018 vaddr 0x0000000000402018 paddr 0x0000000000402018 align 2**2
+         filesz 0x0000000000000064 memsz 0x0000000000000064 flags r--
    STACK off    0x0000000000000000 vaddr 0x0000000000000000 paddr 0x0000000000000000 align 2**4
          filesz 0x0000000000000000 memsz 0x0000000000000000 flags rw-
 
 Sections:
 Idx Name          Size      VMA               LMA               File off  Algn
-  0 .text         00001099  0000000000401000  0000000000401000  00001000  2**0
+  0 .text         000001fd  0000000000401000  0000000000401000  00001000  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
   1 .note.gnu.property 00000020  0000000000400238  0000000000400238  00000238  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   2 .note.gnu.build-id 00000024  0000000000400258  0000000000400258  00000258  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .rodata       00000195  0000000000403000  0000000000403000  00003000  2**3
+  3 .rodata       00000015  0000000000402000  0000000000402000  00002000  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  4 .eh_frame_hdr 000000b4  0000000000403198  0000000000403198  00003198  2**2
+  4 .eh_frame_hdr 00000064  0000000000402018  0000000000402018  00002018  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  5 .eh_frame     000002b8  0000000000403250  0000000000403250  00003250  2**3
+  5 .eh_frame     00000174  0000000000402080  0000000000402080  00002080  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  6 .bss          00000010  0000000000404000  0000000000404000  00004000  2**3
+  6 .bss          00000010  0000000000403000  0000000000403000  00003000  2**3
                   ALLOC
-  7 .comment      0000002b  0000000000000000  0000000000000000  00003508  2**0
+  7 .comment      0000002b  0000000000000000  0000000000000000  000021f4  2**0
                   CONTENTS, READONLY
-  8 .debug_aranges 00000030  0000000000000000  0000000000000000  00003533  2**0
+  8 .debug_aranges 00000030  0000000000000000  0000000000000000  0000221f  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
-  9 .debug_info   00000923  0000000000000000  0000000000000000  00003563  2**0
+  9 .debug_info   000003a2  0000000000000000  0000000000000000  0000224f  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 10 .debug_abbrev 00000283  0000000000000000  0000000000000000  00003e86  2**0
+ 10 .debug_abbrev 0000018a  0000000000000000  0000000000000000  000025f1  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 11 .debug_line   000006c7  0000000000000000  0000000000000000  00004109  2**0
+ 11 .debug_line   0000011f  0000000000000000  0000000000000000  0000277b  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 12 .debug_str    0000028c  0000000000000000  0000000000000000  000047d0  2**0
+ 12 .debug_str    00000199  0000000000000000  0000000000000000  0000289a  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_line_str 0000008f  0000000000000000  0000000000000000  00004a5c  2**0
-                  CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_rnglists 00000017  0000000000000000  0000000000000000  00004aeb  2**0
+ 13 .debug_line_str 0000008f  0000000000000000  0000000000000000  00002a33  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 SYMBOL TABLE:
 0000000000000000 l    df *ABS*	0000000000000000 init.c
@@ -63,1349 +61,229 @@ SYMBOL TABLE:
 0000000000401018 l     F .text	0000000000000023 syscall1
 000000000040103b l     F .text	000000000000002b syscall2
 0000000000401066 l     F .text	0000000000000030 syscall3
-0000000000401096 l     F .text	0000000000000010 HlCreateNewHandle
-00000000004010a6 l     F .text	000000000000002e HlOpenFile
-00000000004010d4 l     F .text	000000000000002f HlReadFile
-0000000000401126 l     F .text	0000000000000028 HlOpenConsole
-000000000040114e l     F .text	000000000000002f HlReadConsole
-000000000040117d l     F .text	000000000000002f HlWriteConsole
+0000000000401096 l     F .text	0000000000000020 HlKernelMessage
+00000000004010b6 l     F .text	0000000000000010 HlCreateNewHandle
+00000000004010e9 l     F .text	0000000000000028 HlOpenConsole
+0000000000401111 l     F .text	000000000000002f HlWriteConsole
+0000000000401140 l     F .text	000000000000004a print
 0000000000000000 l    df *ABS*	0000000000000000 
-0000000000403198 l       .eh_frame_hdr	0000000000000000 __GNU_EH_FRAME_HDR
-00000000004015b8 g     F .text	0000000000000ae1 HlMain
-0000000000401103 g     F .text	0000000000000023 HlExec
-00000000004013ba g     F .text	00000000000000b4 extract_quoted_value
-00000000004012ec g     F .text	0000000000000028 __tolower
-0000000000404000 g     O .bss	0000000000000008 ConR
-0000000000404008 g     O .bss	0000000000000008 ConW
-0000000000401223 g     F .text	0000000000000053 __strcmp
-000000000040151d g     F .text	000000000000009b parse_prompt
-00000000004011e0 g     F .text	0000000000000043 __memset
-0000000000404000 g       .bss	0000000000000000 __bss_start
-00000000004011ac g     F .text	0000000000000034 __strlen
-0000000000404000 g       .bss	0000000000000000 _edata
-0000000000401276 g     F .text	0000000000000076 __strncmp
-0000000000404010 g       .bss	0000000000000000 _end
-0000000000401314 g     F .text	00000000000000a6 __strcasecmp
-000000000040146e g     F .text	00000000000000af replace_placeholder
+0000000000402018 l       .eh_frame_hdr	0000000000000000 __GNU_EH_FRAME_HDR
+000000000040118a g     F .text	0000000000000073 HlMain
+00000000004010c6 g     F .text	0000000000000023 HlExec
+0000000000403008 g     O .bss	0000000000000008 ConR
+0000000000403000 g     O .bss	0000000000000008 ConW
+0000000000403000 g       .bss	0000000000000000 __bss_start
+0000000000403000 g       .bss	0000000000000000 _edata
+0000000000403010 g       .bss	0000000000000000 _end
 
 
 
 Disassembly of section .text:
 
 0000000000401000 <syscall0>:
-/* =========================
-   Minimal libc helpers
-   ========================= */
+static inline void print(const char* msg) {
+	size_t len = 0;
+	while (msg[len] != 0) len++;
+	HlWriteConsole(ConW, msg, len);
+}
 
-size_t __strlen(const char* s) {
-    size_t n = 0;
   401000:	55                   	push   %rbp
   401001:	48 89 e5             	mov    %rsp,%rbp
   401004:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
-    while (*s++) n++;
-    return n;
+void HlMain(void) {
+	HlKernelMessage("Test\n\r");
   401008:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
   40100c:	0f 05                	syscall
   40100e:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-}
 
-void __memset(void* ptr, int value, size_t n) {
-    unsigned char* p = (unsigned char*)ptr;
-    while (n--) *p++ = (unsigned char)value;
-}
+	ConR = HlCreateNewHandle();
+	ConW = HlCreateNewHandle();
+
+	HlOpenConsole(ConR, ConW);
+
   401012:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-
+	HlWriteConsole(ConW, "Hello, World!", 12);
   401016:	5d                   	pop    %rbp
   401017:	c3                   	ret
 
 0000000000401018 <syscall1>:
-int __strcmp(const char* a, const char* b) {
-    while (*a && (*a == *b)) { a++; b++; }
-    return *(unsigned char*)a - *(unsigned char*)b;
-}
+
+	print("Hello, World!");
+
+	while (1);
   401018:	55                   	push   %rbp
   401019:	48 89 e5             	mov    %rsp,%rbp
   40101c:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
   401020:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
-
-int __strncmp(const char* a, const char* b, size_t n) {
+}
   401024:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
   401028:	48 8b 55 e0          	mov    -0x20(%rbp),%rdx
   40102c:	48 89 d7             	mov    %rdx,%rdi
   40102f:	0f 05                	syscall
   401031:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-    while (n-- && *a && (*a == *b)) { a++; b++; }
-    return n == (size_t)-1 ? 0 : *(unsigned char*)a - *(unsigned char*)b;
-}
-
-char __tolower(char c) {
-    if (c >= 'A' && c <= 'Z') return c + 32;
   401035:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-    return c;
   401039:	5d                   	pop    %rbp
   40103a:	c3                   	ret
 
 000000000040103b <syscall2>:
-}
-
-int __strcasecmp(const char* a, const char* b) {
-    while (*a && *b) {
   40103b:	55                   	push   %rbp
   40103c:	48 89 e5             	mov    %rsp,%rbp
   40103f:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
   401043:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
   401047:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
-        char c1 = __tolower(*a);
-        char c2 = __tolower(*b);
   40104b:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
   40104f:	48 8b 55 e0          	mov    -0x20(%rbp),%rdx
   401053:	48 8b 75 d8          	mov    -0x28(%rbp),%rsi
   401057:	48 89 d7             	mov    %rdx,%rdi
   40105a:	0f 05                	syscall
   40105c:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-        if (c1 != c2) return c1 - c2;
-        a++; b++;
-    }
-    return __tolower(*a) - __tolower(*b);
-}
-
   401060:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-#define print(s) HlWriteConsole(ConW, s, __strlen(s))
   401064:	5d                   	pop    %rbp
   401065:	c3                   	ret
 
 0000000000401066 <syscall3>:
-
-/* =========================
-   Config parsing helpers
-   ========================= */
-
   401066:	55                   	push   %rbp
   401067:	48 89 e5             	mov    %rsp,%rbp
   40106a:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
   40106e:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
   401072:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
   401076:	48 89 4d d0          	mov    %rcx,-0x30(%rbp)
-/* Fixed: read full quoted string */
-void extract_quoted_value(const char* line, char* dest, size_t max) {
   40107a:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
   40107e:	48 8b 7d e0          	mov    -0x20(%rbp),%rdi
   401082:	48 8b 75 d8          	mov    -0x28(%rbp),%rsi
   401086:	48 8b 55 d0          	mov    -0x30(%rbp),%rdx
   40108a:	0f 05                	syscall
   40108c:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-    const char* p = line;
-    while (*p == ' ' || *p == '\t') p++;
-
-    if (*p != '"') { dest[0] = '\0'; return; }
-    p++; // skip opening quote
-
   401090:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-    size_t i = 0;
   401094:	5d                   	pop    %rbp
   401095:	c3                   	ret
 
-0000000000401096 <HlCreateNewHandle>:
-        *end = '\0';
-
-        print("DEBUG: line read: '"); print(line); print("'\n\r");
-
-        if (*line == '#') { print("DEBUG: skipped comment\n\r"); line = end + 1; continue; }
-
+0000000000401096 <HlKernelMessage>:
   401096:	55                   	push   %rbp
   401097:	48 89 e5             	mov    %rsp,%rbp
-        if (__strncmp(line, "USER=", 5) == 0) {
-  40109a:	bf 01 00 00 00       	mov    $0x1,%edi
-  40109f:	e8 5c ff ff ff       	call   401000 <syscall0>
-            extract_quoted_value(line + 5, user, sizeof(user));
-  4010a4:	5d                   	pop    %rbp
-  4010a5:	c3                   	ret
+  40109a:	48 83 ec 08          	sub    $0x8,%rsp
+  40109e:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+  4010a2:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+  4010a6:	48 89 c6             	mov    %rax,%rsi
+  4010a9:	bf 00 00 00 00       	mov    $0x0,%edi
+  4010ae:	e8 65 ff ff ff       	call   401018 <syscall1>
+  4010b3:	90                   	nop
+  4010b4:	c9                   	leave
+  4010b5:	c3                   	ret
 
-00000000004010a6 <HlOpenFile>:
-            print("DEBUG: USER set to: '"); print(user); print("'\n\r");
-        } else if (__strncmp(line, "HOST=", 5) == 0) {
-            extract_quoted_value(line + 5, host, sizeof(host));
-            print("DEBUG: HOST set to: '"); print(host); print("'\n\r");
-        } else if (__strncmp(line, "PROMPT=", 7) == 0) {
-            extract_quoted_value(line + 7, prompt_template, sizeof(prompt_template));
-  4010a6:	55                   	push   %rbp
-  4010a7:	48 89 e5             	mov    %rsp,%rbp
-  4010aa:	48 83 ec 18          	sub    $0x18,%rsp
-  4010ae:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  4010b2:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-  4010b6:	89 55 ec             	mov    %edx,-0x14(%rbp)
-            print("DEBUG: PROMPT set to: '"); print(prompt_template); print("'\n\r");
-  4010b9:	8b 4d ec             	mov    -0x14(%rbp),%ecx
-  4010bc:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
-  4010c0:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4010c4:	48 89 c6             	mov    %rax,%rsi
-  4010c7:	bf 03 00 00 00       	mov    $0x3,%edi
-  4010cc:	e8 95 ff ff ff       	call   401066 <syscall3>
-        } else {
-  4010d1:	90                   	nop
-  4010d2:	c9                   	leave
-  4010d3:	c3                   	ret
+00000000004010b6 <HlCreateNewHandle>:
+  4010b6:	55                   	push   %rbp
+  4010b7:	48 89 e5             	mov    %rsp,%rbp
+  4010ba:	bf 01 00 00 00       	mov    $0x1,%edi
+  4010bf:	e8 3c ff ff ff       	call   401000 <syscall0>
+  4010c4:	5d                   	pop    %rbp
+  4010c5:	c3                   	ret
 
-00000000004010d4 <HlReadFile>:
+00000000004010c6 <HlExec>:
+  4010c6:	f3 0f 1e fa          	endbr64
+  4010ca:	55                   	push   %rbp
+  4010cb:	48 89 e5             	mov    %rsp,%rbp
+  4010ce:	48 83 ec 08          	sub    $0x8,%rsp
+  4010d2:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+  4010d6:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+  4010da:	48 89 c6             	mov    %rax,%rsi
+  4010dd:	bf 1c 00 00 00       	mov    $0x1c,%edi
+  4010e2:	e8 31 ff ff ff       	call   401018 <syscall1>
+  4010e7:	c9                   	leave
+  4010e8:	c3                   	ret
 
-    if (__strcasecmp(host, "terra") != 0)
-        print("\x1B[93mWarning: intended for Terra\x1B[0m\n\r");
+00000000004010e9 <HlOpenConsole>:
+  4010e9:	55                   	push   %rbp
+  4010ea:	48 89 e5             	mov    %rsp,%rbp
+  4010ed:	48 83 ec 10          	sub    $0x10,%rsp
+  4010f1:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+  4010f5:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
+  4010f9:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
+  4010fd:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+  401101:	48 89 c6             	mov    %rax,%rsi
+  401104:	bf 1e 00 00 00       	mov    $0x1e,%edi
+  401109:	e8 2d ff ff ff       	call   40103b <syscall2>
+  40110e:	90                   	nop
+  40110f:	c9                   	leave
+  401110:	c3                   	ret
 
-    print("Terra running...\n\r");
+0000000000401111 <HlWriteConsole>:
+  401111:	55                   	push   %rbp
+  401112:	48 89 e5             	mov    %rsp,%rbp
+  401115:	48 83 ec 18          	sub    $0x18,%rsp
+  401119:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
+  40111d:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
+  401121:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
+  401125:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
+  401129:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+  40112d:	48 8b 4d e8          	mov    -0x18(%rbp),%rcx
+  401131:	48 89 c6             	mov    %rax,%rsi
+  401134:	bf 21 00 00 00       	mov    $0x21,%edi
+  401139:	e8 28 ff ff ff       	call   401066 <syscall3>
+  40113e:	c9                   	leave
+  40113f:	c3                   	ret
 
-  4010d4:	55                   	push   %rbp
-  4010d5:	48 89 e5             	mov    %rsp,%rbp
-  4010d8:	48 83 ec 18          	sub    $0x18,%rsp
-  4010dc:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  4010e0:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-  4010e4:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
-    /* ---- Build final prompt ---- */
-  4010e8:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
-  4010ec:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4010f0:	48 8b 4d e8          	mov    -0x18(%rbp),%rcx
-  4010f4:	48 89 c6             	mov    %rax,%rsi
-  4010f7:	bf 08 00 00 00       	mov    $0x8,%edi
-  4010fc:	e8 65 ff ff ff       	call   401066 <syscall3>
-    char cwd[64] = "~";  // default cwd
-  401101:	c9                   	leave
-  401102:	c3                   	ret
-
-0000000000401103 <HlExec>:
-  401103:	f3 0f 1e fa          	endbr64
-  401107:	55                   	push   %rbp
-  401108:	48 89 e5             	mov    %rsp,%rbp
-  40110b:	48 83 ec 08          	sub    $0x8,%rsp
-  40110f:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  401113:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  401117:	48 89 c6             	mov    %rax,%rsi
-  40111a:	bf 1c 00 00 00       	mov    $0x1c,%edi
-  40111f:	e8 f4 fe ff ff       	call   401018 <syscall1>
-  401124:	c9                   	leave
-  401125:	c3                   	ret
-
-0000000000401126 <HlOpenConsole>:
-  401126:	55                   	push   %rbp
-  401127:	48 89 e5             	mov    %rsp,%rbp
-  40112a:	48 83 ec 10          	sub    $0x10,%rsp
-  40112e:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  401132:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-  401136:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
-  40113a:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  40113e:	48 89 c6             	mov    %rax,%rsi
-  401141:	bf 1e 00 00 00       	mov    $0x1e,%edi
-  401146:	e8 f0 fe ff ff       	call   40103b <syscall2>
-  40114b:	90                   	nop
-  40114c:	c9                   	leave
-  40114d:	c3                   	ret
-
-000000000040114e <HlReadConsole>:
-  40114e:	55                   	push   %rbp
-  40114f:	48 89 e5             	mov    %rsp,%rbp
-  401152:	48 83 ec 18          	sub    $0x18,%rsp
-  401156:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  40115a:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-  40115e:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
-  401162:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
-  401166:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  40116a:	48 8b 4d e8          	mov    -0x18(%rbp),%rcx
-  40116e:	48 89 c6             	mov    %rax,%rsi
-  401171:	bf 20 00 00 00       	mov    $0x20,%edi
-  401176:	e8 eb fe ff ff       	call   401066 <syscall3>
-  40117b:	c9                   	leave
-  40117c:	c3                   	ret
-
-000000000040117d <HlWriteConsole>:
-  40117d:	55                   	push   %rbp
-  40117e:	48 89 e5             	mov    %rsp,%rbp
-  401181:	48 83 ec 18          	sub    $0x18,%rsp
-  401185:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  401189:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-  40118d:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
-  401191:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
-  401195:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  401199:	48 8b 4d e8          	mov    -0x18(%rbp),%rcx
-  40119d:	48 89 c6             	mov    %rax,%rsi
-  4011a0:	bf 21 00 00 00       	mov    $0x21,%edi
-  4011a5:	e8 bc fe ff ff       	call   401066 <syscall3>
-  4011aa:	c9                   	leave
-  4011ab:	c3                   	ret
-
-00000000004011ac <__strlen>:
-size_t __strlen(const char* s) {
-  4011ac:	f3 0f 1e fa          	endbr64
-  4011b0:	55                   	push   %rbp
-  4011b1:	48 89 e5             	mov    %rsp,%rbp
-  4011b4:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
-    size_t n = 0;
-  4011b8:	48 c7 45 f8 00 00 00 	movq   $0x0,-0x8(%rbp)
-  4011bf:	00 
-    while (*s++) n++;
-  4011c0:	eb 05                	jmp    4011c7 <__strlen+0x1b>
-  4011c2:	48 83 45 f8 01       	addq   $0x1,-0x8(%rbp)
-  4011c7:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  4011cb:	48 8d 50 01          	lea    0x1(%rax),%rdx
-  4011cf:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
-  4011d3:	0f b6 00             	movzbl (%rax),%eax
-  4011d6:	84 c0                	test   %al,%al
-  4011d8:	75 e8                	jne    4011c2 <__strlen+0x16>
-    return n;
-  4011da:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+0000000000401140 <print>:
+static inline void print(const char* msg) {
+  401140:	55                   	push   %rbp
+  401141:	48 89 e5             	mov    %rsp,%rbp
+  401144:	48 83 ec 18          	sub    $0x18,%rsp
+  401148:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
+	size_t len = 0;
+  40114c:	48 c7 45 f8 00 00 00 	movq   $0x0,-0x8(%rbp)
+  401153:	00 
+	while (msg[len] != 0) len++;
+  401154:	eb 05                	jmp    40115b <print+0x1b>
+  401156:	48 83 45 f8 01       	addq   $0x1,-0x8(%rbp)
+  40115b:	48 8b 55 e8          	mov    -0x18(%rbp),%rdx
+  40115f:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+  401163:	48 01 d0             	add    %rdx,%rax
+  401166:	0f b6 00             	movzbl (%rax),%eax
+  401169:	84 c0                	test   %al,%al
+  40116b:	75 e9                	jne    401156 <print+0x16>
+	HlWriteConsole(ConW, msg, len);
+  40116d:	48 8b 05 8c 1e 00 00 	mov    0x1e8c(%rip),%rax        # 403000 <ConW>
+  401174:	48 8b 55 f8          	mov    -0x8(%rbp),%rdx
+  401178:	48 8b 4d e8          	mov    -0x18(%rbp),%rcx
+  40117c:	48 89 ce             	mov    %rcx,%rsi
+  40117f:	48 89 c7             	mov    %rax,%rdi
+  401182:	e8 8a ff ff ff       	call   401111 <HlWriteConsole>
 }
-  4011de:	5d                   	pop    %rbp
-  4011df:	c3                   	ret
+  401187:	90                   	nop
+  401188:	c9                   	leave
+  401189:	c3                   	ret
 
-00000000004011e0 <__memset>:
-void __memset(void* ptr, int value, size_t n) {
-  4011e0:	f3 0f 1e fa          	endbr64
-  4011e4:	55                   	push   %rbp
-  4011e5:	48 89 e5             	mov    %rsp,%rbp
-  4011e8:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
-  4011ec:	89 75 e4             	mov    %esi,-0x1c(%rbp)
-  4011ef:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
-    unsigned char* p = (unsigned char*)ptr;
-  4011f3:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  4011f7:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-    while (n--) *p++ = (unsigned char)value;
-  4011fb:	eb 11                	jmp    40120e <__memset+0x2e>
-  4011fd:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  401201:	48 8d 50 01          	lea    0x1(%rax),%rdx
-  401205:	48 89 55 f8          	mov    %rdx,-0x8(%rbp)
-  401209:	8b 55 e4             	mov    -0x1c(%rbp),%edx
-  40120c:	88 10                	mov    %dl,(%rax)
-  40120e:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401212:	48 8d 50 ff          	lea    -0x1(%rax),%rdx
-  401216:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
-  40121a:	48 85 c0             	test   %rax,%rax
-  40121d:	75 de                	jne    4011fd <__memset+0x1d>
-}
-  40121f:	90                   	nop
-  401220:	90                   	nop
-  401221:	5d                   	pop    %rbp
-  401222:	c3                   	ret
-
-0000000000401223 <__strcmp>:
-int __strcmp(const char* a, const char* b) {
-  401223:	f3 0f 1e fa          	endbr64
-  401227:	55                   	push   %rbp
-  401228:	48 89 e5             	mov    %rsp,%rbp
-  40122b:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  40122f:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-    while (*a && (*a == *b)) { a++; b++; }
-  401233:	eb 0a                	jmp    40123f <__strcmp+0x1c>
-  401235:	48 83 45 f8 01       	addq   $0x1,-0x8(%rbp)
-  40123a:	48 83 45 f0 01       	addq   $0x1,-0x10(%rbp)
-  40123f:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  401243:	0f b6 00             	movzbl (%rax),%eax
-  401246:	84 c0                	test   %al,%al
-  401248:	74 12                	je     40125c <__strcmp+0x39>
-  40124a:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  40124e:	0f b6 10             	movzbl (%rax),%edx
-  401251:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401255:	0f b6 00             	movzbl (%rax),%eax
-  401258:	38 c2                	cmp    %al,%dl
-  40125a:	74 d9                	je     401235 <__strcmp+0x12>
-    return *(unsigned char*)a - *(unsigned char*)b;
-  40125c:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  401260:	0f b6 00             	movzbl (%rax),%eax
-  401263:	0f b6 d0             	movzbl %al,%edx
-  401266:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  40126a:	0f b6 00             	movzbl (%rax),%eax
-  40126d:	0f b6 c0             	movzbl %al,%eax
-  401270:	29 c2                	sub    %eax,%edx
-  401272:	89 d0                	mov    %edx,%eax
-}
-  401274:	5d                   	pop    %rbp
-  401275:	c3                   	ret
-
-0000000000401276 <__strncmp>:
-int __strncmp(const char* a, const char* b, size_t n) {
-  401276:	f3 0f 1e fa          	endbr64
-  40127a:	55                   	push   %rbp
-  40127b:	48 89 e5             	mov    %rsp,%rbp
-  40127e:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
-  401282:	48 89 75 f0          	mov    %rsi,-0x10(%rbp)
-  401286:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
-    while (n-- && *a && (*a == *b)) { a++; b++; }
-  40128a:	eb 0a                	jmp    401296 <__strncmp+0x20>
-  40128c:	48 83 45 f8 01       	addq   $0x1,-0x8(%rbp)
-  401291:	48 83 45 f0 01       	addq   $0x1,-0x10(%rbp)
-  401296:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  40129a:	48 8d 50 ff          	lea    -0x1(%rax),%rdx
-  40129e:	48 89 55 e8          	mov    %rdx,-0x18(%rbp)
-  4012a2:	48 85 c0             	test   %rax,%rax
-  4012a5:	74 1d                	je     4012c4 <__strncmp+0x4e>
-  4012a7:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4012ab:	0f b6 00             	movzbl (%rax),%eax
-  4012ae:	84 c0                	test   %al,%al
-  4012b0:	74 12                	je     4012c4 <__strncmp+0x4e>
-  4012b2:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4012b6:	0f b6 10             	movzbl (%rax),%edx
-  4012b9:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  4012bd:	0f b6 00             	movzbl (%rax),%eax
-  4012c0:	38 c2                	cmp    %al,%dl
-  4012c2:	74 c8                	je     40128c <__strncmp+0x16>
-    return n == (size_t)-1 ? 0 : *(unsigned char*)a - *(unsigned char*)b;
-  4012c4:	48 83 7d e8 ff       	cmpq   $0xffffffffffffffff,-0x18(%rbp)
-  4012c9:	74 18                	je     4012e3 <__strncmp+0x6d>
-  4012cb:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4012cf:	0f b6 00             	movzbl (%rax),%eax
-  4012d2:	0f b6 d0             	movzbl %al,%edx
-  4012d5:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  4012d9:	0f b6 00             	movzbl (%rax),%eax
-  4012dc:	0f b6 c0             	movzbl %al,%eax
-  4012df:	29 c2                	sub    %eax,%edx
-  4012e1:	eb 05                	jmp    4012e8 <__strncmp+0x72>
-  4012e3:	ba 00 00 00 00       	mov    $0x0,%edx
-  4012e8:	89 d0                	mov    %edx,%eax
-}
-  4012ea:	5d                   	pop    %rbp
-  4012eb:	c3                   	ret
-
-00000000004012ec <__tolower>:
-char __tolower(char c) {
-  4012ec:	f3 0f 1e fa          	endbr64
-  4012f0:	55                   	push   %rbp
-  4012f1:	48 89 e5             	mov    %rsp,%rbp
-  4012f4:	89 f8                	mov    %edi,%eax
-  4012f6:	88 45 fc             	mov    %al,-0x4(%rbp)
-    if (c >= 'A' && c <= 'Z') return c + 32;
-  4012f9:	80 7d fc 40          	cmpb   $0x40,-0x4(%rbp)
-  4012fd:	7e 0f                	jle    40130e <__tolower+0x22>
-  4012ff:	80 7d fc 5a          	cmpb   $0x5a,-0x4(%rbp)
-  401303:	7f 09                	jg     40130e <__tolower+0x22>
-  401305:	0f b6 45 fc          	movzbl -0x4(%rbp),%eax
-  401309:	83 c0 20             	add    $0x20,%eax
-  40130c:	eb 04                	jmp    401312 <__tolower+0x26>
-    return c;
-  40130e:	0f b6 45 fc          	movzbl -0x4(%rbp),%eax
-}
-  401312:	5d                   	pop    %rbp
-  401313:	c3                   	ret
-
-0000000000401314 <__strcasecmp>:
-int __strcasecmp(const char* a, const char* b) {
-  401314:	f3 0f 1e fa          	endbr64
-  401318:	55                   	push   %rbp
-  401319:	48 89 e5             	mov    %rsp,%rbp
-  40131c:	53                   	push   %rbx
-  40131d:	48 83 ec 20          	sub    $0x20,%rsp
-  401321:	48 89 7d e0          	mov    %rdi,-0x20(%rbp)
-  401325:	48 89 75 d8          	mov    %rsi,-0x28(%rbp)
-    while (*a && *b) {
-  401329:	eb 47                	jmp    401372 <__strcasecmp+0x5e>
-        char c1 = __tolower(*a);
-  40132b:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  40132f:	0f b6 00             	movzbl (%rax),%eax
-  401332:	0f be c0             	movsbl %al,%eax
-  401335:	89 c7                	mov    %eax,%edi
-  401337:	e8 b0 ff ff ff       	call   4012ec <__tolower>
-  40133c:	88 45 f7             	mov    %al,-0x9(%rbp)
-        char c2 = __tolower(*b);
-  40133f:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401343:	0f b6 00             	movzbl (%rax),%eax
-  401346:	0f be c0             	movsbl %al,%eax
-  401349:	89 c7                	mov    %eax,%edi
-  40134b:	e8 9c ff ff ff       	call   4012ec <__tolower>
-  401350:	88 45 f6             	mov    %al,-0xa(%rbp)
-        if (c1 != c2) return c1 - c2;
-  401353:	0f b6 45 f7          	movzbl -0x9(%rbp),%eax
-  401357:	3a 45 f6             	cmp    -0xa(%rbp),%al
-  40135a:	74 0c                	je     401368 <__strcasecmp+0x54>
-  40135c:	0f be 45 f7          	movsbl -0x9(%rbp),%eax
-  401360:	0f be 55 f6          	movsbl -0xa(%rbp),%edx
-  401364:	29 d0                	sub    %edx,%eax
-  401366:	eb 4c                	jmp    4013b4 <__strcasecmp+0xa0>
-        a++; b++;
-  401368:	48 83 45 e0 01       	addq   $0x1,-0x20(%rbp)
-  40136d:	48 83 45 d8 01       	addq   $0x1,-0x28(%rbp)
-    while (*a && *b) {
-  401372:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  401376:	0f b6 00             	movzbl (%rax),%eax
-  401379:	84 c0                	test   %al,%al
-  40137b:	74 0b                	je     401388 <__strcasecmp+0x74>
-  40137d:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401381:	0f b6 00             	movzbl (%rax),%eax
-  401384:	84 c0                	test   %al,%al
-  401386:	75 a3                	jne    40132b <__strcasecmp+0x17>
-    return __tolower(*a) - __tolower(*b);
-  401388:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  40138c:	0f b6 00             	movzbl (%rax),%eax
-  40138f:	0f be c0             	movsbl %al,%eax
-  401392:	89 c7                	mov    %eax,%edi
-  401394:	e8 53 ff ff ff       	call   4012ec <__tolower>
-  401399:	0f be d8             	movsbl %al,%ebx
-  40139c:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  4013a0:	0f b6 00             	movzbl (%rax),%eax
-  4013a3:	0f be c0             	movsbl %al,%eax
-  4013a6:	89 c7                	mov    %eax,%edi
-  4013a8:	e8 3f ff ff ff       	call   4012ec <__tolower>
-  4013ad:	0f be d0             	movsbl %al,%edx
-  4013b0:	89 d8                	mov    %ebx,%eax
-  4013b2:	29 d0                	sub    %edx,%eax
-}
-  4013b4:	48 8b 5d f8          	mov    -0x8(%rbp),%rbx
-  4013b8:	c9                   	leave
-  4013b9:	c3                   	ret
-
-00000000004013ba <extract_quoted_value>:
-void extract_quoted_value(const char* line, char* dest, size_t max) {
-  4013ba:	f3 0f 1e fa          	endbr64
-  4013be:	55                   	push   %rbp
-  4013bf:	48 89 e5             	mov    %rsp,%rbp
-  4013c2:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
-  4013c6:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
-  4013ca:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
-    const char* p = line;
-  4013ce:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  4013d2:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-    while (*p == ' ' || *p == '\t') p++;
-  4013d6:	eb 05                	jmp    4013dd <extract_quoted_value+0x23>
-  4013d8:	48 83 45 f8 01       	addq   $0x1,-0x8(%rbp)
-  4013dd:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4013e1:	0f b6 00             	movzbl (%rax),%eax
-  4013e4:	3c 20                	cmp    $0x20,%al
-  4013e6:	74 f0                	je     4013d8 <extract_quoted_value+0x1e>
-  4013e8:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4013ec:	0f b6 00             	movzbl (%rax),%eax
-  4013ef:	3c 09                	cmp    $0x9,%al
-  4013f1:	74 e5                	je     4013d8 <extract_quoted_value+0x1e>
-    if (*p != '"') { dest[0] = '\0'; return; }
-  4013f3:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4013f7:	0f b6 00             	movzbl (%rax),%eax
-  4013fa:	3c 22                	cmp    $0x22,%al
-  4013fc:	74 09                	je     401407 <extract_quoted_value+0x4d>
-  4013fe:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  401402:	c6 00 00             	movb   $0x0,(%rax)
-  401405:	eb 65                	jmp    40146c <extract_quoted_value+0xb2>
-    p++; // skip opening quote
-  401407:	48 83 45 f8 01       	addq   $0x1,-0x8(%rbp)
-    size_t i = 0;
-  40140c:	48 c7 45 f0 00 00 00 	movq   $0x0,-0x10(%rbp)
-  401413:	00 
-    while (*p && *p != '"' && i < max - 1) {
-  401414:	eb 24                	jmp    40143a <extract_quoted_value+0x80>
-        dest[i++] = *p++;
-  401416:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  40141a:	48 8d 50 01          	lea    0x1(%rax),%rdx
-  40141e:	48 89 55 f8          	mov    %rdx,-0x8(%rbp)
-  401422:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
-  401426:	48 8d 4a 01          	lea    0x1(%rdx),%rcx
-  40142a:	48 89 4d f0          	mov    %rcx,-0x10(%rbp)
-  40142e:	48 8b 4d e0          	mov    -0x20(%rbp),%rcx
-  401432:	48 01 ca             	add    %rcx,%rdx
-  401435:	0f b6 00             	movzbl (%rax),%eax
-  401438:	88 02                	mov    %al,(%rdx)
-    while (*p && *p != '"' && i < max - 1) {
-  40143a:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  40143e:	0f b6 00             	movzbl (%rax),%eax
-  401441:	84 c0                	test   %al,%al
-  401443:	74 19                	je     40145e <extract_quoted_value+0xa4>
-  401445:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  401449:	0f b6 00             	movzbl (%rax),%eax
-  40144c:	3c 22                	cmp    $0x22,%al
-  40144e:	74 0e                	je     40145e <extract_quoted_value+0xa4>
-  401450:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401454:	48 83 e8 01          	sub    $0x1,%rax
-  401458:	48 39 45 f0          	cmp    %rax,-0x10(%rbp)
-  40145c:	72 b8                	jb     401416 <extract_quoted_value+0x5c>
-    dest[i] = '\0';
-  40145e:	48 8b 55 e0          	mov    -0x20(%rbp),%rdx
-  401462:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401466:	48 01 d0             	add    %rdx,%rax
-  401469:	c6 00 00             	movb   $0x0,(%rax)
-}
-  40146c:	5d                   	pop    %rbp
-  40146d:	c3                   	ret
-
-000000000040146e <replace_placeholder>:
-void replace_placeholder(const char* src, const char* ph, const char* val, char* out) {
-  40146e:	f3 0f 1e fa          	endbr64
-  401472:	55                   	push   %rbp
-  401473:	48 89 e5             	mov    %rsp,%rbp
-  401476:	48 83 ec 30          	sub    $0x30,%rsp
-  40147a:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
-  40147e:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
-  401482:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
-  401486:	48 89 4d d0          	mov    %rcx,-0x30(%rbp)
-    size_t ph_len = __strlen(ph);
-  40148a:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  40148e:	48 89 c7             	mov    %rax,%rdi
-  401491:	e8 16 fd ff ff       	call   4011ac <__strlen>
-  401496:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
-    while (*src) {
-  40149a:	eb 6c                	jmp    401508 <replace_placeholder+0x9a>
-        if (__strncmp(src, ph, ph_len) == 0) {
-  40149c:	48 8b 55 f8          	mov    -0x8(%rbp),%rdx
-  4014a0:	48 8b 4d e0          	mov    -0x20(%rbp),%rcx
-  4014a4:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  4014a8:	48 89 ce             	mov    %rcx,%rsi
-  4014ab:	48 89 c7             	mov    %rax,%rdi
-  4014ae:	e8 c3 fd ff ff       	call   401276 <__strncmp>
-  4014b3:	85 c0                	test   %eax,%eax
-  4014b5:	75 34                	jne    4014eb <replace_placeholder+0x7d>
-            while (*val) *out++ = *val++;
-  4014b7:	eb 1d                	jmp    4014d6 <replace_placeholder+0x68>
-  4014b9:	48 8b 55 d8          	mov    -0x28(%rbp),%rdx
-  4014bd:	48 8d 42 01          	lea    0x1(%rdx),%rax
-  4014c1:	48 89 45 d8          	mov    %rax,-0x28(%rbp)
-  4014c5:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
-  4014c9:	48 8d 48 01          	lea    0x1(%rax),%rcx
-  4014cd:	48 89 4d d0          	mov    %rcx,-0x30(%rbp)
-  4014d1:	0f b6 12             	movzbl (%rdx),%edx
-  4014d4:	88 10                	mov    %dl,(%rax)
-  4014d6:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  4014da:	0f b6 00             	movzbl (%rax),%eax
-  4014dd:	84 c0                	test   %al,%al
-  4014df:	75 d8                	jne    4014b9 <replace_placeholder+0x4b>
-            src += ph_len;
-  4014e1:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  4014e5:	48 01 45 e8          	add    %rax,-0x18(%rbp)
-  4014e9:	eb 1d                	jmp    401508 <replace_placeholder+0x9a>
-            *out++ = *src++;
-  4014eb:	48 8b 55 e8          	mov    -0x18(%rbp),%rdx
-  4014ef:	48 8d 42 01          	lea    0x1(%rdx),%rax
-  4014f3:	48 89 45 e8          	mov    %rax,-0x18(%rbp)
-  4014f7:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
-  4014fb:	48 8d 48 01          	lea    0x1(%rax),%rcx
-  4014ff:	48 89 4d d0          	mov    %rcx,-0x30(%rbp)
-  401503:	0f b6 12             	movzbl (%rdx),%edx
-  401506:	88 10                	mov    %dl,(%rax)
-    while (*src) {
-  401508:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  40150c:	0f b6 00             	movzbl (%rax),%eax
-  40150f:	84 c0                	test   %al,%al
-  401511:	75 89                	jne    40149c <replace_placeholder+0x2e>
-    *out = '\0';
-  401513:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
-  401517:	c6 00 00             	movb   $0x0,(%rax)
-}
-  40151a:	90                   	nop
-  40151b:	c9                   	leave
-  40151c:	c3                   	ret
-
-000000000040151d <parse_prompt>:
-void parse_prompt(const char* tmpl, const char* user, const char* host, const char* cwd, char* out) {
-  40151d:	f3 0f 1e fa          	endbr64
-  401521:	55                   	push   %rbp
-  401522:	48 89 e5             	mov    %rsp,%rbp
-  401525:	48 81 ec 30 04 00 00 	sub    $0x430,%rsp
-  40152c:	48 89 bd f8 fb ff ff 	mov    %rdi,-0x408(%rbp)
-  401533:	48 89 b5 f0 fb ff ff 	mov    %rsi,-0x410(%rbp)
-  40153a:	48 89 95 e8 fb ff ff 	mov    %rdx,-0x418(%rbp)
-  401541:	48 89 8d e0 fb ff ff 	mov    %rcx,-0x420(%rbp)
-  401548:	4c 89 85 d8 fb ff ff 	mov    %r8,-0x428(%rbp)
-    replace_placeholder(tmpl, "{USER}", user, tmp);
-  40154f:	48 8d 8d 00 fe ff ff 	lea    -0x200(%rbp),%rcx
-  401556:	48 8b 95 f0 fb ff ff 	mov    -0x410(%rbp),%rdx
-  40155d:	48 8b 85 f8 fb ff ff 	mov    -0x408(%rbp),%rax
-  401564:	be 00 30 40 00       	mov    $0x403000,%esi
-  401569:	48 89 c7             	mov    %rax,%rdi
-  40156c:	e8 fd fe ff ff       	call   40146e <replace_placeholder>
-    replace_placeholder(tmp, "{HOST}", host, tmp2);
-  401571:	48 8d 8d 00 fc ff ff 	lea    -0x400(%rbp),%rcx
-  401578:	48 8b 95 e8 fb ff ff 	mov    -0x418(%rbp),%rdx
-  40157f:	48 8d 85 00 fe ff ff 	lea    -0x200(%rbp),%rax
-  401586:	be 07 30 40 00       	mov    $0x403007,%esi
-  40158b:	48 89 c7             	mov    %rax,%rdi
-  40158e:	e8 db fe ff ff       	call   40146e <replace_placeholder>
-    replace_placeholder(tmp2, "{CWD}", cwd, out);
-  401593:	48 8b 8d d8 fb ff ff 	mov    -0x428(%rbp),%rcx
-  40159a:	48 8b 95 e0 fb ff ff 	mov    -0x420(%rbp),%rdx
-  4015a1:	48 8d 85 00 fc ff ff 	lea    -0x400(%rbp),%rax
-  4015a8:	be 0e 30 40 00       	mov    $0x40300e,%esi
-  4015ad:	48 89 c7             	mov    %rax,%rdi
-  4015b0:	e8 b9 fe ff ff       	call   40146e <replace_placeholder>
-}
-  4015b5:	90                   	nop
-  4015b6:	c9                   	leave
-  4015b7:	c3                   	ret
-
-00000000004015b8 <HlMain>:
+000000000040118a <HlMain>:
 void HlMain(void) {
-  4015b8:	f3 0f 1e fa          	endbr64
-  4015bc:	55                   	push   %rbp
-  4015bd:	48 89 e5             	mov    %rsp,%rbp
-  4015c0:	48 81 ec 00 10 00 00 	sub    $0x1000,%rsp
-  4015c7:	48 83 0c 24 00       	orq    $0x0,(%rsp)
-  4015cc:	48 81 ec 00 10 00 00 	sub    $0x1000,%rsp
-  4015d3:	48 83 0c 24 00       	orq    $0x0,(%rsp)
-  4015d8:	48 81 ec 20 06 00 00 	sub    $0x620,%rsp
-    ConR = HlCreateNewHandle();
-  4015df:	b8 00 00 00 00       	mov    $0x0,%eax
-  4015e4:	e8 ad fa ff ff       	call   401096 <HlCreateNewHandle>
-  4015e9:	48 89 05 10 2a 00 00 	mov    %rax,0x2a10(%rip)        # 404000 <ConR>
-    ConW = HlCreateNewHandle();
-  4015f0:	b8 00 00 00 00       	mov    $0x0,%eax
-  4015f5:	e8 9c fa ff ff       	call   401096 <HlCreateNewHandle>
-  4015fa:	48 89 05 07 2a 00 00 	mov    %rax,0x2a07(%rip)        # 404008 <ConW>
-    HlOpenConsole(ConR, ConW);
-  401601:	48 8b 15 00 2a 00 00 	mov    0x2a00(%rip),%rdx        # 404008 <ConW>
-  401608:	48 8b 05 f1 29 00 00 	mov    0x29f1(%rip),%rax        # 404000 <ConR>
-  40160f:	48 89 d6             	mov    %rdx,%rsi
-  401612:	48 89 c7             	mov    %rax,%rdi
-  401615:	e8 0c fb ff ff       	call   401126 <HlOpenConsole>
-    char user[64] = "root";
-  40161a:	48 c7 85 60 ff ff ff 	movq   $0x746f6f72,-0xa0(%rbp)
-  401621:	72 6f 6f 74 
-  401625:	48 c7 85 68 ff ff ff 	movq   $0x0,-0x98(%rbp)
-  40162c:	00 00 00 00 
-  401630:	48 c7 85 70 ff ff ff 	movq   $0x0,-0x90(%rbp)
-  401637:	00 00 00 00 
-  40163b:	48 c7 85 78 ff ff ff 	movq   $0x0,-0x88(%rbp)
-  401642:	00 00 00 00 
-  401646:	48 c7 45 80 00 00 00 	movq   $0x0,-0x80(%rbp)
-  40164d:	00 
-  40164e:	48 c7 45 88 00 00 00 	movq   $0x0,-0x78(%rbp)
-  401655:	00 
-  401656:	48 c7 45 90 00 00 00 	movq   $0x0,-0x70(%rbp)
-  40165d:	00 
-  40165e:	48 c7 45 98 00 00 00 	movq   $0x0,-0x68(%rbp)
-  401665:	00 
-    char host[64] = "terra";
-  401666:	48 b8 74 65 72 72 61 	movabs $0x6172726574,%rax
-  40166d:	00 00 00 
-  401670:	ba 00 00 00 00       	mov    $0x0,%edx
-  401675:	48 89 85 20 ff ff ff 	mov    %rax,-0xe0(%rbp)
-  40167c:	48 89 95 28 ff ff ff 	mov    %rdx,-0xd8(%rbp)
-  401683:	48 c7 85 30 ff ff ff 	movq   $0x0,-0xd0(%rbp)
-  40168a:	00 00 00 00 
-  40168e:	48 c7 85 38 ff ff ff 	movq   $0x0,-0xc8(%rbp)
-  401695:	00 00 00 00 
-  401699:	48 c7 85 40 ff ff ff 	movq   $0x0,-0xc0(%rbp)
-  4016a0:	00 00 00 00 
-  4016a4:	48 c7 85 48 ff ff ff 	movq   $0x0,-0xb8(%rbp)
-  4016ab:	00 00 00 00 
-  4016af:	48 c7 85 50 ff ff ff 	movq   $0x0,-0xb0(%rbp)
-  4016b6:	00 00 00 00 
-  4016ba:	48 c7 85 58 ff ff ff 	movq   $0x0,-0xa8(%rbp)
-  4016c1:	00 00 00 00 
-    char prompt_template[256] =
-  4016c5:	48 b8 5c 78 31 42 5b 	movabs $0x6d32395b4231785c,%rax
-  4016cc:	39 32 6d 
-  4016cf:	48 ba 7b 55 53 45 52 	movabs $0x5c407d524553557b,%rdx
-  4016d6:	7d 40 5c 
-  4016d9:	48 89 85 20 fe ff ff 	mov    %rax,-0x1e0(%rbp)
-  4016e0:	48 89 95 28 fe ff ff 	mov    %rdx,-0x1d8(%rbp)
-  4016e7:	48 b8 78 31 42 5b 39 	movabs $0x7b6d32395b423178,%rax
-  4016ee:	32 6d 7b 
-  4016f1:	48 ba 48 4f 53 54 7d 	movabs $0x31785c7d54534f48,%rdx
-  4016f8:	5c 78 31 
-  4016fb:	48 89 85 30 fe ff ff 	mov    %rax,-0x1d0(%rbp)
-  401702:	48 89 95 38 fe ff ff 	mov    %rdx,-0x1c8(%rbp)
-  401709:	48 b8 42 5b 39 30 6d 	movabs $0x437b3a6d30395b42,%rax
-  401710:	3a 7b 43 
-  401713:	48 ba 57 44 7d 5c 78 	movabs $0x5b4231785c7d4457,%rdx
-  40171a:	31 42 5b 
-  40171d:	48 89 85 40 fe ff ff 	mov    %rax,-0x1c0(%rbp)
-  401724:	48 89 95 48 fe ff ff 	mov    %rdx,-0x1b8(%rbp)
-  40172b:	48 c7 85 50 fe ff ff 	movq   $0x20246d30,-0x1b0(%rbp)
-  401732:	30 6d 24 20 
-  401736:	48 c7 85 58 fe ff ff 	movq   $0x0,-0x1a8(%rbp)
-  40173d:	00 00 00 00 
-  401741:	48 c7 85 60 fe ff ff 	movq   $0x0,-0x1a0(%rbp)
-  401748:	00 00 00 00 
-  40174c:	48 c7 85 68 fe ff ff 	movq   $0x0,-0x198(%rbp)
-  401753:	00 00 00 00 
-  401757:	48 c7 85 70 fe ff ff 	movq   $0x0,-0x190(%rbp)
-  40175e:	00 00 00 00 
-  401762:	48 c7 85 78 fe ff ff 	movq   $0x0,-0x188(%rbp)
-  401769:	00 00 00 00 
-  40176d:	48 c7 85 80 fe ff ff 	movq   $0x0,-0x180(%rbp)
-  401774:	00 00 00 00 
-  401778:	48 c7 85 88 fe ff ff 	movq   $0x0,-0x178(%rbp)
-  40177f:	00 00 00 00 
-  401783:	48 c7 85 90 fe ff ff 	movq   $0x0,-0x170(%rbp)
-  40178a:	00 00 00 00 
-  40178e:	48 c7 85 98 fe ff ff 	movq   $0x0,-0x168(%rbp)
-  401795:	00 00 00 00 
-  401799:	48 c7 85 a0 fe ff ff 	movq   $0x0,-0x160(%rbp)
-  4017a0:	00 00 00 00 
-  4017a4:	48 c7 85 a8 fe ff ff 	movq   $0x0,-0x158(%rbp)
-  4017ab:	00 00 00 00 
-  4017af:	48 c7 85 b0 fe ff ff 	movq   $0x0,-0x150(%rbp)
-  4017b6:	00 00 00 00 
-  4017ba:	48 c7 85 b8 fe ff ff 	movq   $0x0,-0x148(%rbp)
-  4017c1:	00 00 00 00 
-  4017c5:	48 c7 85 c0 fe ff ff 	movq   $0x0,-0x140(%rbp)
-  4017cc:	00 00 00 00 
-  4017d0:	48 c7 85 c8 fe ff ff 	movq   $0x0,-0x138(%rbp)
-  4017d7:	00 00 00 00 
-  4017db:	48 c7 85 d0 fe ff ff 	movq   $0x0,-0x130(%rbp)
-  4017e2:	00 00 00 00 
-  4017e6:	48 c7 85 d8 fe ff ff 	movq   $0x0,-0x128(%rbp)
-  4017ed:	00 00 00 00 
-  4017f1:	48 c7 85 e0 fe ff ff 	movq   $0x0,-0x120(%rbp)
-  4017f8:	00 00 00 00 
-  4017fc:	48 c7 85 e8 fe ff ff 	movq   $0x0,-0x118(%rbp)
-  401803:	00 00 00 00 
-  401807:	48 c7 85 f0 fe ff ff 	movq   $0x0,-0x110(%rbp)
-  40180e:	00 00 00 00 
-  401812:	48 c7 85 f8 fe ff ff 	movq   $0x0,-0x108(%rbp)
-  401819:	00 00 00 00 
-  40181d:	48 c7 85 00 ff ff ff 	movq   $0x0,-0x100(%rbp)
-  401824:	00 00 00 00 
-  401828:	48 c7 85 08 ff ff ff 	movq   $0x0,-0xf8(%rbp)
-  40182f:	00 00 00 00 
-  401833:	48 c7 85 10 ff ff ff 	movq   $0x0,-0xf0(%rbp)
-  40183a:	00 00 00 00 
-  40183e:	48 c7 85 18 ff ff ff 	movq   $0x0,-0xe8(%rbp)
-  401845:	00 00 00 00 
-    Handle* cfg = HlCreateNewHandle();
-  401849:	b8 00 00 00 00       	mov    $0x0,%eax
-  40184e:	e8 43 f8 ff ff       	call   401096 <HlCreateNewHandle>
-  401853:	48 89 45 c8          	mov    %rax,-0x38(%rbp)
-    if (!cfg) {
-  401857:	48 83 7d c8 00       	cmpq   $0x0,-0x38(%rbp)
-  40185c:	75 0d                	jne    40186b <HlMain+0x2b3>
-    	errmsg = "Failed to create config handle\n\r";
-  40185e:	48 c7 45 f8 18 30 40 	movq   $0x403018,-0x8(%rbp)
-  401865:	00 
-    	goto err;
-  401866:	e9 e8 07 00 00       	jmp    402053 <HlMain+0xa9b>
-    HlOpenFile(cfg, "/initrd/init_conf.conf", O_RDWR);
-  40186b:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
-  40186f:	ba 02 00 00 00       	mov    $0x2,%edx
-  401874:	be 39 30 40 00       	mov    $0x403039,%esi
-  401879:	48 89 c7             	mov    %rax,%rdi
-  40187c:	e8 25 f8 ff ff       	call   4010a6 <HlOpenFile>
-    __memset(cfg_buf, 0, sizeof(cfg_buf));
-  401881:	48 8d 85 20 ee ff ff 	lea    -0x11e0(%rbp),%rax
-  401888:	ba 00 10 00 00       	mov    $0x1000,%edx
-  40188d:	be 00 00 00 00       	mov    $0x0,%esi
-  401892:	48 89 c7             	mov    %rax,%rdi
-  401895:	e8 46 f9 ff ff       	call   4011e0 <__memset>
-    int64_t rd = HlReadFile(cfg, cfg_buf, sizeof(cfg_buf) - 1);
-  40189a:	48 8d 8d 20 ee ff ff 	lea    -0x11e0(%rbp),%rcx
-  4018a1:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
-  4018a5:	ba ff 0f 00 00       	mov    $0xfff,%edx
-  4018aa:	48 89 ce             	mov    %rcx,%rsi
-  4018ad:	48 89 c7             	mov    %rax,%rdi
-  4018b0:	e8 1f f8 ff ff       	call   4010d4 <HlReadFile>
-  4018b5:	48 89 45 c0          	mov    %rax,-0x40(%rbp)
-    if (rd <= 0) {
-  4018b9:	48 83 7d c0 00       	cmpq   $0x0,-0x40(%rbp)
-  4018be:	7f 0d                	jg     4018cd <HlMain+0x315>
-        errmsg = "Failed to read init_conf.conf\n\r";
-  4018c0:	48 c7 45 f8 50 30 40 	movq   $0x403050,-0x8(%rbp)
-  4018c7:	00 
-        goto err;
-  4018c8:	e9 86 07 00 00       	jmp    402053 <HlMain+0xa9b>
-    cfg_buf[rd] = '\0';
-  4018cd:	48 8d 95 20 ee ff ff 	lea    -0x11e0(%rbp),%rdx
-  4018d4:	48 8b 45 c0          	mov    -0x40(%rbp),%rax
-  4018d8:	48 01 d0             	add    %rdx,%rax
-  4018db:	c6 00 00             	movb   $0x0,(%rax)
-    char* line = cfg_buf;
-  4018de:	48 8d 85 20 ee ff ff 	lea    -0x11e0(%rbp),%rax
-  4018e5:	48 89 45 f0          	mov    %rax,-0x10(%rbp)
-    while (*line) {
-  4018e9:	e9 4c 03 00 00       	jmp    401c3a <HlMain+0x682>
-        while (*line == '\n' || *line == '\r') line++;
-  4018ee:	48 83 45 f0 01       	addq   $0x1,-0x10(%rbp)
-  4018f3:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  4018f7:	0f b6 00             	movzbl (%rax),%eax
-  4018fa:	3c 0a                	cmp    $0xa,%al
-  4018fc:	74 f0                	je     4018ee <HlMain+0x336>
-  4018fe:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401902:	0f b6 00             	movzbl (%rax),%eax
-  401905:	3c 0d                	cmp    $0xd,%al
-  401907:	74 e5                	je     4018ee <HlMain+0x336>
-        if (*line == '\0') break;
-  401909:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  40190d:	0f b6 00             	movzbl (%rax),%eax
-  401910:	84 c0                	test   %al,%al
-  401912:	0f 84 33 03 00 00    	je     401c4b <HlMain+0x693>
-        char* end = line;
-  401918:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  40191c:	48 89 45 e8          	mov    %rax,-0x18(%rbp)
-        while (*end && *end != '\n' && *end != '\r') end++;
-  401920:	eb 05                	jmp    401927 <HlMain+0x36f>
-  401922:	48 83 45 e8 01       	addq   $0x1,-0x18(%rbp)
-  401927:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  40192b:	0f b6 00             	movzbl (%rax),%eax
-  40192e:	84 c0                	test   %al,%al
-  401930:	74 16                	je     401948 <HlMain+0x390>
-  401932:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  401936:	0f b6 00             	movzbl (%rax),%eax
-  401939:	3c 0a                	cmp    $0xa,%al
-  40193b:	74 0b                	je     401948 <HlMain+0x390>
-  40193d:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  401941:	0f b6 00             	movzbl (%rax),%eax
-  401944:	3c 0d                	cmp    $0xd,%al
-  401946:	75 da                	jne    401922 <HlMain+0x36a>
-        char save = *end;
-  401948:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  40194c:	0f b6 00             	movzbl (%rax),%eax
-  40194f:	88 45 bf             	mov    %al,-0x41(%rbp)
-        *end = '\0';
-  401952:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  401956:	c6 00 00             	movb   $0x0,(%rax)
-        print("DEBUG: line read: '"); print(line); print("'\n\r");
-  401959:	bf 70 30 40 00       	mov    $0x403070,%edi
-  40195e:	e8 49 f8 ff ff       	call   4011ac <__strlen>
-  401963:	48 89 c2             	mov    %rax,%rdx
-  401966:	48 8b 05 9b 26 00 00 	mov    0x269b(%rip),%rax        # 404008 <ConW>
-  40196d:	be 70 30 40 00       	mov    $0x403070,%esi
-  401972:	48 89 c7             	mov    %rax,%rdi
-  401975:	e8 03 f8 ff ff       	call   40117d <HlWriteConsole>
-  40197a:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  40197e:	48 89 c7             	mov    %rax,%rdi
-  401981:	e8 26 f8 ff ff       	call   4011ac <__strlen>
-  401986:	48 89 c2             	mov    %rax,%rdx
-  401989:	48 8b 05 78 26 00 00 	mov    0x2678(%rip),%rax        # 404008 <ConW>
-  401990:	48 8b 4d f0          	mov    -0x10(%rbp),%rcx
-  401994:	48 89 ce             	mov    %rcx,%rsi
-  401997:	48 89 c7             	mov    %rax,%rdi
-  40199a:	e8 de f7 ff ff       	call   40117d <HlWriteConsole>
-  40199f:	bf 84 30 40 00       	mov    $0x403084,%edi
-  4019a4:	e8 03 f8 ff ff       	call   4011ac <__strlen>
-  4019a9:	48 89 c2             	mov    %rax,%rdx
-  4019ac:	48 8b 05 55 26 00 00 	mov    0x2655(%rip),%rax        # 404008 <ConW>
-  4019b3:	be 84 30 40 00       	mov    $0x403084,%esi
-  4019b8:	48 89 c7             	mov    %rax,%rdi
-  4019bb:	e8 bd f7 ff ff       	call   40117d <HlWriteConsole>
-        if (*line == '#') { print("DEBUG: skipped comment\n\r"); line = end + 1; continue; }
-  4019c0:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  4019c4:	0f b6 00             	movzbl (%rax),%eax
-  4019c7:	3c 23                	cmp    $0x23,%al
-  4019c9:	75 32                	jne    4019fd <HlMain+0x445>
-  4019cb:	bf 88 30 40 00       	mov    $0x403088,%edi
-  4019d0:	e8 d7 f7 ff ff       	call   4011ac <__strlen>
-  4019d5:	48 89 c2             	mov    %rax,%rdx
-  4019d8:	48 8b 05 29 26 00 00 	mov    0x2629(%rip),%rax        # 404008 <ConW>
-  4019df:	be 88 30 40 00       	mov    $0x403088,%esi
-  4019e4:	48 89 c7             	mov    %rax,%rdi
-  4019e7:	e8 91 f7 ff ff       	call   40117d <HlWriteConsole>
-  4019ec:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  4019f0:	48 83 c0 01          	add    $0x1,%rax
-  4019f4:	48 89 45 f0          	mov    %rax,-0x10(%rbp)
-  4019f8:	e9 3d 02 00 00       	jmp    401c3a <HlMain+0x682>
-        if (__strncmp(line, "USER=", 5) == 0) {
-  4019fd:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401a01:	ba 05 00 00 00       	mov    $0x5,%edx
-  401a06:	be a1 30 40 00       	mov    $0x4030a1,%esi
-  401a0b:	48 89 c7             	mov    %rax,%rdi
-  401a0e:	e8 63 f8 ff ff       	call   401276 <__strncmp>
-  401a13:	85 c0                	test   %eax,%eax
-  401a15:	0f 85 91 00 00 00    	jne    401aac <HlMain+0x4f4>
-            extract_quoted_value(line + 5, user, sizeof(user));
-  401a1b:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401a1f:	48 8d 48 05          	lea    0x5(%rax),%rcx
-  401a23:	48 8d 85 60 ff ff ff 	lea    -0xa0(%rbp),%rax
-  401a2a:	ba 40 00 00 00       	mov    $0x40,%edx
-  401a2f:	48 89 c6             	mov    %rax,%rsi
-  401a32:	48 89 cf             	mov    %rcx,%rdi
-  401a35:	e8 80 f9 ff ff       	call   4013ba <extract_quoted_value>
-            print("DEBUG: USER set to: '"); print(user); print("'\n\r");
-  401a3a:	bf a7 30 40 00       	mov    $0x4030a7,%edi
-  401a3f:	e8 68 f7 ff ff       	call   4011ac <__strlen>
-  401a44:	48 89 c2             	mov    %rax,%rdx
-  401a47:	48 8b 05 ba 25 00 00 	mov    0x25ba(%rip),%rax        # 404008 <ConW>
-  401a4e:	be a7 30 40 00       	mov    $0x4030a7,%esi
-  401a53:	48 89 c7             	mov    %rax,%rdi
-  401a56:	e8 22 f7 ff ff       	call   40117d <HlWriteConsole>
-  401a5b:	48 8d 85 60 ff ff ff 	lea    -0xa0(%rbp),%rax
-  401a62:	48 89 c7             	mov    %rax,%rdi
-  401a65:	e8 42 f7 ff ff       	call   4011ac <__strlen>
-  401a6a:	48 89 c2             	mov    %rax,%rdx
-  401a6d:	48 8b 05 94 25 00 00 	mov    0x2594(%rip),%rax        # 404008 <ConW>
-  401a74:	48 8d 8d 60 ff ff ff 	lea    -0xa0(%rbp),%rcx
-  401a7b:	48 89 ce             	mov    %rcx,%rsi
-  401a7e:	48 89 c7             	mov    %rax,%rdi
-  401a81:	e8 f7 f6 ff ff       	call   40117d <HlWriteConsole>
-  401a86:	bf 84 30 40 00       	mov    $0x403084,%edi
-  401a8b:	e8 1c f7 ff ff       	call   4011ac <__strlen>
-  401a90:	48 89 c2             	mov    %rax,%rdx
-  401a93:	48 8b 05 6e 25 00 00 	mov    0x256e(%rip),%rax        # 404008 <ConW>
-  401a9a:	be 84 30 40 00       	mov    $0x403084,%esi
-  401a9f:	48 89 c7             	mov    %rax,%rdi
-  401aa2:	e8 d6 f6 ff ff       	call   40117d <HlWriteConsole>
-  401aa7:	e9 7c 01 00 00       	jmp    401c28 <HlMain+0x670>
-        } else if (__strncmp(line, "HOST=", 5) == 0) {
-  401aac:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401ab0:	ba 05 00 00 00       	mov    $0x5,%edx
-  401ab5:	be bd 30 40 00       	mov    $0x4030bd,%esi
-  401aba:	48 89 c7             	mov    %rax,%rdi
-  401abd:	e8 b4 f7 ff ff       	call   401276 <__strncmp>
-  401ac2:	85 c0                	test   %eax,%eax
-  401ac4:	0f 85 91 00 00 00    	jne    401b5b <HlMain+0x5a3>
-            extract_quoted_value(line + 5, host, sizeof(host));
-  401aca:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401ace:	48 8d 48 05          	lea    0x5(%rax),%rcx
-  401ad2:	48 8d 85 20 ff ff ff 	lea    -0xe0(%rbp),%rax
-  401ad9:	ba 40 00 00 00       	mov    $0x40,%edx
-  401ade:	48 89 c6             	mov    %rax,%rsi
-  401ae1:	48 89 cf             	mov    %rcx,%rdi
-  401ae4:	e8 d1 f8 ff ff       	call   4013ba <extract_quoted_value>
-            print("DEBUG: HOST set to: '"); print(host); print("'\n\r");
-  401ae9:	bf c3 30 40 00       	mov    $0x4030c3,%edi
-  401aee:	e8 b9 f6 ff ff       	call   4011ac <__strlen>
-  401af3:	48 89 c2             	mov    %rax,%rdx
-  401af6:	48 8b 05 0b 25 00 00 	mov    0x250b(%rip),%rax        # 404008 <ConW>
-  401afd:	be c3 30 40 00       	mov    $0x4030c3,%esi
-  401b02:	48 89 c7             	mov    %rax,%rdi
-  401b05:	e8 73 f6 ff ff       	call   40117d <HlWriteConsole>
-  401b0a:	48 8d 85 20 ff ff ff 	lea    -0xe0(%rbp),%rax
-  401b11:	48 89 c7             	mov    %rax,%rdi
-  401b14:	e8 93 f6 ff ff       	call   4011ac <__strlen>
-  401b19:	48 89 c2             	mov    %rax,%rdx
-  401b1c:	48 8b 05 e5 24 00 00 	mov    0x24e5(%rip),%rax        # 404008 <ConW>
-  401b23:	48 8d 8d 20 ff ff ff 	lea    -0xe0(%rbp),%rcx
-  401b2a:	48 89 ce             	mov    %rcx,%rsi
-  401b2d:	48 89 c7             	mov    %rax,%rdi
-  401b30:	e8 48 f6 ff ff       	call   40117d <HlWriteConsole>
-  401b35:	bf 84 30 40 00       	mov    $0x403084,%edi
-  401b3a:	e8 6d f6 ff ff       	call   4011ac <__strlen>
-  401b3f:	48 89 c2             	mov    %rax,%rdx
-  401b42:	48 8b 05 bf 24 00 00 	mov    0x24bf(%rip),%rax        # 404008 <ConW>
-  401b49:	be 84 30 40 00       	mov    $0x403084,%esi
-  401b4e:	48 89 c7             	mov    %rax,%rdi
-  401b51:	e8 27 f6 ff ff       	call   40117d <HlWriteConsole>
-  401b56:	e9 cd 00 00 00       	jmp    401c28 <HlMain+0x670>
-        } else if (__strncmp(line, "PROMPT=", 7) == 0) {
-  401b5b:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401b5f:	ba 07 00 00 00       	mov    $0x7,%edx
-  401b64:	be d9 30 40 00       	mov    $0x4030d9,%esi
-  401b69:	48 89 c7             	mov    %rax,%rdi
-  401b6c:	e8 05 f7 ff ff       	call   401276 <__strncmp>
-  401b71:	85 c0                	test   %eax,%eax
-  401b73:	0f 85 8e 00 00 00    	jne    401c07 <HlMain+0x64f>
-            extract_quoted_value(line + 7, prompt_template, sizeof(prompt_template));
-  401b79:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401b7d:	48 8d 48 07          	lea    0x7(%rax),%rcx
-  401b81:	48 8d 85 20 fe ff ff 	lea    -0x1e0(%rbp),%rax
-  401b88:	ba 00 01 00 00       	mov    $0x100,%edx
-  401b8d:	48 89 c6             	mov    %rax,%rsi
-  401b90:	48 89 cf             	mov    %rcx,%rdi
-  401b93:	e8 22 f8 ff ff       	call   4013ba <extract_quoted_value>
-            print("DEBUG: PROMPT set to: '"); print(prompt_template); print("'\n\r");
-  401b98:	bf e1 30 40 00       	mov    $0x4030e1,%edi
-  401b9d:	e8 0a f6 ff ff       	call   4011ac <__strlen>
-  401ba2:	48 89 c2             	mov    %rax,%rdx
-  401ba5:	48 8b 05 5c 24 00 00 	mov    0x245c(%rip),%rax        # 404008 <ConW>
-  401bac:	be e1 30 40 00       	mov    $0x4030e1,%esi
-  401bb1:	48 89 c7             	mov    %rax,%rdi
-  401bb4:	e8 c4 f5 ff ff       	call   40117d <HlWriteConsole>
-  401bb9:	48 8d 85 20 fe ff ff 	lea    -0x1e0(%rbp),%rax
-  401bc0:	48 89 c7             	mov    %rax,%rdi
-  401bc3:	e8 e4 f5 ff ff       	call   4011ac <__strlen>
-  401bc8:	48 89 c2             	mov    %rax,%rdx
-  401bcb:	48 8b 05 36 24 00 00 	mov    0x2436(%rip),%rax        # 404008 <ConW>
-  401bd2:	48 8d 8d 20 fe ff ff 	lea    -0x1e0(%rbp),%rcx
-  401bd9:	48 89 ce             	mov    %rcx,%rsi
-  401bdc:	48 89 c7             	mov    %rax,%rdi
-  401bdf:	e8 99 f5 ff ff       	call   40117d <HlWriteConsole>
-  401be4:	bf 84 30 40 00       	mov    $0x403084,%edi
-  401be9:	e8 be f5 ff ff       	call   4011ac <__strlen>
-  401bee:	48 89 c2             	mov    %rax,%rdx
-  401bf1:	48 8b 05 10 24 00 00 	mov    0x2410(%rip),%rax        # 404008 <ConW>
-  401bf8:	be 84 30 40 00       	mov    $0x403084,%esi
-  401bfd:	48 89 c7             	mov    %rax,%rdi
-  401c00:	e8 78 f5 ff ff       	call   40117d <HlWriteConsole>
-  401c05:	eb 21                	jmp    401c28 <HlMain+0x670>
-            print("DEBUG: unrecognized line\n\r");
-  401c07:	bf f9 30 40 00       	mov    $0x4030f9,%edi
-  401c0c:	e8 9b f5 ff ff       	call   4011ac <__strlen>
-  401c11:	48 89 c2             	mov    %rax,%rdx
-  401c14:	48 8b 05 ed 23 00 00 	mov    0x23ed(%rip),%rax        # 404008 <ConW>
-  401c1b:	be f9 30 40 00       	mov    $0x4030f9,%esi
-  401c20:	48 89 c7             	mov    %rax,%rdi
-  401c23:	e8 55 f5 ff ff       	call   40117d <HlWriteConsole>
-        if (!save) break;
-  401c28:	80 7d bf 00          	cmpb   $0x0,-0x41(%rbp)
-  401c2c:	74 20                	je     401c4e <HlMain+0x696>
-        line = end + 1;
-  401c2e:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-  401c32:	48 83 c0 01          	add    $0x1,%rax
-  401c36:	48 89 45 f0          	mov    %rax,-0x10(%rbp)
-    while (*line) {
-  401c3a:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
-  401c3e:	0f b6 00             	movzbl (%rax),%eax
-  401c41:	84 c0                	test   %al,%al
-  401c43:	0f 85 aa fc ff ff    	jne    4018f3 <HlMain+0x33b>
-  401c49:	eb 04                	jmp    401c4f <HlMain+0x697>
-        if (*line == '\0') break;
-  401c4b:	90                   	nop
-  401c4c:	eb 01                	jmp    401c4f <HlMain+0x697>
-        if (!save) break;
-  401c4e:	90                   	nop
-    print("DEBUG: final parsed values:\n\r");
-  401c4f:	bf 14 31 40 00       	mov    $0x403114,%edi
-  401c54:	e8 53 f5 ff ff       	call   4011ac <__strlen>
-  401c59:	48 89 c2             	mov    %rax,%rdx
-  401c5c:	48 8b 05 a5 23 00 00 	mov    0x23a5(%rip),%rax        # 404008 <ConW>
-  401c63:	be 14 31 40 00       	mov    $0x403114,%esi
-  401c68:	48 89 c7             	mov    %rax,%rdi
-  401c6b:	e8 0d f5 ff ff       	call   40117d <HlWriteConsole>
-    print("USER='"); print(user); print("'\n\r");
-  401c70:	bf 32 31 40 00       	mov    $0x403132,%edi
-  401c75:	e8 32 f5 ff ff       	call   4011ac <__strlen>
-  401c7a:	48 89 c2             	mov    %rax,%rdx
-  401c7d:	48 8b 05 84 23 00 00 	mov    0x2384(%rip),%rax        # 404008 <ConW>
-  401c84:	be 32 31 40 00       	mov    $0x403132,%esi
-  401c89:	48 89 c7             	mov    %rax,%rdi
-  401c8c:	e8 ec f4 ff ff       	call   40117d <HlWriteConsole>
-  401c91:	48 8d 85 60 ff ff ff 	lea    -0xa0(%rbp),%rax
-  401c98:	48 89 c7             	mov    %rax,%rdi
-  401c9b:	e8 0c f5 ff ff       	call   4011ac <__strlen>
-  401ca0:	48 89 c2             	mov    %rax,%rdx
-  401ca3:	48 8b 05 5e 23 00 00 	mov    0x235e(%rip),%rax        # 404008 <ConW>
-  401caa:	48 8d 8d 60 ff ff ff 	lea    -0xa0(%rbp),%rcx
-  401cb1:	48 89 ce             	mov    %rcx,%rsi
-  401cb4:	48 89 c7             	mov    %rax,%rdi
-  401cb7:	e8 c1 f4 ff ff       	call   40117d <HlWriteConsole>
-  401cbc:	bf 84 30 40 00       	mov    $0x403084,%edi
-  401cc1:	e8 e6 f4 ff ff       	call   4011ac <__strlen>
-  401cc6:	48 89 c2             	mov    %rax,%rdx
-  401cc9:	48 8b 05 38 23 00 00 	mov    0x2338(%rip),%rax        # 404008 <ConW>
-  401cd0:	be 84 30 40 00       	mov    $0x403084,%esi
-  401cd5:	48 89 c7             	mov    %rax,%rdi
-  401cd8:	e8 a0 f4 ff ff       	call   40117d <HlWriteConsole>
-    print("HOST='"); print(host); print("'\n\r");
-  401cdd:	bf 39 31 40 00       	mov    $0x403139,%edi
-  401ce2:	e8 c5 f4 ff ff       	call   4011ac <__strlen>
-  401ce7:	48 89 c2             	mov    %rax,%rdx
-  401cea:	48 8b 05 17 23 00 00 	mov    0x2317(%rip),%rax        # 404008 <ConW>
-  401cf1:	be 39 31 40 00       	mov    $0x403139,%esi
-  401cf6:	48 89 c7             	mov    %rax,%rdi
-  401cf9:	e8 7f f4 ff ff       	call   40117d <HlWriteConsole>
-  401cfe:	48 8d 85 20 ff ff ff 	lea    -0xe0(%rbp),%rax
-  401d05:	48 89 c7             	mov    %rax,%rdi
-  401d08:	e8 9f f4 ff ff       	call   4011ac <__strlen>
-  401d0d:	48 89 c2             	mov    %rax,%rdx
-  401d10:	48 8b 05 f1 22 00 00 	mov    0x22f1(%rip),%rax        # 404008 <ConW>
-  401d17:	48 8d 8d 20 ff ff ff 	lea    -0xe0(%rbp),%rcx
-  401d1e:	48 89 ce             	mov    %rcx,%rsi
-  401d21:	48 89 c7             	mov    %rax,%rdi
-  401d24:	e8 54 f4 ff ff       	call   40117d <HlWriteConsole>
-  401d29:	bf 84 30 40 00       	mov    $0x403084,%edi
-  401d2e:	e8 79 f4 ff ff       	call   4011ac <__strlen>
-  401d33:	48 89 c2             	mov    %rax,%rdx
-  401d36:	48 8b 05 cb 22 00 00 	mov    0x22cb(%rip),%rax        # 404008 <ConW>
-  401d3d:	be 84 30 40 00       	mov    $0x403084,%esi
-  401d42:	48 89 c7             	mov    %rax,%rdi
-  401d45:	e8 33 f4 ff ff       	call   40117d <HlWriteConsole>
-    print("PROMPT='"); print(prompt_template); print("'\n\r");
-  401d4a:	bf 40 31 40 00       	mov    $0x403140,%edi
-  401d4f:	e8 58 f4 ff ff       	call   4011ac <__strlen>
-  401d54:	48 89 c2             	mov    %rax,%rdx
-  401d57:	48 8b 05 aa 22 00 00 	mov    0x22aa(%rip),%rax        # 404008 <ConW>
-  401d5e:	be 40 31 40 00       	mov    $0x403140,%esi
-  401d63:	48 89 c7             	mov    %rax,%rdi
-  401d66:	e8 12 f4 ff ff       	call   40117d <HlWriteConsole>
-  401d6b:	48 8d 85 20 fe ff ff 	lea    -0x1e0(%rbp),%rax
-  401d72:	48 89 c7             	mov    %rax,%rdi
-  401d75:	e8 32 f4 ff ff       	call   4011ac <__strlen>
-  401d7a:	48 89 c2             	mov    %rax,%rdx
-  401d7d:	48 8b 05 84 22 00 00 	mov    0x2284(%rip),%rax        # 404008 <ConW>
-  401d84:	48 8d 8d 20 fe ff ff 	lea    -0x1e0(%rbp),%rcx
-  401d8b:	48 89 ce             	mov    %rcx,%rsi
-  401d8e:	48 89 c7             	mov    %rax,%rdi
-  401d91:	e8 e7 f3 ff ff       	call   40117d <HlWriteConsole>
-  401d96:	bf 84 30 40 00       	mov    $0x403084,%edi
-  401d9b:	e8 0c f4 ff ff       	call   4011ac <__strlen>
-  401da0:	48 89 c2             	mov    %rax,%rdx
-  401da3:	48 8b 05 5e 22 00 00 	mov    0x225e(%rip),%rax        # 404008 <ConW>
-  401daa:	be 84 30 40 00       	mov    $0x403084,%esi
-  401daf:	48 89 c7             	mov    %rax,%rdi
-  401db2:	e8 c6 f3 ff ff       	call   40117d <HlWriteConsole>
-    if (__strcasecmp(host, "terra") != 0)
-  401db7:	48 8d 85 20 ff ff ff 	lea    -0xe0(%rbp),%rax
-  401dbe:	be 49 31 40 00       	mov    $0x403149,%esi
-  401dc3:	48 89 c7             	mov    %rax,%rdi
-  401dc6:	e8 49 f5 ff ff       	call   401314 <__strcasecmp>
-  401dcb:	85 c0                	test   %eax,%eax
-  401dcd:	74 21                	je     401df0 <HlMain+0x838>
-        print("\x1B[93mWarning: intended for Terra\x1B[0m\n\r");
-  401dcf:	bf 50 31 40 00       	mov    $0x403150,%edi
-  401dd4:	e8 d3 f3 ff ff       	call   4011ac <__strlen>
-  401dd9:	48 89 c2             	mov    %rax,%rdx
-  401ddc:	48 8b 05 25 22 00 00 	mov    0x2225(%rip),%rax        # 404008 <ConW>
-  401de3:	be 50 31 40 00       	mov    $0x403150,%esi
-  401de8:	48 89 c7             	mov    %rax,%rdi
-  401deb:	e8 8d f3 ff ff       	call   40117d <HlWriteConsole>
-    print("Terra running...\n\r");
-  401df0:	bf 77 31 40 00       	mov    $0x403177,%edi
-  401df5:	e8 b2 f3 ff ff       	call   4011ac <__strlen>
-  401dfa:	48 89 c2             	mov    %rax,%rdx
-  401dfd:	48 8b 05 04 22 00 00 	mov    0x2204(%rip),%rax        # 404008 <ConW>
-  401e04:	be 77 31 40 00       	mov    $0x403177,%esi
-  401e09:	48 89 c7             	mov    %rax,%rdi
-  401e0c:	e8 6c f3 ff ff       	call   40117d <HlWriteConsole>
-    char cwd[64] = "~";  // default cwd
-  401e11:	48 c7 85 e0 ed ff ff 	movq   $0x7e,-0x1220(%rbp)
-  401e18:	7e 00 00 00 
-  401e1c:	48 c7 85 e8 ed ff ff 	movq   $0x0,-0x1218(%rbp)
-  401e23:	00 00 00 00 
-  401e27:	48 c7 85 f0 ed ff ff 	movq   $0x0,-0x1210(%rbp)
-  401e2e:	00 00 00 00 
-  401e32:	48 c7 85 f8 ed ff ff 	movq   $0x0,-0x1208(%rbp)
-  401e39:	00 00 00 00 
-  401e3d:	48 c7 85 00 ee ff ff 	movq   $0x0,-0x1200(%rbp)
-  401e44:	00 00 00 00 
-  401e48:	48 c7 85 08 ee ff ff 	movq   $0x0,-0x11f8(%rbp)
-  401e4f:	00 00 00 00 
-  401e53:	48 c7 85 10 ee ff ff 	movq   $0x0,-0x11f0(%rbp)
-  401e5a:	00 00 00 00 
-  401e5e:	48 c7 85 18 ee ff ff 	movq   $0x0,-0x11e8(%rbp)
-  401e65:	00 00 00 00 
-    parse_prompt(prompt_template, user, host, cwd, prompt);
-  401e69:	48 8d bd e0 eb ff ff 	lea    -0x1420(%rbp),%rdi
-  401e70:	48 8d 8d e0 ed ff ff 	lea    -0x1220(%rbp),%rcx
-  401e77:	48 8d 95 20 ff ff ff 	lea    -0xe0(%rbp),%rdx
-  401e7e:	48 8d b5 60 ff ff ff 	lea    -0xa0(%rbp),%rsi
-  401e85:	48 8d 85 20 fe ff ff 	lea    -0x1e0(%rbp),%rax
-  401e8c:	49 89 f8             	mov    %rdi,%r8
-  401e8f:	48 89 c7             	mov    %rax,%rdi
-  401e92:	e8 86 f6 ff ff       	call   40151d <parse_prompt>
-    char* s = prompt;
-  401e97:	48 8d 85 e0 eb ff ff 	lea    -0x1420(%rbp),%rax
-  401e9e:	48 89 45 e0          	mov    %rax,-0x20(%rbp)
-    char* d = final_prompt;
-  401ea2:	48 8d 85 e0 e9 ff ff 	lea    -0x1620(%rbp),%rax
-  401ea9:	48 89 45 d8          	mov    %rax,-0x28(%rbp)
-    while (*s) {
-  401ead:	e9 cd 00 00 00       	jmp    401f7f <HlMain+0x9c7>
-        if (*s == '\\' && s[1] == 'x') {
-  401eb2:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  401eb6:	0f b6 00             	movzbl (%rax),%eax
-  401eb9:	3c 5c                	cmp    $0x5c,%al
-  401ebb:	0f 85 a1 00 00 00    	jne    401f62 <HlMain+0x9aa>
-  401ec1:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  401ec5:	48 83 c0 01          	add    $0x1,%rax
-  401ec9:	0f b6 00             	movzbl (%rax),%eax
-  401ecc:	3c 78                	cmp    $0x78,%al
-  401ece:	0f 85 8e 00 00 00    	jne    401f62 <HlMain+0x9aa>
-            s += 2;
-  401ed4:	48 83 45 e0 02       	addq   $0x2,-0x20(%rbp)
-            int v = 0;
-  401ed9:	c7 45 d4 00 00 00 00 	movl   $0x0,-0x2c(%rbp)
-            for (int i = 0; i < 2; i++) {
-  401ee0:	c7 45 d0 00 00 00 00 	movl   $0x0,-0x30(%rbp)
-  401ee7:	eb 60                	jmp    401f49 <HlMain+0x991>
-                v <<= 4;
-  401ee9:	c1 65 d4 04          	shll   $0x4,-0x2c(%rbp)
-                char c = *s++;
-  401eed:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  401ef1:	48 8d 50 01          	lea    0x1(%rax),%rdx
-  401ef5:	48 89 55 e0          	mov    %rdx,-0x20(%rbp)
-  401ef9:	0f b6 00             	movzbl (%rax),%eax
-  401efc:	88 45 af             	mov    %al,-0x51(%rbp)
-                if (c >= '0' && c <= '9') v |= c - '0';
-  401eff:	80 7d af 2f          	cmpb   $0x2f,-0x51(%rbp)
-  401f03:	7e 12                	jle    401f17 <HlMain+0x95f>
-  401f05:	80 7d af 39          	cmpb   $0x39,-0x51(%rbp)
-  401f09:	7f 0c                	jg     401f17 <HlMain+0x95f>
-  401f0b:	0f be 45 af          	movsbl -0x51(%rbp),%eax
-  401f0f:	83 e8 30             	sub    $0x30,%eax
-  401f12:	09 45 d4             	or     %eax,-0x2c(%rbp)
-  401f15:	eb 2e                	jmp    401f45 <HlMain+0x98d>
-                else if (c >= 'A' && c <= 'F') v |= c - 'A' + 10;
-  401f17:	80 7d af 40          	cmpb   $0x40,-0x51(%rbp)
-  401f1b:	7e 12                	jle    401f2f <HlMain+0x977>
-  401f1d:	80 7d af 46          	cmpb   $0x46,-0x51(%rbp)
-  401f21:	7f 0c                	jg     401f2f <HlMain+0x977>
-  401f23:	0f be 45 af          	movsbl -0x51(%rbp),%eax
-  401f27:	83 e8 37             	sub    $0x37,%eax
-  401f2a:	09 45 d4             	or     %eax,-0x2c(%rbp)
-  401f2d:	eb 16                	jmp    401f45 <HlMain+0x98d>
-                else if (c >= 'a' && c <= 'f') v |= c - 'a' + 10;
-  401f2f:	80 7d af 60          	cmpb   $0x60,-0x51(%rbp)
-  401f33:	7e 10                	jle    401f45 <HlMain+0x98d>
-  401f35:	80 7d af 66          	cmpb   $0x66,-0x51(%rbp)
-  401f39:	7f 0a                	jg     401f45 <HlMain+0x98d>
-  401f3b:	0f be 45 af          	movsbl -0x51(%rbp),%eax
-  401f3f:	83 e8 57             	sub    $0x57,%eax
-  401f42:	09 45 d4             	or     %eax,-0x2c(%rbp)
-            for (int i = 0; i < 2; i++) {
-  401f45:	83 45 d0 01          	addl   $0x1,-0x30(%rbp)
-  401f49:	83 7d d0 01          	cmpl   $0x1,-0x30(%rbp)
-  401f4d:	7e 9a                	jle    401ee9 <HlMain+0x931>
-            *d++ = (char)v;
-  401f4f:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401f53:	48 8d 50 01          	lea    0x1(%rax),%rdx
-  401f57:	48 89 55 d8          	mov    %rdx,-0x28(%rbp)
-  401f5b:	8b 55 d4             	mov    -0x2c(%rbp),%edx
-  401f5e:	88 10                	mov    %dl,(%rax)
-        if (*s == '\\' && s[1] == 'x') {
-  401f60:	eb 1d                	jmp    401f7f <HlMain+0x9c7>
-            *d++ = *s++;
-  401f62:	48 8b 55 e0          	mov    -0x20(%rbp),%rdx
-  401f66:	48 8d 42 01          	lea    0x1(%rdx),%rax
-  401f6a:	48 89 45 e0          	mov    %rax,-0x20(%rbp)
-  401f6e:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401f72:	48 8d 48 01          	lea    0x1(%rax),%rcx
-  401f76:	48 89 4d d8          	mov    %rcx,-0x28(%rbp)
-  401f7a:	0f b6 12             	movzbl (%rdx),%edx
-  401f7d:	88 10                	mov    %dl,(%rax)
-    while (*s) {
-  401f7f:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
-  401f83:	0f b6 00             	movzbl (%rax),%eax
-  401f86:	84 c0                	test   %al,%al
-  401f88:	0f 85 24 ff ff ff    	jne    401eb2 <HlMain+0x8fa>
-    *d = '\0';
-  401f8e:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
-  401f92:	c6 00 00             	movb   $0x0,(%rax)
-        print(final_prompt);
-  401f95:	48 8d 85 e0 e9 ff ff 	lea    -0x1620(%rbp),%rax
-  401f9c:	48 89 c7             	mov    %rax,%rdi
-  401f9f:	e8 08 f2 ff ff       	call   4011ac <__strlen>
-  401fa4:	48 89 c2             	mov    %rax,%rdx
-  401fa7:	48 8b 05 5a 20 00 00 	mov    0x205a(%rip),%rax        # 404008 <ConW>
-  401fae:	48 8d 8d e0 e9 ff ff 	lea    -0x1620(%rbp),%rcx
-  401fb5:	48 89 ce             	mov    %rcx,%rsi
-  401fb8:	48 89 c7             	mov    %rax,%rdi
-  401fbb:	e8 bd f1 ff ff       	call   40117d <HlWriteConsole>
-        __memset(buf, 0, sizeof(buf));
-  401fc0:	48 8d 85 e0 d9 ff ff 	lea    -0x2620(%rbp),%rax
-  401fc7:	ba 00 10 00 00       	mov    $0x1000,%edx
-  401fcc:	be 00 00 00 00       	mov    $0x0,%esi
-  401fd1:	48 89 c7             	mov    %rax,%rdi
-  401fd4:	e8 07 f2 ff ff       	call   4011e0 <__memset>
-        int64_t n = HlReadConsole(ConR, buf, sizeof(buf) - 1);
-  401fd9:	48 8b 05 20 20 00 00 	mov    0x2020(%rip),%rax        # 404000 <ConR>
-  401fe0:	48 8d 8d e0 d9 ff ff 	lea    -0x2620(%rbp),%rcx
-  401fe7:	ba ff 0f 00 00       	mov    $0xfff,%edx
-  401fec:	48 89 ce             	mov    %rcx,%rsi
-  401fef:	48 89 c7             	mov    %rax,%rdi
-  401ff2:	e8 57 f1 ff ff       	call   40114e <HlReadConsole>
-  401ff7:	48 89 45 b0          	mov    %rax,-0x50(%rbp)
-        if (n > 0) { print(buf); print("\n\r"); }
-  401ffb:	48 83 7d b0 00       	cmpq   $0x0,-0x50(%rbp)
-  402000:	7e 93                	jle    401f95 <HlMain+0x9dd>
-  402002:	48 8d 85 e0 d9 ff ff 	lea    -0x2620(%rbp),%rax
-  402009:	48 89 c7             	mov    %rax,%rdi
-  40200c:	e8 9b f1 ff ff       	call   4011ac <__strlen>
-  402011:	48 89 c2             	mov    %rax,%rdx
-  402014:	48 8b 05 ed 1f 00 00 	mov    0x1fed(%rip),%rax        # 404008 <ConW>
-  40201b:	48 8d 8d e0 d9 ff ff 	lea    -0x2620(%rbp),%rcx
-  402022:	48 89 ce             	mov    %rcx,%rsi
-  402025:	48 89 c7             	mov    %rax,%rdi
-  402028:	e8 50 f1 ff ff       	call   40117d <HlWriteConsole>
-  40202d:	bf 8a 31 40 00       	mov    $0x40318a,%edi
-  402032:	e8 75 f1 ff ff       	call   4011ac <__strlen>
-  402037:	48 89 c2             	mov    %rax,%rdx
-  40203a:	48 8b 05 c7 1f 00 00 	mov    0x1fc7(%rip),%rax        # 404008 <ConW>
-  402041:	be 8a 31 40 00       	mov    $0x40318a,%esi
-  402046:	48 89 c7             	mov    %rax,%rdi
-  402049:	e8 2f f1 ff ff       	call   40117d <HlWriteConsole>
-    while (1) {
-  40204e:	e9 42 ff ff ff       	jmp    401f95 <HlMain+0x9dd>
-	print("Error: ");
-  402053:	bf 8d 31 40 00       	mov    $0x40318d,%edi
-  402058:	e8 4f f1 ff ff       	call   4011ac <__strlen>
-  40205d:	48 89 c2             	mov    %rax,%rdx
-  402060:	48 8b 05 a1 1f 00 00 	mov    0x1fa1(%rip),%rax        # 404008 <ConW>
-  402067:	be 8d 31 40 00       	mov    $0x40318d,%esi
-  40206c:	48 89 c7             	mov    %rax,%rdi
-  40206f:	e8 09 f1 ff ff       	call   40117d <HlWriteConsole>
-	print(errmsg);
-  402074:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-  402078:	48 89 c7             	mov    %rax,%rdi
-  40207b:	e8 2c f1 ff ff       	call   4011ac <__strlen>
-  402080:	48 89 c2             	mov    %rax,%rdx
-  402083:	48 8b 05 7e 1f 00 00 	mov    0x1f7e(%rip),%rax        # 404008 <ConW>
-  40208a:	48 8b 4d f8          	mov    -0x8(%rbp),%rcx
-  40208e:	48 89 ce             	mov    %rcx,%rsi
-  402091:	48 89 c7             	mov    %rax,%rdi
-  402094:	e8 e4 f0 ff ff       	call   40117d <HlWriteConsole>
+  40118a:	f3 0f 1e fa          	endbr64
+  40118e:	55                   	push   %rbp
+  40118f:	48 89 e5             	mov    %rsp,%rbp
+	HlKernelMessage("Test\n\r");
+  401192:	bf 00 20 40 00       	mov    $0x402000,%edi
+  401197:	e8 fa fe ff ff       	call   401096 <HlKernelMessage>
+	ConR = HlCreateNewHandle();
+  40119c:	b8 00 00 00 00       	mov    $0x0,%eax
+  4011a1:	e8 10 ff ff ff       	call   4010b6 <HlCreateNewHandle>
+  4011a6:	48 89 05 5b 1e 00 00 	mov    %rax,0x1e5b(%rip)        # 403008 <ConR>
+	ConW = HlCreateNewHandle();
+  4011ad:	b8 00 00 00 00       	mov    $0x0,%eax
+  4011b2:	e8 ff fe ff ff       	call   4010b6 <HlCreateNewHandle>
+  4011b7:	48 89 05 42 1e 00 00 	mov    %rax,0x1e42(%rip)        # 403000 <ConW>
+	HlOpenConsole(ConR, ConW);
+  4011be:	48 8b 15 3b 1e 00 00 	mov    0x1e3b(%rip),%rdx        # 403000 <ConW>
+  4011c5:	48 8b 05 3c 1e 00 00 	mov    0x1e3c(%rip),%rax        # 403008 <ConR>
+  4011cc:	48 89 d6             	mov    %rdx,%rsi
+  4011cf:	48 89 c7             	mov    %rax,%rdi
+  4011d2:	e8 12 ff ff ff       	call   4010e9 <HlOpenConsole>
+	HlWriteConsole(ConW, "Hello, World!", 12);
+  4011d7:	48 8b 05 22 1e 00 00 	mov    0x1e22(%rip),%rax        # 403000 <ConW>
+  4011de:	ba 0c 00 00 00       	mov    $0xc,%edx
+  4011e3:	be 07 20 40 00       	mov    $0x402007,%esi
+  4011e8:	48 89 c7             	mov    %rax,%rdi
+  4011eb:	e8 21 ff ff ff       	call   401111 <HlWriteConsole>
+	print("Hello, World!");
+  4011f0:	bf 07 20 40 00       	mov    $0x402007,%edi
+  4011f5:	e8 46 ff ff ff       	call   401140 <print>
+	while (1);
+  4011fa:	90                   	nop
+  4011fb:	eb fd                	jmp    4011fa <HlMain+0x70>

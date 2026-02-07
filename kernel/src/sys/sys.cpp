@@ -67,7 +67,5 @@ void initialise_syscalls() {
 	/* HlApi 1.2 */
 	set_handler(36, HlRetrieveFileMappedMemory, 1);
 	set_handler(37, HlRetrieveMappedFileSize, 1);
-
-	set_handler(38, HlPrintInt64, 1);
 }
 

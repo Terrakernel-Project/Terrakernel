@@ -55,10 +55,12 @@ inline uint64_t call_syscall(uint8_t argc, uint64_t nr,
 uint64_t handle_syscall(uint64_t rax, uint64_t rdi, uint64_t rsi,
                         uint64_t rdx, uint64_t r10, uint64_t r8,
                         uint64_t r9) {
-    if (!(0 <= rax && rax < NUM_SYSCALLS)) {
+	if (rax > NUM_SYSCALLS) {
+		return (uint64_t)-1;
+	}
+	
+    if (!syscall_table.entry[rax].allocated) {
     	return (uint64_t)-1;
-    } else {
-    	if (!syscall_table.entry[rax].allocated) return (uint64_t)-1;
     }
 
     uint8_t argc = syscall_table.entry[rax].num_args;

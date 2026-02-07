@@ -21,36 +21,51 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write a virtual memory manager
 - [x] Write a heap
 - [x] Write a PIT timer (Unused now, use APIC)
-- [x] Write an APIC and Multiprocessing support (no MP for now)
+- [x] Write an APIC and Multiprocessing support
 - [x] Write an APIC timer
 - [x] Switch to fully graphical (flanterm) messages and logs
 - [x] Port uACPI
 - [x] (Other) Write a VFS and RamFS and parse a USTAR Initrd archive
-- [x] Multiprocessing (kinda works cuz we can give CPUs a task)
+- [x] Multiprocessing
 - [ ] Scheduling and multithreading*
+- [ ] IPC
 - [x] Switching to userspace
 - [x] Write some basic syscalls
-- [x] Load x86_64 ELF binaries, static and relocatable (copy from old version of TK) (delayed)
+- [x] Load x86_64 ELF binaries, static and relocatable
 - [x] BGRT table
 - [x] Remap the framebuffer with Write Combining for maximum performance
-- [x] A kewl loading cirle :^)
-- [ ] End of x86_64 stuff (almost) (almost)
+- [x] Loading cirle
+- [x] The HLEC (HL Event Complex)
+- [ ] End of x86_64 stuff
 
-### Other
-- [x] Write a VFS and TMPFS and parse a USTAR Initrd archive
-- [x] Write a PCI driver (PCIe as well)
-- [x] Write a PS2 keyboard driver and PS2 mouse driver
+### Subsystems
+- [x] Write a VFS and RamFS and parse a USTAR Initrd archive
+- [x] Write a PCI driver
+- [x] Write a PCIe driver and stop using PCI
+- [x] Write a PS2 keyboard driver and PS2 mouse driver with an event system
 - [x] Line discipline
 - [x] EDID driver
-- [x] End of other (yay!!!)
+- [ ] AHCI disk driver
+- [ ] NVMe disk driver
+- [ ] FAT32 file system
+- [ ] HLFS file system
+- [ ] Partitions with MBR
+- [ ] Partitions with GPT
+- [ ] Userspace graphics driver
+- [ ] Network cards drivers
+- [ ] DHCP support
+- [ ] UDP support
+- [ ] TCP/IP support
+- [ ] HTTP protocol support
+- [ ] End of other
 
-### Porting software
-- [ ] Write or port a LibC
-- [ ] Port binutils and coreutils
-- [ ] Port DOOM
-- [ ] Port a window manager (window server) (probably Xorg)
-- [ ] Port anything else
-- [ ] End of porting software
+### Writing and Porting software
+- [ ] Write a better init process
+- [ ] Write a LibC
+- [ ] Write a window manager
+- [ ] Port something
+- [ ] Write a package manager, tpkgs (Terra PKGs)
+- [ ] End of writing and porting software
 - [ ] End of project... or at least this version...
 
 ### Building the kernel

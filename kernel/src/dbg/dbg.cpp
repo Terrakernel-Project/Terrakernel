@@ -309,32 +309,56 @@ static inline bool is_canonical(uint64_t addr) {
 void stacktrace(uint64_t addr, uint64_t len, uint64_t paging_len) {
     if (paging_len == 0 || paging_len % 16 != 0)
         paging_len = 16;
-
+        
     uint64_t rbp = addr;
     int frame = 0;
-
-    printf(" ----==== STACKTRACE ====---- -------------------------------------\n\r");
-
+    
+    printf(" ----==== STACKTRACE ====---- \n\r");
+    printf("NOTE: -fomit-frame-pointer must be DISABLED for accurate traces\n\r");
+    printf("Add -fno-omit-frame-pointer to your CFLAGS\n\r");
+    printf("--------------------------------------------------------------\n\r");
+    
     while (rbp != 0 && frame < len) {
+        if (!is_canonical(rbp)) {
+            printf("#%d: <non-canonical frame pointer 0x%llX - chain broken>\n",
+                   frame, (unsigned long long)rbp);
+            printf("This is expected with -fomit-frame-pointer\n\r");
+            break;
+        }
+        
         uint64_t ret_addr = *((uint64_t*)(rbp + 8));
-
         uint64_t offset = 0;
         const char* func = find_symbol(ret_addr, &offset);
-
+        
         printf("#%d: <%s+0x%llX> (RIP=%016llX)\n", 
-               frame, func, (unsigned long long)offset, (unsigned long long)ret_addr);
-
+               frame, func, (unsigned long long)offset, 
+               (unsigned long long)ret_addr);
+        
+        uint64_t prev_rbp = rbp;
         rbp = *((uint64_t*)rbp);
+        
+        if (rbp != 0 && rbp <= prev_rbp) {
+            printf("#%d: <frame pointer went backwards or stayed same - broken chain>\n",
+                   frame + 1);
+            break;
+        }
+        
         frame++;
-
+        
         if (frame % paging_len == 0 && frame != 0) {
             printf("Press any key to continue stacktrace\n\r");
             char c;
             drivers::tty::ldisc::read(false, &c, 1);
             printf("\033[2J\033[H");
         }
-        
-        if (!is_canonical(rbp)) break;
+    }
+    
+    if (frame == 0) {
+        printf(
+        	"ERROR: Could not unwind stack at all!\n\r"
+        	"Likely cause: -fomit-frame-pointer is enabled\n\r"
+	        "Solution: Add -fno-omit-frame-pointer to CFLAGS\n\r"
+        );
     }
 }
 
