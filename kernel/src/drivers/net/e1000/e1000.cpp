@@ -193,11 +193,11 @@ bool read_mac_address() {
 		temp = eeprom_read(1);
 		mac[2] = temp & 0xFF;
 		mac[3] = temp >> 8;
-		temp = eeprom_read(2);  // FIX: Changed from 3 to 2
+		temp = eeprom_read(2);
 		mac[4] = temp & 0xFF;
 		mac[5] = temp >> 8;
 	} else {
-		uint8_t* mem_base_mac_8 = (uint8_t*)(mem_base + 0x5400);  // FIX: Changed from 5400 to 0x5400
+		uint8_t* mem_base_mac_8 = (uint8_t*)(mem_base + 0x5400);
 		uint32_t* mem_base_mac_32 = (uint32_t*)(mem_base + 0x5400);
 
 		if (mem_base_mac_32[0] != 0) {
