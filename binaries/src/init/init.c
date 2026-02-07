@@ -16,9 +16,7 @@ void HlMain(void) {
 
 	HlOpenConsole(ConR, ConW);
 
-	HlWriteConsole(ConW, "Hello, World!", 12);
-
-	print("Hello, World!");
+	print("Hello, World! from a userspace init process\n\r");
 
 	while (1);
 }

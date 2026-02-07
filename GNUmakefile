@@ -2,7 +2,7 @@
 
 ARCH := x86_64
 
-QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic #-serial stdio
+QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0
 QEMUFLAGS_NORM := -rtc base=localtime -M q35 -m 6G
 QEMUFLAGS_DINT := $(QEMUFLAGS_NORM) -d int
 QEMUFLAGS_GDB := $(QEMUFLAGS_NORM) -s -S

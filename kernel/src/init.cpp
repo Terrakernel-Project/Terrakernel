@@ -31,6 +31,9 @@
 #include <drivers/display/edid/edid.hpp>
 #include <drivers/display/gfx.hpp>
 #include <proc/exec.hpp>
+#include <subsystems/hlec/hlec.hpp>
+#include <drivers/net/netgeneric.hpp>
+#include <drivers/net/dhcp.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -205,6 +208,11 @@ skip_redraw:;
     drivers::display::edid::initialise();
     Log::printf_status("OK", "EDID Driver Initialised");
 
+	drivers::net::netgeneric::initialise();
+	Log::printf_status("OK", "Networking Initialised");
+
+	
+
     // Finished bootstrapping
 
 	asm ("sti");
@@ -284,8 +292,9 @@ skip_redraw:;
 		    __ATOMIC_RELEASE
 		);
 		
-		drivers::timers::apic::sleep_ms(5);
+		drivers::timers::apic::sleep_ms(100);
 	}
+	drivers::timers::apic::sleep_ms(100);
 
     Log::end_kernel_messages(); // now no messages print
 
@@ -299,22 +308,7 @@ skip_redraw:;
 	    nullptr
 	};
 
-	switch_to_tty(0);
-	refresh_tty();
-	printf("TTY0\n\r");
-
-	drivers::timers::apic::sleep_ms(100);
-
-	switch_to_tty(1);
-	refresh_tty();
-	printf("TTY1\n\r");
-
-	drivers::timers::apic::sleep_ms(100);
-
-	switch_to_tty(0);
-	printf("Back to TTY0\n\r");
-
-	//proc::exec::execve("/initrd/init", argv, envp);
+	proc::exec::execve("/initrd/init", argv, envp);
 
     while (1) {
         asm volatile("hlt");
