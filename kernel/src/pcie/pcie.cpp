@@ -105,6 +105,7 @@ void enumerate_devices() {
                     dev->prog_if = *((volatile uint8_t*)config + 0x09);
                     dev->revision_id = *((volatile uint8_t*)config + 0x08);
                     dev->header_type = *((volatile uint8_t*)config + 0x0E) & 0x7F;
+					dev->interrupt_line = *((volatile uint8_t*)config + 0x3C);
                     
                     for (int i = 0; i < 6; i++) {
                         dev->bars[i] = *((volatile uint32_t*)config + 4 + i);

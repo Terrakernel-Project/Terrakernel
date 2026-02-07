@@ -25,6 +25,7 @@ void initialise();
 
 bool send(const uint8_t* data, size_t length);
 size_t recv(uint8_t* buffer, size_t buffer_len);
+size_t listen(uint8_t* buffer, size_t buffer_len);
 
 bool get_mac(uint8_t mac[6]);
 

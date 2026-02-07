@@ -145,7 +145,7 @@ ip_u dhcp_request(uint32_t transaction_identifier, char* hostname, mac_u mac) {
     uint8_t buffer[2048];
 	printf("step 6\n\r");
     
-    size_t received = drivers::net::netgeneric::recv(buffer, sizeof(buffer));
+    size_t received = drivers::net::netgeneric::listen(buffer, sizeof(buffer));
 	printf("step 7 (received %zu bytes)\n\r", received);
 
     if (received == 0) {
@@ -176,7 +176,7 @@ ip_configuration dhcp_request_ip(ip_u offer, uint32_t transaction_identifier, ch
     drivers::net::netgeneric::send((uint8_t*)&packet, sizeof(dhcp_packet));
 
     uint8_t buffer[2048];
-    size_t received = drivers::net::netgeneric::recv(buffer, sizeof(buffer));
+    size_t received = drivers::net::netgeneric::listen(buffer, sizeof(buffer));
 
     if (received == 0) {
         printf("dhcp: No response received to request!\n");

@@ -297,22 +297,29 @@ void handle_receive() {
     }
 }
 
+bool transmit_done = false;
+
 __attribute__((interrupt))
 void fire(void* frame) {
 	write_command(REG_IMASK, 0x1);
 
 	uint32_t status = read_command(0xC0);
 
+	printf("interrupt! %08X\n\r", status);
+
 	if (status & 0x04) {
 		start_link();
 	} else if (status & 0x10) {
-		
+		transmit_done = true;
 	} else if (status & 0x80) {
 		handle_receive();
 	}
 }
 
 int send_packet(const void* p_data, uint16_t p_len) {
+	while (transmit_done == false);
+	transmit_done = false;
+
     uint64_t phys_addr = mem::vmm::va_to_pa((uint64_t)p_data);
     tx_descs[tx_cur]->addr = phys_addr;
     tx_descs[tx_cur]->length = p_len;
@@ -322,11 +329,12 @@ int send_packet(const void* p_data, uint16_t p_len) {
     tx_cur = (tx_cur + 1) % E1000_NUM_TX_DESC;
     write_command(REG_TXDESCTAIL, tx_cur);
     
-    while(!(tx_descs[old_cur]->status & 0xff)) {
+    while(!(tx_descs[old_cur]->status & TSTA_DD)) {
+    	if (transmit_done) break;
         __asm__ volatile("pause");
     }
     
-    return 0;
+    return !(tx_descs[old_cur]->status & ~TSTA_DD);
 }
 
 bool e1000_send(const uint8_t* data, size_t length);
@@ -334,14 +342,25 @@ size_t e1000_recv(uint8_t* buffer, size_t len);
 size_t e1000_lstn(uint8_t* buffer, size_t len);
 bool e1000_get_mac(uint8_t _mac[6]);
 
+#define E1000_CTRL 0x0000
+#define E1000_CTRL_RST (1 << 26)
+
+void e1000_reset() {
+    write_command(REG_CTRL, read_command(REG_CTRL) | (1 << 26));
+    while (read_command(REG_CTRL) & (1 << 26)) asm("pause");
+}
+
 void e1000_init(pcie_device* dev, net_card_driver* driver) {
 	printf("Initialising E1000 network card\n\r");
+	printf("pcie drier = %p\n\r", dev);
 
 	driver->name = "E1000";
 	driver->send = e1000_send;
 	driver->receive = e1000_recv;
 	driver->listen = e1000_lstn;
 	driver->get_mac = e1000_get_mac;
+
+	dev->command |= (1 << 2); // PCI_COMMAND_MASTER;
 
 	bar_type = dev->bars[0] & 0x1;
 	io_base = dev->bars[0] & ~0x3;
@@ -362,18 +381,20 @@ void e1000_init(pcie_device* dev, net_card_driver* driver) {
 	}
 	printf("\n\r");
 
+	e1000_reset();
+
 	start_link();
 
 	for (int i = 0; i < 0x80; i++)
 		write_command(0x5200 + i * 4, 0);
 
 	arch::x86_64::cpu::idt::set_descriptor(0x20 + dev->interrupt_line, (uint64_t)fire, 0x8E);
+	arch::x86_64::cpu::idt::irq_clear_mask(dev->interrupt_line);
+	printf("vector = %02X\n\r", 0x20 + dev->interrupt_line);
 
 	enable_interrupt();
 	rx_init();
 	tx_init();
-
-	printf("E1000 card started\n\r");
 }
 
 bool e1000_send(const uint8_t* data, size_t length) {
