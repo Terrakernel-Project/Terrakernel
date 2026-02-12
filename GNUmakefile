@@ -2,10 +2,17 @@
 
 ARCH := x86_64
 
-QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0
+# TAP
+#QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0
+
+# NO TAP
+#QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic -netdev user,id=net0 -device e1000,netdev=net0
+
 QEMUFLAGS_NORM := -rtc base=localtime -M q35 -m 6G
 QEMUFLAGS_DINT := $(QEMUFLAGS_NORM) -d int
 QEMUFLAGS_GDB := $(QEMUFLAGS_NORM) -s -S
+
+# All flags without some stuff
 QEMUFLAGS_A := $(QEMUFLAGS_NORM) -d int -s -S
 
 override IMAGE_NAME := terra-$(ARCH)
@@ -39,21 +46,19 @@ run-hdd: run-hdd-$(ARCH)
 
 run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35 \
+		-machine q35,sata=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
-		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
-		-blockdev driver=raw,node-name=disk0,file=diskfile \
-		-device ahci,id=ahci \
-		-device ide-hd,drive=disk0,bus=ahci.0 \
+		-drive if=none,id=cdrom0,format=raw,file=$(IMAGE_NAME).iso \
+		-device ich9-ahci,id=ahci \
+		-device ide-cd,drive=cdrom0,bus=ahci.0 \
 		$(QEMUFLAGS)
 
 run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 	qemu-system-$(ARCH) \
-		-machine q35 \
+		-machine q35,sata=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
-		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).hdd \
-		-blockdev driver=raw,node-name=disk0,file=diskfile \
-		-device ahci,id=ahci \
+		-drive if=none,id=disk0,format=raw,file=$(IMAGE_NAME).hdd \
+		-device ich9-ahci,id=ahci \
 		-device ide-hd,drive=disk0,bus=ahci.0 \
 		$(QEMUFLAGS)
 

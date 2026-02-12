@@ -1,10 +1,9 @@
 #include "netgeneric.hpp"
-#include <pcie/pcie.hpp>
 #include <panic.hpp>
 #include <mem/mem.hpp>
+#include "dhcp.hpp"
 #include "e1000/e1000.hpp"
 #include "rtl8139/rtl8139.hpp"
-#include "dhcp.hpp"
 
 net_card_driver* driver;
 pcie_device* device;
@@ -198,12 +197,22 @@ void initialise() {
 
 bool send(const uint8_t* data, size_t length) {
 	stats.packets_sent++;
-	return driver->send(data, length);
+	if (driver->send(data, length)) {
+		return true;
+	} else {
+		stats.errors++;
+		return false;
+	}
 }
 
 size_t recv(uint8_t* buffer, size_t buffer_len) {
 	stats.packets_received++;
-	return driver->receive(buffer, buffer_len);
+	if (driver->receive(buffer, buffer_len)) {
+		return true;
+	} else {
+		stats.errors++;
+		return false;
+	}
 }
 
 size_t listen(uint8_t* buffer, size_t buffer_len) {
@@ -212,7 +221,12 @@ size_t listen(uint8_t* buffer, size_t buffer_len) {
 }
 
 bool get_mac(uint8_t mac[6]) {
-	return driver->get_mac(mac);
+	if (driver->get_mac(mac)) {
+		return true;
+	} else {
+		stats.errors++;
+		return false;
+	}
 }
 
 net_stats net_card_get_stats() {

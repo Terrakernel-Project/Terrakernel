@@ -46,7 +46,6 @@ void set_event_quiet(event_context* evctx);
 void unset_event_quiet(int64_t event_id);
 void unset_event_quiet(event_context* evctx);
 
-
 }
 
 #endif

@@ -93,6 +93,14 @@ endmenu
 
 endmenu
 
+menu "AHCI"
+
+config AHCI_VERBOSE
+	bool "AHCI verbose output"
+	default y
+
+endmenu
+
 endmenu
 
 menu "IDT"

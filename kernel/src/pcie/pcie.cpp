@@ -212,4 +212,14 @@ pcie_device* get_device_vendor_id(uint16_t vendor_id, uint16_t device_id) {
     return nullptr;
 }
 
+void enable_bus_mastering(pcie_device* dev) {
+    volatile uint16_t* command_reg = (volatile uint16_t*)((uintptr_t)dev->config_space + 0x04);
+    
+    uint16_t command = *command_reg;
+    
+    command |= (1 << 2) | (1 << 1) | (1 << 0);
+    
+    *command_reg = command;
+}
+
 }

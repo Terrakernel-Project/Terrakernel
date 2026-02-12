@@ -352,7 +352,6 @@ void e1000_reset() {
 
 void e1000_init(pcie_device* dev, net_card_driver* driver) {
 	printf("Initialising E1000 network card\n\r");
-	printf("pcie drier = %p\n\r", dev);
 
 	driver->name = "E1000";
 	driver->send = e1000_send;
@@ -360,7 +359,7 @@ void e1000_init(pcie_device* dev, net_card_driver* driver) {
 	driver->listen = e1000_lstn;
 	driver->get_mac = e1000_get_mac;
 
-	dev->command |= (1 << 2); // PCI_COMMAND_MASTER;
+	pcie::enable_bus_mastering(dev);
 
 	bar_type = dev->bars[0] & 0x1;
 	io_base = dev->bars[0] & ~0x3;

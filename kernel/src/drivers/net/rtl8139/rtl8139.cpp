@@ -118,7 +118,7 @@ void rtl8139_init(pcie_device* dev, net_card_driver* driver) {
     driver->listen = rtl8139_lstn;
     driver->get_mac = rtl8139_get_mac;
 
-    dev->command |= (1 << 2); // PCI master
+    pcie::enable_bus_mastering(dev);
 
     io_base = dev->bars[0] & 0x3;
 

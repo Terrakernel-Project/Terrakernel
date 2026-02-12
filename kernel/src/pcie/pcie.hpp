@@ -48,6 +48,8 @@ pcie_device* get_device_bdf(uint8_t bus, uint8_t device, uint8_t function);
 pcie_device* get_device_class_code(uint8_t class_code, uint8_t subclass, bool check_progif = false, uint8_t prog_if = 0);
 pcie_device* get_device_vendor_id(uint16_t vendor_id, uint16_t device_id);
 
+void enable_bus_mastering(pcie_device* dev);
+
 }
 
 #endif

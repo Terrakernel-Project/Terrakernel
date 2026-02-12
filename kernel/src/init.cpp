@@ -33,7 +33,7 @@
 #include <proc/exec.hpp>
 #include <subsystems/hlec/hlec.hpp>
 #include <drivers/net/netgeneric.hpp>
-#include <drivers/net/dhcp.hpp>
+#include <drivers/blockio/diskgeneric.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -208,10 +208,19 @@ skip_redraw:;
     drivers::display::edid::initialise();
     Log::printf_status("OK", "EDID Driver Initialised");
 
-	drivers::net::netgeneric::initialise();
-	Log::printf_status("OK", "Networking Initialised");
+	//drivers::net::netgeneric::initialise();
+	//Log::printf_status("OK", "Networking Initialised");
 
-	
+	drivers::blockio::diskgeneric::initialise();
+	Log::printf_status("OK", "Block I/O Initialised");	
+
+	char buf[512];
+	int64_t read = drivers::blockio::diskgeneric::read(0, 1, (uint8_t*)buf, 512);
+	printf("read %zd bytes\n\r", read);
+
+	for (int i = 0; i < 512; i++) {
+		printf("%c", buf[i]);
+	}
 
     // Finished bootstrapping
 
