@@ -8,7 +8,7 @@ config PRINT_STATUS
 	bool "Verbose status logs"
 	default n
 
-endmenu
+endmenu # Logging
 
 menu "Drivers"
 
@@ -34,7 +34,7 @@ config PS2K_DROP_EVENTS_ON_FAILURE_OR_OVERFLOW
     bool "Drop events on failiure"
     default n
 
-endmenu
+endmenu # PS2 Keyboard
 
 menu "PS2 Mouse"
 
@@ -42,7 +42,7 @@ config DEBUG_MOUSE
 	bool "Debugging"
 	default n
 
-endmenu
+endmenu # PS2 Mouse
 
 menu "ACPI"
 
@@ -50,7 +50,7 @@ config ACPI_VERBOSE
     bool "Verbose Logging"
     default n
 
-endmenu
+endmenu # ACPI
 
 menu "PCI"
 
@@ -58,7 +58,7 @@ config PCI_VERBOSE
     bool "Verbose Logging"
     default n
 
-endmenu
+endmenu # PCI
 
 menu "Timers"
 
@@ -68,7 +68,7 @@ config PIT_FREQUENCY
 	int "PIT Timer Frequency"
 	default 25
 
-endmenu
+endmenu # PIT
 
 menu "APIC Timer"
 
@@ -89,19 +89,35 @@ config APIC_INACCURACY_PROT_DELAY
 	range 40 400 if APIC_INACCURACY_PROT # 40 millisecond to 400 milliseconds, the higher to more accurate, i think if TK is a real-time OS then higher is better
 	default 40 if APIC_INACCURACY_PROT
 
-endmenu
+endmenu # APIC Timer
 
-endmenu
+endmenu # Timers
 
 menu "AHCI"
 
 config AHCI_VERBOSE
 	bool "AHCI verbose output"
-	default y
+	default n
 
-endmenu
+endmenu # AHCI
 
-endmenu
+menu "Filesystems"
+
+menu "FAT32"
+
+config FAT_VERBOSE
+	bool "FAT32 verbose output"
+	default n
+
+config DUMP_BOOT_SECTOR_ON_FAILURE_SIG
+	bool "Dump the boot sector on signature errors"
+	default n
+
+endmenu # FAT32
+
+endmenu # Filesystems
+
+endmenu # Drivers
 
 menu "IDT"
 
@@ -133,7 +149,7 @@ config EXCEPTION_DEFAULT
 		4: MEMVIEW + EXCEPTION
 		5: STACKTRACE
 
-endmenu
+endmenu # Default menu
 
 config EXCEPTION_DEBUGGER_SYNTAX
 	bool "Use Intel Syntax"
@@ -153,9 +169,9 @@ config DISASM_STOP_AT_RET
 		- SYSRET
 		- SYSRETQ
 
-endmenu
+endmenu # Exceptions
 
-endmenu
+endmenu # IDT
 
 menu "Syscalls"
 
@@ -174,9 +190,9 @@ config VERBOSE_SYSCALL_CREATION
 
 config ENABLE_SYSCALL_DEBUGGING
 	bool "Enable syscall debugging"
-	default y
+	default n
 
-endmenu
+endmenu # Syscalls
 
 menu "APIC"
 
@@ -184,7 +200,7 @@ config APIC_VERBOSE
 	bool "Verbose Logging"
 	default n
 
-endmenu
+endmenu # APIC
 
 menu "Kernel Messages"
 
@@ -192,7 +208,7 @@ config ENABLE_KERNEL_MESSAGES
 	bool "Enable kernel messages"
 	default y
 
-endmenu
+endmenu # Kernel Messages
 
 menu "MISC"
 
@@ -205,9 +221,9 @@ config BGRT_SLEEP_TIME_MS
 	default 3000
 	range 1000 10000
 
-endmenu
+endmenu # BGRT
 
-endmenu
+endmenu # Boot Resources
 
 config DEV_MODE
 	bool "Enable DEV Mode"
@@ -215,4 +231,4 @@ config DEV_MODE
 	help
 		If enabled disables wait-time processes such as BGRT_SLEEP_TIME_MS ("BGRT display time milliseconds")
 
-endmenu
+endmenu # MISC

@@ -24,4 +24,13 @@ static inline bool isalnum(char c) {
 	return (isalpha(c) || isdigit(c));
 }
 
+static inline char toupper(char c) {
+	if (c >= 'a' && c <= 'z') return c + 0x20;
+	else return c;
+}
+
+static inline char tolower(char c) {
+	return toupper(c) - 0x20;
+}
+
 #endif

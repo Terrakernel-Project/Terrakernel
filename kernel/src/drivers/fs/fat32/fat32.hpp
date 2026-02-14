@@ -3,8 +3,13 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <config.hpp>
 
-#define FDPRINTF(fmt, ...) printf("[ %s ] " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+#ifdef CONFIG_FAT_VERBOSE
+#	define FDPRINTF(fmt, ...) printf("[ %s ] " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+#else
+#	define FDPRINTF(fmt, ...)
+#endif
 
 struct __attribute__((packed)) fat32_bpb {
     uint8_t  jmp_boot[3];
@@ -78,28 +83,18 @@ struct __attribute__((packed)) fat32_lfn_entry {
 
 enum class FATType { FAT12, FAT16, FAT32 };
 
-struct fat_state {
-    FATType type;
-    uint32_t part_sn;
-    uint8_t* fat_cache;
-    uint32_t fat_cache_sector;
-    bool fat_cache_valid;
-
-    // BPB fields
-    uint16_t bytes_per_sector;
-    uint8_t sectors_per_cluster;
-    uint16_t reserved_sectors;
-    uint8_t num_fats;
-    uint16_t root_entry_count;
-    uint32_t total_sectors;
-    uint32_t fat_size;
-    uint32_t root_dir_sectors;
-    uint32_t cluster_count;
-    uint32_t fat_begin_lba;
-    uint32_t cluster_begin_lba;
-    uint16_t root_cluster; // 0 for FAT12/16
-    char volume_label[11];
-    char fs_type[8];
+struct fat32_state {
+	fat32_bpb bpb;
+	uint32_t fat_begin_lba;
+	uint32_t cluster_begin_lba;
+	uint32_t sectors_per_cluster;
+	uint32_t bytes_per_cluster;
+	uint32_t root_dir_cluster;
+	uint32_t fat_size_sectors;
+	int part_sn;
+	uint8_t* fat_cache;
+	uint32_t fat_cache_sector;
+	bool fat_cache_valid;
 };
 
 void fat32_init();

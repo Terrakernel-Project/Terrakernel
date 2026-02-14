@@ -1,105 +1,0 @@
-[2J[001;001H[=3h[2J[001;001H[2J[001;001H[8;042;160t[2J[001;001H[2J[001;001H[8;056;240t[2J[001;001HBdsDxe: loading Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
-BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
-[2J[001;001H[001;001H[2J[001;001H[001;001H[2J[H[90m[00000.000][0m [ [1;mWARNING[0m ] EDID purely discovers modes and is not able to change video modes
-
-Initialising AHCI disk controller
-[ bool supported_port_type(HBA_PORT*) ] Port is a SATA port
-[ void setup_port(internal_port*) ] Setting up port sata_a
-[ void setup_port(internal_port*) ] Allocating memory for CLB/FB/CTBA for port sata_a
-[ void setup_port(internal_port*) ] Registered CLB=0x0000000000107000 FB=0x0000000000108000
-[ void setup_port(internal_port*) ] Prepared command list for port sata_a
-[ void setup_port(internal_port*) ] Performing COMRESET on port sata_a
-[ void setup_port(internal_port*) ] Waiting for device detection on port sata_a
-[ void setup_port(internal_port*) ] Port sata_a is online - DET=0x3 IPM=0x1
-[ void setup_port(internal_port*) ] Port sata_a signature: 0x00000101
-[ void setup_port(internal_port*) ]   -> SATA drive
-[ void setup_port(internal_port*) ] Starting port sata_a
-[ void setup_port(internal_port*) ] ===============================
-
-[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 1 due to not being supported...
-[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 2 due to not being supported...
-[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 3 due to not being supported...
-[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 4 due to not being supported...
-[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 5 due to not being supported...
-Initializing partition table
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Reading from port sata_a: LBA=0 count=3
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Using command slot 0
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Buffer virt=FFFF80000010B000 phys=0x10b000
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Pre-command state: SSTS=0x00000113 TFD=0x00000130 SERR=0x00000000
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Issuing READ command on slot 0
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Read completed, transferred 1536 bytes
-Detected MBR partition table
-Parsing MBR partition table
-Partition 0:
-  Type: 0x07
-  LBA range: 64 - 139
-  Size: 76 sectors (0 MB)
-  Bootable: Yes
-  ESP: No
-Partition 1:
-  Type: 0xef
-  LBA range: 140 - 5899
-  Size: 5760 sectors (2 MB)
-  Bootable: No
-  ESP: Yes
-Partition 2:
-  Type: 0xaf
-  LBA range: 5900 - 11135
-  Size: 5236 sectors (2 MB)
-  Bootable: No
-  ESP: No
-Partition 3:
-  Type: 0x07
-  LBA range: 11136 - 11735
-  Size: 600 sectors (0 MB)
-  Bootable: No
-  ESP: No
-Found 4 MBR partitions
-[ void fat32_init() ] Initializing FAT32 driver
-[ void fat32_init() ] Allocated FAT cache at FFFF800003C920D5
-[ bool fat32_read_boot_sector() ] Reading boot sector from partition 1
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Reading from port sata_a: LBA=140 count=1
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Using command slot 0
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Buffer virt=FFFF80000010B000 phys=0x10b000
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Pre-command state: SSTS=0x00000113 TFD=0x00000050 SERR=0x00000000
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Issuing READ command on slot 0
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Read completed, transferred 512 bytes
-[ bool fat32_read_boot_sector() ] Boot sector read result: 512 bytes
-[ bool fat32_read_boot_sector() ] First 16 bytes: eb 3c 90 4d 54 4f 4f 34 30 34 39 00 02 02 01 00
-[ bool fat32_read_boot_sector() ] OEM Name: MTOO4049
-[ bool fat32_read_boot_sector() ] FS Type field (offset 54 for FAT12/16): FAT12   
-[ bool fat32_read_boot_sector() ] FS Type field (offset 82 for FAT32): V
-[ bool fat32_read_boot_sector() ] Boot signature offset 66 (FAT32): 0xd8
-[ bool fat32_read_boot_sector() ] Boot signature offset 38 (FAT12/16): 0x29
-[ bool fat32_read_boot_sector() ] Bytes 510-511: 0x55 0xaa (expecting 0x55 0xAA)
-[ bool fat32_read_boot_sector() ] Cluster count: 2863
-[ bool fat32_read_boot_sector() ] Root entry count: 240 (FAT12/16 only)
-[ bool fat32_read_boot_sector() ] Detected FAT12 (cluster_count=2863 < 4085)
-[ bool fat32_read_boot_sector() ] FAT12/16 detected - converting to FAT32-compatible structure
-[ bool fat32_read_boot_sector() ] Bytes per sector: 512
-[ bool fat32_read_boot_sector() ] Sectors per cluster: 2
-[ bool fat32_read_boot_sector() ] Root cluster: 2
-[ bool fat32_read_boot_sector() ] FAT begin LBA: 1
-[ bool fat32_read_boot_sector() ] Cluster begin LBA: 34
-[ bool fat32_read_boot_sector() ] Volume label: NO NAME    
-[ bool fat32_read_boot_sector() ] FS type: FAT12   
-[ void fat32_init() ] FAT32 init complete
-[ bool fat32_navigate_path(const char*, uint32_t*, bool*) ] Navigating path: testtestlfn.txt
-[ bool fat32_navigate_path(const char*, uint32_t*, bool*) ] Path has 1 components
-[ bool fat32_navigate_path(const char*, uint32_t*, bool*) ] Looking for component: testtestlfn.txt
-[ bool fat32_find_file_in_directory(uint32_t, const char*, fat32_dir_entry*, uint32_t*) ] Searching for 'testtestlfn.txt' in directory cluster 2
-[ bool fat32_read_cluster(uint32_t, uint8_t*) ] Reading cluster 2 at LBA 34 (2 sectors)
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Reading from port sata_a: LBA=174 count=2
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Using command slot 0
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Buffer virt=FFFF80000010B000 phys=0x10b000
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Pre-command state: SSTS=0x00000113 TFD=0x00000050 SERR=0x00000000
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Issuing READ command on slot 0
-[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Read completed, transferred 1024 bytes
-[ bool fat32_read_cluster(uint32_t, uint8_t*) ] Read cluster result: 1024 bytes
-[ bool fat32_find_file_in_directory(uint32_t, const char*, fat32_dir_entry*, uint32_t*) ] End of directory reached
-[ bool fat32_navigate_path(const char*, uint32_t*, bool*) ] Component not found: testtestlfn.txt
-Read -1 bytes: 
-Got 1 CPUs
-[90m[00000.256][0m [ [94mINFO[0m ]  CPU#0 is already online (BSP/Boostrap Processor)
-Hello, World! from a userspace init process
-

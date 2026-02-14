@@ -22,15 +22,6 @@ void fat32_init() {
         FDPRINTF("Failed to read boot sector\n");
         return;
     }
-
-	if (cluster_count < 4085) {
-	    g_fat.type = FATType::FAT12;
-	} else if (cluster_count < 65525) {
-	    g_fat.type = FATType::FAT16;
-	} else {
-	    g_fat.type = FATType::FAT32;
-	}
-    
     FDPRINTF("FAT32 init complete\n");
 }
 
@@ -115,7 +106,7 @@ bool fat32_read_boot_sector() {
     } else {
         if (g_fat32.bpb.boot_signature != 0x29 && g_fat32.bpb.boot_signature != 0x28) {
             FDPRINTF("Invalid FAT32 boot signature: 0x%02x at offset 66\n", g_fat32.bpb.boot_signature);
-            
+#ifdef CONFIG_DUMP_BOOT_SECTOR_ON_FAILURE_SIG
             printf("\n[FAT32] Boot sector hex dump:\n");
             for (int y = 0; y < 32; y++) {
                 printf("%04x | ", y*16);
@@ -130,6 +121,7 @@ bool fat32_read_boot_sector() {
                 printf("\n");
             }
             printf("\n");
+#endif
             
             mem::heap::free(boot_sector);
             return false;
@@ -457,10 +449,10 @@ bool fat32_read_directory_entries(uint32_t cluster, fat32_dir_entry* entries,
                 continue;
             }
             
-			if (dir_entries[i].attr == FAT32_ATTR_LONG_NAME ||
-			    dir_entries[i].attr == FAT32_ATTR_VOLUME_ID) {
-			    continue;
-			}
+            if (dir_entries[i].attr == FAT32_ATTR_LONG_NAME || 
+                (dir_entries[i].attr & FAT32_ATTR_VOLUME_ID)) {
+                continue;
+            }
             
             if (*count < max_entries) {
                 mem::memcpy(&entries[*count], &dir_entries[i], sizeof(fat32_dir_entry));

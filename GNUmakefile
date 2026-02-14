@@ -203,6 +203,8 @@ endif
 	@mmd -i $(IMAGE_NAME).hdd@@1M ::/boot
 	@mmd -i $(IMAGE_NAME).hdd@@1M ::/boot/limine
 	@mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/kernel ::/boot &> /dev/null
+	@mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/initrd.img ::/boot &> /dev/null
+	@mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/other/* ::/ &> /dev/null
 	@mcopy -i $(IMAGE_NAME).hdd@@1M limine.conf ::/boot/limine &> /dev/null
 ifeq ($(ARCH),x86_64)
 	@mcopy -i $(IMAGE_NAME).hdd@@1M limine/limine-bios.sys ::/boot/limine &> /dev/null
