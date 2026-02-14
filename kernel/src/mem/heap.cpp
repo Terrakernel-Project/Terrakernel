@@ -251,3 +251,15 @@ void free(void* ptr) {
 }
 
 }
+
+extern "C" {
+
+extern void* exposed_malloc(size_t n) {
+	return mem::heap::malloc(n);
+}
+
+extern void exposed_free(void* p) {
+	mem::heap::free(p);
+}
+
+}

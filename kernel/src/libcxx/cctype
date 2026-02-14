@@ -14,4 +14,14 @@ static inline bool isdigit(char c) {
     return c >= '0' && c <= '9';
 }
 
+static inline bool isalpha(char c) {
+	if (c >= 'a' && c <= 'z') return true;
+	else if (c >= 'A' && c <= 'Z') return true;
+	else return false;
+}
+
+static inline bool isalnum(char c) {
+	return (isalpha(c) || isdigit(c));
+}
+
 #endif

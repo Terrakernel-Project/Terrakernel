@@ -85,8 +85,7 @@ struct __attribute__((packed)) HBA_CMD_TBL {
 	HBA_PRDT_ENTRY prdt_entry[1];
 };
 
-typedef struct tagFIS_REG_H2D
-{
+struct FIS_REG_H2D {
 	// DWORD 0
 	uint8_t  fis_type;	// FIS_TYPE_REG_H2D
 
@@ -117,10 +116,9 @@ typedef struct tagFIS_REG_H2D
 
 	// DWORD 4
 	uint8_t  rsv1[4];	// Reserved
-} FIS_REG_H2D;
+};
 
-typedef struct tagFIS_REG_D2H
-{
+struct FIS_REG_D2H {
 	// DWORD 0
 	uint8_t  fis_type;    // FIS_TYPE_REG_D2H
 
@@ -151,10 +149,9 @@ typedef struct tagFIS_REG_D2H
 
 	// DWORD 4
 	uint8_t  rsv4[4];     // Reserved
-} FIS_REG_D2H;
+};
 
-typedef struct tagFIS_DATA
-{
+struct FIS_DATA {
 	// DWORD 0
 	uint8_t  fis_type;	// FIS_TYPE_DATA
 
@@ -165,7 +162,38 @@ typedef struct tagFIS_DATA
 
 	// DWORD 1 ~ N
 	uint32_t data[1];	// Payload
-} FIS_DATA;
+};
+
+struct FIS_DMA_SETUP {
+	// DWORD 0
+	uint8_t  fis_type;	// FIS_TYPE_DMA_SETUP
+
+	uint8_t  pmport:4;	// Port multiplier
+	uint8_t  rsv0:1;		// Reserved
+	uint8_t  d:1;		// Data transfer direction, 1 - device to host
+	uint8_t  i:1;		// Interrupt bit
+	uint8_t  a:1;            // Auto-activate. Specifies if DMA Activate FIS is needed
+
+        uint8_t  rsved[2];       // Reserved
+
+	//DWORD 1&2
+
+        uint64_t DMAbufferID;    // DMA Buffer Identifier. Used to Identify DMA buffer in host memory.
+                                 // SATA Spec says host specific and not in Spec. Trying AHCI spec might work.
+
+        //DWORD 3
+        uint32_t rsvd;           //More reserved
+
+        //DWORD 4
+        uint32_t DMAbufOffset;   //Byte offset into buffer. First 2 bits must be 0
+
+        //DWORD 5
+        uint32_t TransferCount;  //Number of bytes to transfer. Bit 0 must be 0
+
+        //DWORD 6
+        uint32_t resvd;          //Reserved
+        
+};
 
 void ahci_init(pcie_device* dev, disk_driver* driver);
 

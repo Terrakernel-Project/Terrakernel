@@ -4,3 +4,4 @@
 edk2-ovmf
 *.config
 *.config.old
+/initrd/init

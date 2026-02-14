@@ -48,18 +48,18 @@ run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
 		-machine q35,sata=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
-		-drive if=none,id=cdrom0,format=raw,file=$(IMAGE_NAME).iso \
+		-drive if=none,id=hdd0,format=raw,file=$(IMAGE_NAME).iso \
 		-device ich9-ahci,id=ahci \
-		-device ide-cd,drive=cdrom0,bus=ahci.0 \
+		-device ide-hd,drive=hdd0,bus=ahci.0 \
 		$(QEMUFLAGS)
 
 run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 	qemu-system-$(ARCH) \
 		-machine q35,sata=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
-		-drive if=none,id=disk0,format=raw,file=$(IMAGE_NAME).hdd \
+		-drive if=none,id=hdd0,format=raw,file=$(IMAGE_NAME).hdd \
 		-device ich9-ahci,id=ahci \
-		-device ide-hd,drive=disk0,bus=ahci.0 \
+		-device ide-hd,drive=hdd0,bus=ahci.0 \
 		$(QEMUFLAGS)
 
 run-norm: edk2-ovmf $(IMAGE_NAME).iso
@@ -151,6 +151,7 @@ ifeq ($(ARCH),x86_64)
 	@cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	@cp -v limine/BOOTIA32.EFI iso_root/EFI/BOOT/
 	@cp -v kernel/bin-$(ARCH)/initrd.img iso_root/boot/initrd.img
+	@cp -rfv kernel/bin-$(ARCH)/other/* iso_root/
 	@xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
 		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \

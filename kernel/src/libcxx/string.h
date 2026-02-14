@@ -1,8 +1,6 @@
 #ifndef TC_STRING_H
 #define TC_STRING_H 1
-
 #define STRING_H 1
-
 #include <mem/mem.hpp>
 #include <stddef.h>
 
@@ -33,6 +31,34 @@ static inline int strcmp(const char *a, const char *b) {
 static inline int strncmp(const char *a, const char *b, size_t n) {
     for (size_t i = 0; i < n; i++) {
         if (a[i] != b[i] || a[i] == '\0') return (unsigned char)a[i] - (unsigned char)b[i];
+    }
+    return 0;
+}
+
+static inline int strcasecmp(const char* a, const char* b) {
+    while (*a && *b) {
+        char c1 = *a;
+        char c2 = *b;
+        if (c1 >= 'A' && c1 <= 'Z') c1 += 32;
+        if (c2 >= 'A' && c2 <= 'Z') c2 += 32;
+        if (c1 != c2) return (unsigned char)c1 - (unsigned char)c2;
+        a++;
+        b++;
+    }
+    char c1 = *a;
+    char c2 = *b;
+    if (c1 >= 'A' && c1 <= 'Z') c1 += 32;
+    if (c2 >= 'A' && c2 <= 'Z') c2 += 32;
+    return (unsigned char)c1 - (unsigned char)c2;
+}
+
+static inline int strncasecmp(const char* a, const char* b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        char c1 = a[i];
+        char c2 = b[i];
+        if (c1 >= 'A' && c1 <= 'Z') c1 += 32;
+        if (c2 >= 'A' && c2 <= 'Z') c2 += 32;
+        if (c1 != c2 || c1 == '\0') return (unsigned char)c1 - (unsigned char)c2;
     }
     return 0;
 }
@@ -72,9 +98,68 @@ static inline size_t strnlen(const char *s, size_t max) {
 }
 
 static inline char* strdup(char* src) {
-    char* new_string = (char*)mem::heap::malloc(strlen(src));
+    char* new_string = (char*)mem::heap::malloc(strlen(src) + 1);
     strcpy(new_string, src);
     return new_string;
+}
+
+static inline char *strcat(char *dst, const char *src) {
+    char *ret = dst;
+    while (*dst) dst++;
+    while ((*dst++ = *src++));
+    return ret;
+}
+
+static inline char* strtok(char* str, const char* delim) {
+    static char* next_token = nullptr;
+    
+    if (str) {
+        next_token = str;
+    } else {
+        str = next_token;
+    }
+    
+    if (!str || !*str) {
+        return nullptr;
+    }
+    
+    while (*str) {
+        bool is_delim = false;
+        for (const char* d = delim; *d; d++) {
+            if (*str == *d) {
+                is_delim = true;
+                break;
+            }
+        }
+        if (!is_delim) break;
+        str++;
+    }
+    
+    if (!*str) {
+        next_token = nullptr;
+        return nullptr;
+    }
+    
+    char* token_start = str;
+    
+    while (*str) {
+        bool is_delim = false;
+        for (const char* d = delim; *d; d++) {
+            if (*str == *d) {
+                is_delim = true;
+                break;
+            }
+        }
+        if (is_delim) {
+            *str = '\0';
+            next_token = str + 1;
+            return token_start;
+        }
+        str++;
+    }
+    
+    next_token = nullptr;
+    return token_start;
 }
 
 #endif

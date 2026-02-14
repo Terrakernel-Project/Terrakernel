@@ -34,6 +34,8 @@
 #include <subsystems/hlec/hlec.hpp>
 #include <drivers/net/netgeneric.hpp>
 #include <drivers/blockio/diskgeneric.hpp>
+#include <cctype>
+#include <drivers/fs/fsgeneric.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -214,13 +216,29 @@ skip_redraw:;
 	drivers::blockio::diskgeneric::initialise();
 	Log::printf_status("OK", "Block I/O Initialised");	
 
-	char buf[512];
-	int64_t read = drivers::blockio::diskgeneric::read(0, 1, (uint8_t*)buf, 512);
-	printf("read %zd bytes\n\r", read);
+	drivers::blockio::diskgeneric::partitions::initialise();
+	Log::printf_status("OK", "Partitions Initialised");
 
-	for (int i = 0; i < 512; i++) {
-		printf("%c", buf[i]);
-	}
+	bool full_disk_fs = false;
+
+	int part_count = drivers::blockio::diskgeneric::partitions::get_num_parts();
+	if (part_count > 1) full_disk_fs = false;
+	else if (part_count == 1) full_disk_fs = true;
+	else panic("failed to get partition count");
+	Log::infof("Discovered %d partitions on disk", part_count);
+
+	drivers::fs::fsgeneric::initialise(full_disk_fs);
+	Log::printf_status("OK", "Filesystem Subsystem Initialised");
+
+	fgfile_t* file_image_test = drivers::fs::fsgeneric::open_disk_file_image("testtestlfn.txt");
+
+	char file_buf[4096];
+
+	int64_t file_sz = drivers::fs::fsgeneric::read_file_contents(file_image_test, file_buf, 4096);
+
+	printf("Read %zd bytes: %.*s\n\r", file_sz, file_buf);
+
+	drivers::fs::fsgeneric::close_disk_file_image(file_image_test);
 
     // Finished bootstrapping
 

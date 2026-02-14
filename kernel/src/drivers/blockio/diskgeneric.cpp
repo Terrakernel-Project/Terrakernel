@@ -127,7 +127,7 @@ void initialise() {
 	init_disk[idx](device, driver);
 }
 
-int64_t read(uint64_t lba, uint64_t c, uint8_t* buffer, size_t len) {
+int64_t raw_read(uint64_t lba, uint64_t c, uint8_t* buffer, size_t len) {
 	stats.sectors_read += c;
 	stats.read_ops++;
 	if (!driver) {
@@ -147,7 +147,7 @@ int64_t read(uint64_t lba, uint64_t c, uint8_t* buffer, size_t len) {
 	}
 }
 
-int64_t write(uint64_t lba, uint64_t c, const uint8_t* data, size_t len) {
+int64_t raw_write(uint64_t lba, uint64_t c, const uint8_t* data, size_t len) {
 	stats.sectors_written += c;
 	stats.write_ops++;
 	if (!driver) {
@@ -169,6 +169,18 @@ int64_t write(uint64_t lba, uint64_t c, const uint8_t* data, size_t len) {
 
 disk_stats disk_get_stats() {
 	return stats;
+}
+
+int64_t read(int part_sn, uint64_t lba, uint64_t c, uint8_t* buffer, size_t len) {
+	return raw_read(drivers::blockio::diskgeneric::partitions::get_part_offset(part_sn, lba), c, buffer, len);
+}
+
+int64_t write(int part_sn, uint64_t lba, uint64_t c, const uint8_t* data, size_t len) {
+	return raw_write(drivers::blockio::diskgeneric::partitions::get_part_offset(part_sn, lba), c, data, len);
+}
+
+int get_esp_part_sn() {
+	return drivers::blockio::diskgeneric::partitions::get_esp_part_sn_intrnl();	
 }
 
 }

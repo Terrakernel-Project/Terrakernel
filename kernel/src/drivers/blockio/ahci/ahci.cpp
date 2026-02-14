@@ -60,6 +60,32 @@ void start_port(HBA_PORT* port) {
 	port->cmd |= (1 << 0);
 }
 
+#define SATA_SIG_ATAPI 0xEB140101
+#define SATA_SIG_ATA 0x00000101
+#define SATA_SIG_SEMB 0xC33C0101
+#define SATA_SIG_PM 0x96690101
+
+bool supported_port_type(HBA_PORT* hba_port) {
+	switch (hba_port->sig) {
+		case SATA_SIG_ATAPI:
+			ADPRINTF("Port is a SATAPI port, unsupported\n\r");
+			return false;
+		case SATA_SIG_ATA:
+			ADPRINTF("Port is a SATA port\n\r");
+			return true;
+		case SATA_SIG_SEMB:
+			ADPRINTF("Port is a SEMB port, unsupported\n\r");
+			return false;
+		case SATA_SIG_PM:
+			ADPRINTF("Port is a PM port, unsupported\n\r");
+			return false;
+	}
+
+	return false;
+}
+
+bool ahci_identify(HBA_PORT* hba_port, uint16_t* identify_buffer);
+
 void setup_port(internal_port* port) {
 	ADPRINTF("Setting up port %s\n\r", port->port_name);
 
@@ -164,10 +190,28 @@ void setup_port(internal_port* port) {
 	ADPRINTF("===============================\n\r\n\r");
 }
 
+
+
 HBA_MEM* abar;
 
+bool ahci_identify(HBA_PORT* hba_port, uint16_t* identify_buffer);
 int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len);
 int64_t ahci_write(uint64_t lba, uint64_t count, const uint8_t* data, size_t len);
+
+void error_dump(FIS_REG_H2D* fis, HBA_CMD_TBL* cmd_tbl, HBA_CMD_HEADER* cmd_header) {
+	ADPRINTF("FIS dump:\n\r");
+	ADPRINTF("  fis_type=0x%02x c=%d command=0x%02x\n\r", fis->fis_type, fis->c, fis->command);
+	ADPRINTF("  device=0x%02x\n\r", fis->device);
+	ADPRINTF("  lba=0x%02x%02x%02x%02x%02x%02x\n\r", fis->lba5, fis->lba4, fis->lba3, fis->lba2, fis->lba1, fis->lba0);
+	ADPRINTF("  count=0x%04x\n\r", (fis->counth << 8) | fis->countl);
+	
+	ADPRINTF("PRDT dump:\n\r");
+	ADPRINTF("  dba=0x%08x%08x\n\r", cmd_tbl->prdt_entry[0].dbau, cmd_tbl->prdt_entry[0].dba);
+	ADPRINTF("  dbc=0x%08x (bytes=%u)\n\r", cmd_tbl->prdt_entry[0].dbc, cmd_tbl->prdt_entry[0].dbc + 1);
+	
+	ADPRINTF("Command header dump:\n\r");
+	ADPRINTF("  cfl=%d w=%d prdtl=%d\n\r", cmd_header->cfl, cmd_header->w, cmd_header->prdtl);
+}
 
 void ahci_init(pcie_device* dev, disk_driver* driver) {
 	printf("Initialising AHCI disk controller\n\r");
@@ -179,7 +223,7 @@ void ahci_init(pcie_device* dev, disk_driver* driver) {
 	pcie::enable_bus_mastering(dev);
 	
 	uint64_t abar_phys = dev->bars[5] & ~0xFULL;
-	abar = (HBA_MEM*)mem::vmm::pa_to_va(abar_phys);
+	abar = (HBA_MEM*)mem::vmm::pa_to_va((uint64_t)abar_phys);
 	mem::vmm::mmap((void*)abar_phys, abar, (sizeof(HBA_MEM) + 0xFFF) / 0x1000, PAGE_PRESENT | PAGE_RW | PAGE_PCD);
 	
 	abar->ghc |= (1 << 31);
@@ -188,8 +232,12 @@ void ahci_init(pcie_device* dev, disk_driver* driver) {
 	
 	for (int i = 0; i < 32; i++) {
 		if (pi & (1 << i)) {
-			internal_port* port = implement_port(&abar->ports[i]);
-			setup_port(port);
+			if (supported_port_type(&abar->ports[i])) {
+				internal_port* port = implement_port(&abar->ports[i]);
+				setup_port(port);
+			} else {
+				ADPRINTF("Skipping port %d due to not being supported...\n\r", i);
+			}
 			continue;
 		} else {
 			continue;
@@ -207,236 +255,386 @@ int find_cmdslot(HBA_PORT* port) {
 	return -1;
 }
 
-int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len) {
-	if (len < (count * 512)) {
-		return -1; // buffer size must be bigger than or equal to the number of sectors read
-	}
+bool ahci_identify(HBA_PORT* hba_port, uint16_t* identify_buffer) {
+	ADPRINTF("Sending IDENTIFY DEVICE command\n\r");
 
-	if (count > 8192) {
-		return -1; // cannot read more than 4MiB of data
+	void* intrnl_buf_phys = mem::pmm::palloc(1);
+	void* intrnl_buf = (void*)mem::vmm::pa_to_va((uint64_t)intrnl_buf_phys);
+	mem::memset(intrnl_buf, 0, 4096);
+	
+	hba_port->serr = 0xFFFFFFFF;
+	hba_port->is = 0xFFFFFFFF;
+	
+	uint64_t timeout = 100000;
+	while (timeout > 0) {
+		uint32_t tfd = hba_port->tfd;
+		uint8_t status = tfd & 0xFF;
+		if (!(status & 0x80) && !(status & 0x08)) {
+			break;
+		}
+		timeout--;
 	}
-
-	ADPRINTF("Reading LBA=%lu count=%lu\n\r", lba, count);
 	
-	if (port_idx == 0) {
-		ADPRINTF("No ports available\n\r");
-		return -1;
+	if (timeout == 0) {
+		ADPRINTF("Device not ready for IDENTIFY\n\r");
+		mem::pmm::free(intrnl_buf_phys, 1);
+		return false;
 	}
-	
-	internal_port* port = &driver_ports[0];
-	if (!port->online) {
-		ADPRINTF("Port is offline\n\r");
-		return -1;
-	}
-	
-	HBA_PORT* hba_port = port->hba_port;
-	
-	hba_port->is = (uint32_t)-1;
 	
 	int slot = find_cmdslot(hba_port);
 	if (slot == -1) {
 		ADPRINTF("No command slot available\n\r");
-		return -1;
+		mem::pmm::free(intrnl_buf_phys, 1);
+		return false;
 	}
-	ADPRINTF("Using command slot %d\n\r", slot);
 	
 	uint64_t clb_phys = ((uint64_t)hba_port->clbu << 32) | hba_port->clb;
-	HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*)mem::vmm::pa_to_va(clb_phys);
+	HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*)mem::vmm::pa_to_va((uint64_t)clb_phys);
 	cmd_header += slot;
 	
 	cmd_header->cfl = sizeof(FIS_REG_H2D) / sizeof(uint32_t);
-	cmd_header->w = 0; // Read op
+	cmd_header->w = 0;
+	cmd_header->c = 0;
+	cmd_header->p = 0;
 	cmd_header->prdtl = 1;
 	cmd_header->prdbc = 0;
 	
 	uint64_t ctba_phys = ((uint64_t)cmd_header->ctbau << 32) | cmd_header->ctba;
-	HBA_CMD_TBL* cmd_tbl = (HBA_CMD_TBL*)mem::vmm::pa_to_va(ctba_phys);
+	HBA_CMD_TBL* cmd_tbl = (HBA_CMD_TBL*)mem::vmm::pa_to_va((uint64_t)ctba_phys);
 	mem::memset(cmd_tbl, 0, sizeof(HBA_CMD_TBL) + sizeof(HBA_PRDT_ENTRY) * 7);
 	
-	uint64_t buffer_phys = mem::vmm::va_to_pa((uint64_t)buffer);
-	ADPRINTF("Buffer virt=%p phys=0x%lx\n\r", buffer, buffer_phys);
-	
+	uint64_t buffer_phys = (uint64_t)intrnl_buf_phys;
 	cmd_tbl->prdt_entry[0].dba = (uint32_t)(buffer_phys & 0xFFFFFFFF);
 	cmd_tbl->prdt_entry[0].dbau = (uint32_t)(buffer_phys >> 32);
-	cmd_tbl->prdt_entry[0].dbc = (count * 512) - 1;
-	cmd_tbl->prdt_entry[0].i = 1;
+	cmd_tbl->prdt_entry[0].dbc = 512 - 1;
+	cmd_tbl->prdt_entry[0].i = 0;
 	
 	FIS_REG_H2D* fis = (FIS_REG_H2D*)(&cmd_tbl->cfis);
 	mem::memset(fis, 0, sizeof(FIS_REG_H2D));
 	
 	fis->fis_type = FIS_TYPE_REG_H2D;
 	fis->c = 1;
-	fis->command = 0x25; // READ DMA EXT
+	fis->command = 0xEC;
+	fis->device = 0;
+	fis->countl = 1;
+	fis->counth = 0;
+	
+	hba_port->is = 0xFFFFFFFF;
+	
+	ADPRINTF("Issuing IDENTIFY on slot %d\n\r", slot);
+	hba_port->ci = 1 << slot;
+
+	drivers::timers::apic::sleep_ms(5);
+	if (hba_port->ci & (1 << slot) != 0) {
+		ADPRINTF("Command timed out\n\r");
+		return -1;
+	}
+
+	if (hba_port->is & (1 << 30)) {
+		ADPRINTF("Task file error:\n\r");
+		ADPRINTF("  IS=0x%08x\n\r", hba_port->is);
+		ADPRINTF("  SERR=0x%08x\n\r", hba_port->serr);
+		ADPRINTF("  TFD=0x%08x\n\r", hba_port->tfd);
+		ADPRINTF("  SSTS=0x%08x\n\r", hba_port->ssts);
+				
+		error_dump(fis, cmd_tbl, cmd_header);
+							         
+		hba_port->is = hba_port->is;
+		hba_port->serr = hba_port->serr;
+		mem::pmm::free(intrnl_buf_phys, 1);
+		return false;
+	}
+	
+	uint16_t* id_data = (uint16_t*)intrnl_buf;
+	uint64_t sectors = ((uint64_t)id_data[103] << 48) |
+	                   ((uint64_t)id_data[102] << 32) |
+	                   ((uint64_t)id_data[101] << 16) |
+	                   ((uint64_t)id_data[100]);
+	
+	if (sectors == 0) {
+		sectors = ((uint32_t)id_data[61] << 16) | id_data[60];
+	}
+	
+	ADPRINTF("Device capacity: %lu sectors (%lu MB)\n\r", sectors, (sectors * 512) / (1024 * 1024));
+
+	mem::memcpy(identify_buffer, intrnl_buf, 512);
+
+	mem::pmm::free(intrnl_buf_phys, 1);
+	
+	return true;
+}
+
+int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len) {
+	if (len < (count * 512)) {
+		return -1;
+	}
+
+	if (count == 0 || count > 65536) {
+		return -1;
+	}
+
+	size_t dma_pages = ((count * 512) + 0xFFF) / 0x1000;
+	void* intrnl_buf_phys = mem::pmm::palloc(dma_pages);
+	void* intrnl_buf = (void*)mem::vmm::pa_to_va((uint64_t)intrnl_buf_phys);
+	mem::memset(intrnl_buf, 0, dma_pages * 0x1000);
+
+	ADPRINTF("Reading from port %s: LBA=%lu count=%lu\n\r", driver_ports[0].port_name, lba, count);
+	
+	if (port_idx == 0) {
+		ADPRINTF("No ports available\n\r");
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
+		return -1;
+	}
+	
+	internal_port* port = &driver_ports[0];
+	if (!port->online) {
+		ADPRINTF("Port is offline\n\r");
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
+		return -1;
+	}
+	
+	HBA_PORT* hba_port = port->hba_port;
+
+	hba_port->serr = 0xFFFFFFFF;
+	hba_port->is = 0xFFFFFFFF;
+	
+	uint64_t timeout = 1000000;
+	while (timeout > 0) {
+		uint32_t tfd = hba_port->tfd;
+		uint8_t status = tfd & 0xFF;
+		
+		if (!(status & 0x80) && !(status & 0x08)) {
+			break;
+		}
+		timeout--;
+	}
+	
+	if (timeout == 0) {
+		ADPRINTF("Device not ready (TFD=0x%08x)\n\r", hba_port->tfd);
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
+		return -1;
+	}
+	
+	int slot = find_cmdslot(hba_port);
+	if (slot == -1) {
+		ADPRINTF("No command slot available\n\r");
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
+		return -1;
+	}
+	ADPRINTF("Using command slot %d\n\r", slot);
+	
+	uint64_t clb_phys = ((uint64_t)hba_port->clbu << 32) | hba_port->clb;
+	HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*)mem::vmm::pa_to_va((uint64_t)clb_phys);
+	cmd_header += slot;
+	
+	cmd_header->cfl = sizeof(FIS_REG_H2D) / sizeof(uint32_t);
+	cmd_header->w = 0;
+	cmd_header->c = 0;
+	cmd_header->p = 0;
+	cmd_header->prdtl = 1;
+	cmd_header->prdbc = 0;
+	
+	uint64_t ctba_phys = ((uint64_t)cmd_header->ctbau << 32) | cmd_header->ctba;
+	HBA_CMD_TBL* cmd_tbl = (HBA_CMD_TBL*)mem::vmm::pa_to_va((uint64_t)ctba_phys);
+	mem::memset(cmd_tbl, 0, sizeof(HBA_CMD_TBL) + sizeof(HBA_PRDT_ENTRY) * 7);
+	
+	uint64_t buffer_phys = (uint64_t)intrnl_buf_phys;
+	ADPRINTF("Buffer virt=%p phys=0x%lx\n\r", intrnl_buf, buffer_phys);
+	
+	cmd_tbl->prdt_entry[0].dba = (uint32_t)(buffer_phys & 0xFFFFFFFF);
+	cmd_tbl->prdt_entry[0].dbau = (uint32_t)(buffer_phys >> 32);
+	cmd_tbl->prdt_entry[0].dbc = (count * 512) - 1;
+	cmd_tbl->prdt_entry[0].i = 0;
+	
+	FIS_REG_H2D* fis = (FIS_REG_H2D*)(&cmd_tbl->cfis);
+	mem::memset(fis, 0, sizeof(FIS_REG_H2D));
+	
+	fis->fis_type = FIS_TYPE_REG_H2D;
+	fis->c = 1;
+	fis->command = 0x25;
 	
 	fis->lba0 = lba & 0xFF;
 	fis->lba1 = (lba >> 8) & 0xFF;
 	fis->lba2 = (lba >> 16) & 0xFF;
-	fis->device = (1 << 6);
-	
 	fis->lba3 = (lba >> 24) & 0xFF;
 	fis->lba4 = (lba >> 32) & 0xFF;
 	fis->lba5 = (lba >> 40) & 0xFF;
 	
+	fis->device = 0x40;
+	
 	fis->countl = count & 0xFF;
 	fis->counth = (count >> 8) & 0xFF;
 	
-	ADPRINTF("Waiting for TFD ready (BSY=0, DRQ=0)\n\r");
-	uint64_t timeout_a = 100000;
-	while (hba_port->tfd & (0x80 | 0x08) && timeout_a > 0) timeout_a--;
-	if (timeout_a <= 0) {
-		ADPRINTF("TFD timeout (TFD=0x%08x)\n\r", hba_port->tfd);
-		return -1;
-	}
+	hba_port->is = 0xFFFFFFFF;
 	
-	ADPRINTF("Issuing command on slot %d\n\r", slot);
+	ADPRINTF("Pre-command state: SSTS=0x%08x TFD=0x%08x SERR=0x%08x\n\r", 
+	         hba_port->ssts, hba_port->tfd, hba_port->serr);
+	
+	ADPRINTF("Issuing READ command on slot %d\n\r", slot);
 	hba_port->ci = 1 << slot;
-	
-	ADPRINTF("Waiting for completion\n\r");
-	uint64_t timeout_b = 10000000;
-	while (timeout_b > 0) {
-		if ((hba_port->ci & (1 << slot)) == 0) {
-			ADPRINTF("Command completed successfully\n\r");
-			break;
-		}
-		
-		if (hba_port->is & (1 << 30)) {
-			ADPRINTF("Task file error:\n\r");
-			ADPRINTF("  IS=0x%08x\n\r", hba_port->is);
-			ADPRINTF("  SERR=0x%08x\n\r", hba_port->serr);
-			ADPRINTF("  TFD=0x%08x\n\r", hba_port->tfd);
-			ADPRINTF("  SSTS=0x%08x\n\r", hba_port->ssts);
-			
-			hba_port->is = hba_port->is;
-			hba_port->serr = hba_port->serr;
-			
-			return -1;
-		}
-		
-		timeout_b--;
-	}
-	
-	if (timeout_b == 0) {
-		ADPRINTF("Command timeout (CI still set)\n\r");
-		ADPRINTF("  CI=0x%08x\n\r", hba_port->ci);
-		ADPRINTF("  IS=0x%08x\n\r", hba_port->is);
-		ADPRINTF("  TFD=0x%08x\n\r", hba_port->tfd);
+
+	drivers::timers::apic::sleep_ms(5);
+	if (hba_port->ci & (1 << slot) != 0) {
+		ADPRINTF("Command timed out\n\r");
 		return -1;
 	}
+
+	if (hba_port->is & (1 << 30)) {
+		ADPRINTF("Task file error:\n\r");
+		ADPRINTF("  IS=0x%08x\n\r", hba_port->is);
+		ADPRINTF("  SERR=0x%08x\n\r", hba_port->serr);
+		ADPRINTF("  TFD=0x%08x\n\r", hba_port->tfd);
+		ADPRINTF("  SSTS=0x%08x\n\r", hba_port->ssts);
+				
+		error_dump(fis, cmd_tbl, cmd_header);
+							         
+		hba_port->is = hba_port->is;
+		hba_port->serr = hba_port->serr;
+		mem::pmm::free(intrnl_buf_phys, 1);
+		return false;
+	}
+
+	mem::memcpy(buffer, intrnl_buf, count * 512);
+
+	mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
 	
-	ADPRINTF("Read completed, transferred %lu bytes\n\r", (uint64_t)cmd_header->prdbc);
+	ADPRINTF("Read completed, transferred %u bytes\n\r", cmd_header->prdbc);
 	return count * 512;
 }
 
 int64_t ahci_write(uint64_t lba, uint64_t count, const uint8_t* data, size_t len) {
 	if (len < (count * 512)) {
-		return -1; // data size must be bigger than or equal to the number of sectors written
+		return -1;
 	}
 
-	if (count > 8192) {
-		return -1; // cannot write more than 4MiB of data
+	if (count == 0 || count > 65536) {
+		return -1;
 	}
 
-	ADPRINTF("Writing LBA=%lu count=%lu\n\r", lba, count);
+	size_t dma_pages = ((count * 512) + 0xFFF) / 0x1000;
+	void* intrnl_buf_phys = mem::pmm::palloc(dma_pages);
+	void* intrnl_buf = (void*)mem::vmm::pa_to_va((uint64_t)intrnl_buf_phys);
+
+	mem::memcpy(intrnl_buf, data, count * 512);
+
+	ADPRINTF("Writing to port %s: LBA=%lu count=%lu\n\r", driver_ports[0].port_name, lba, count);
 	
 	if (port_idx == 0) {
 		ADPRINTF("No ports available\n\r");
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
 		return -1;
 	}
 	
 	internal_port* port = &driver_ports[0];
 	if (!port->online) {
 		ADPRINTF("Port is offline\n\r");
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
 		return -1;
-	} else {
-		ADPRINTF("Defaulting to %s\n\r", port->port_name);
 	}
 	
 	HBA_PORT* hba_port = port->hba_port;
 	
-	hba_port->is = (uint32_t)-1;
+	hba_port->serr = 0xFFFFFFFF;
+	hba_port->is = 0xFFFFFFFF;
+	
+	uint64_t timeout = 1000000;
+	while (timeout > 0) {
+		uint32_t tfd = hba_port->tfd;
+		uint8_t status = tfd & 0xFF;
+		
+		if (!(status & 0x80) && !(status & 0x08)) {
+			break;
+		}
+		timeout--;
+	}
+	
+	if (timeout == 0) {
+		ADPRINTF("Device not ready (TFD=0x%08x)\n\r", hba_port->tfd);
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
+		return -1;
+	}
 	
 	int slot = find_cmdslot(hba_port);
 	if (slot == -1) {
 		ADPRINTF("No command slot available\n\r");
+		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
 		return -1;
 	}
 	ADPRINTF("Using command slot %d\n\r", slot);
 	
 	uint64_t clb_phys = ((uint64_t)hba_port->clbu << 32) | hba_port->clb;
-	HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*)mem::vmm::pa_to_va(clb_phys);
+	HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*)mem::vmm::pa_to_va((uint64_t)clb_phys);
 	cmd_header += slot;
 	
 	cmd_header->cfl = sizeof(FIS_REG_H2D) / sizeof(uint32_t);
-	cmd_header->w = 1; // Write op
+	cmd_header->w = 1;
+	cmd_header->c = 0;
+	cmd_header->p = 0;
 	cmd_header->prdtl = 1;
 	cmd_header->prdbc = 0;
 	
 	uint64_t ctba_phys = ((uint64_t)cmd_header->ctbau << 32) | cmd_header->ctba;
-	HBA_CMD_TBL* cmd_tbl = (HBA_CMD_TBL*)mem::vmm::pa_to_va(ctba_phys);
+	HBA_CMD_TBL* cmd_tbl = (HBA_CMD_TBL*)mem::vmm::pa_to_va((uint64_t)ctba_phys);
 	mem::memset(cmd_tbl, 0, sizeof(HBA_CMD_TBL) + sizeof(HBA_PRDT_ENTRY) * 7);
 	
-	uint64_t buffer_phys = mem::vmm::va_to_pa((uint64_t)data);
-	ADPRINTF("Buffer virt=%p phys=0x%lx\n\r", data, buffer_phys);
+	uint64_t buffer_phys = (uint64_t)intrnl_buf_phys;
+	ADPRINTF("Buffer virt=%p phys=0x%lx\n\r", intrnl_buf, buffer_phys);
 	
 	cmd_tbl->prdt_entry[0].dba = (uint32_t)(buffer_phys & 0xFFFFFFFF);
 	cmd_tbl->prdt_entry[0].dbau = (uint32_t)(buffer_phys >> 32);
 	cmd_tbl->prdt_entry[0].dbc = (count * 512) - 1;
-	cmd_tbl->prdt_entry[0].i = 1;
+	cmd_tbl->prdt_entry[0].i = 0;
 	
 	FIS_REG_H2D* fis = (FIS_REG_H2D*)(&cmd_tbl->cfis);
 	mem::memset(fis, 0, sizeof(FIS_REG_H2D));
 	
 	fis->fis_type = FIS_TYPE_REG_H2D;
 	fis->c = 1;
-	fis->command = 0x35; // WRITE DMA EXT
+	fis->command = 0x35;
 	
 	fis->lba0 = lba & 0xFF;
 	fis->lba1 = (lba >> 8) & 0xFF;
 	fis->lba2 = (lba >> 16) & 0xFF;
-	fis->device = (1 << 6);
-	
 	fis->lba3 = (lba >> 24) & 0xFF;
 	fis->lba4 = (lba >> 32) & 0xFF;
 	fis->lba5 = (lba >> 40) & 0xFF;
 	
+	fis->device = 0x40;
+	
 	fis->countl = count & 0xFF;
 	fis->counth = (count >> 8) & 0xFF;
 	
-	ADPRINTF("Waiting for TFD ready\n\r");
-	int timeout = 1000000;
-	while ((hba_port->tfd & (0x80 | 0x08)) && timeout > 0) {
-		timeout--;
-	}
+	hba_port->is = 0xFFFFFFFF;
 	
-	if (timeout == 0) {
-		ADPRINTF("TFD timeout\n\r");
-		return -1;
-	}
+	ADPRINTF("Pre-command state: SSTS=0x%08x TFD=0x%08x SERR=0x%08x\n\r", 
+	         hba_port->ssts, hba_port->tfd, hba_port->serr);
 	
-	ADPRINTF("Issuing command\n\r");
+	ADPRINTF("Issuing WRITE command on slot %d\n\r", slot);
 	hba_port->ci = 1 << slot;
-	
-	ADPRINTF("Waiting for completion\n\r");
-	timeout = 10000000;
-	while (timeout > 0) {
-		if ((hba_port->ci & (1 << slot)) == 0) {
-			ADPRINTF("Command completed successfully\n\r");
-			break;
-		}
-		if (hba_port->is & (1 << 30)) {
-			ADPRINTF("Task file error (IS=0x%08x SERR=0x%08x TFD=0x%08x)\n\r", 
-			         hba_port->is, hba_port->serr, hba_port->tfd);
-			hba_port->is = hba_port->is;
-			hba_port->serr = hba_port->serr;
-			return -1;
-		}
-		timeout--;
-	}
-	
-	if (timeout == 0) {
-		ADPRINTF("Command timeout\n\r");
+
+	drivers::timers::apic::sleep_ms(5);
+	if (hba_port->ci & (1 << slot) != 0) {
+		ADPRINTF("Command timed out\n\r");
 		return -1;
 	}
+
+	if (hba_port->is & (1 << 30)) {
+		ADPRINTF("Task file error:\n\r");
+		ADPRINTF("  IS=0x%08x\n\r", hba_port->is);
+		ADPRINTF("  SERR=0x%08x\n\r", hba_port->serr);
+		ADPRINTF("  TFD=0x%08x\n\r", hba_port->tfd);
+		ADPRINTF("  SSTS=0x%08x\n\r", hba_port->ssts);
+				
+		error_dump(fis, cmd_tbl, cmd_header);
+							         
+		hba_port->is = hba_port->is;
+		hba_port->serr = hba_port->serr;
+		mem::pmm::free(intrnl_buf_phys, 1);
+		return false;
+	}
 	
+	mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
+	
+	ADPRINTF("Write completed, transferred %u bytes\n\r", cmd_header->prdbc);
 	return count * 512;
 }

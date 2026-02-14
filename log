@@ -1,0 +1,73 @@
+[2J[001;001H[=3h[2J[001;001H[2J[001;001H[8;042;160t[2J[001;001H[2J[001;001H[8;056;240t[2J[001;001HBdsDxe: loading Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
+BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
+[2J[001;001H[001;001H[2J[001;001H[001;001H[2J[H[90m[00000.000][0m [ [1;mWARNING[0m ] EDID purely discovers modes and is not able to change video modes
+
+Initialising AHCI disk controller
+[ bool supported_port_type(HBA_PORT*) ] Port is a SATA port
+[ void setup_port(internal_port*) ] Setting up port sata_a
+[ void setup_port(internal_port*) ] Allocating memory for CLB/FB/CTBA for port sata_a
+[ void setup_port(internal_port*) ] Registered CLB=0x0000000000107000 FB=0x0000000000108000
+[ void setup_port(internal_port*) ] Prepared command list for port sata_a
+[ void setup_port(internal_port*) ] Performing COMRESET on port sata_a
+[ void setup_port(internal_port*) ] Waiting for device detection on port sata_a
+[ void setup_port(internal_port*) ] Port sata_a is online - DET=0x3 IPM=0x1
+[ void setup_port(internal_port*) ] Port sata_a signature: 0x00000101
+[ void setup_port(internal_port*) ]   -> SATA drive
+[ void setup_port(internal_port*) ] Starting port sata_a
+[ void setup_port(internal_port*) ] ===============================
+
+[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 1 due to not being supported...
+[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 2 due to not being supported...
+[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 3 due to not being supported...
+[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 4 due to not being supported...
+[ void ahci_init(pcie_device*, disk_driver*) ] Skipping port 5 due to not being supported...
+[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Reading from port sata_a: LBA=0 count=1
+[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Using command slot 0
+[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Buffer virt=FFFF80000010B000 phys=0x10b000
+[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Pre-command state: SSTS=0x00000113 TFD=0x00000130 SERR=0x00000000
+[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Issuing READ command on slot 0
+[ int64_t ahci_read(uint64_t, uint64_t, uint8_t*, size_t) ] Read completed, transferred 512 bytes
+read 512 bytes
+[ int64_t ahci_write(uint64_t, uint64_t, const uint8_t*, size_t) ] Writing to port sata_a: LBA=0 count=1
+[ int64_t ahci_write(uint64_t, uint64_t, const uint8_t*, size_t) ] Using command slot 0
+[ int64_t ahci_write(uint64_t, uint64_t, const uint8_t*, size_t) ] Buffer virt=FFFF80000010B000 phys=0x10b000
+[ int64_t ahci_write(uint64_t, uint64_t, const uint8_t*, size_t) ] Pre-command state: SSTS=0x00000113 TFD=0x00000050 SERR=0x00000000
+[ int64_t ahci_write(uint64_t, uint64_t, const uint8_t*, size_t) ] Issuing WRITE command on slot 0
+[ int64_t ahci_write(uint64_t, uint64_t, const uint8_t*, size_t) ] Write completed, transferred 512 bytes
+wrote 512 bytes
+0000 | eb 3c 90 4c 49 4d 49 4e 45 20 20 00 02 00 00 00 | ...LIMINE.......
+0010 | 00 00 00 00 00 00 00 00 12 00 02 00 00 00 00 00 | ................
+0020 | 00 00 00 00 00 00 00 00 00 00 00 4c 49 4d 49 4e | ...........LIMIN
+0030 | 45 20 20 20 20 20 00 00 00 00 00 00 00 00 fa fc | E...............
+0040 | ea 45 7c 00 00 31 f6 8e de 8e c6 8e d6 bc 00 7c | .E...1..........
+0050 | fb 80 fa 80 0f 82 11 01 80 fa 8f 0f 87 09 01 b4 | ................
+0060 | 41 bb aa 55 cd 13 0f 82 fd 00 81 fb 55 aa 0f 85 | A..U........U...
+0070 | f4 00 68 00 70 07 bf a4 7d 66 8b 05 66 8b 6d 04 | ..h.p....f..f.m.
+0080 | 31 db 66 b9 00 7e 00 00 e8 55 00 0f 82 d6 00 0f | 1.f......U......
+0090 | 01 16 4f 7d fa 0f 20 c0 0f ba e8 00 0f 22 c0 ea | ..O.............
+00a0 | 7a 7d 08 00 00 00 00 00 00 00 00 00 00 00 00 00 | z...............
+00b0 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | ................
+00c0 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | ................
+00d0 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | ................
+00e0 | 60 be 00 80 c7 04 10 00 c7 44 02 01 00 89 5c 04 | .........D......
+00f0 | 8c 44 06 52 56 66 50 66 55 b4 48 be 10 80 c7 04 | .D.RVfPfU.H.....
+0100 | 1e 00 cd 13 72 47 66 0f b7 6c 18 89 c8 66 c1 e9 | ....rGf..l...f..
+0110 | 10 89 ca 31 c9 f7 f5 85 d2 0f 95 c1 01 c1 66 5a | ...1..........fZ
+0120 | 66 58 5e 66 f7 f5 66 89 44 08 66 c7 44 0c 00 00 | fX.f..f.D.f.D...
+0130 | 00 00 5a b4 42 f8 cd 13 72 13 01 6c 04 66 31 db | ..Z.B...r..l.f1.
+0140 | 66 ff 44 08 0f 90 c3 66 01 5c 0c e2 e6 61 c3 17 | f.D....f.....a..
+0150 | 00 4d 7d 00 00 ff ff 00 00 00 9b cf 00 ff ff 00 | .M..............
+0160 | 00 00 93 cf 00 46 46 46 46 81 c6 30 4f 68 00 b8 | .....FFFF..0Oh..
+0170 | 07 26 89 36 00 00 fb f4 eb fd b8 10 00 00 00 8e | ...6............
+0180 | d8 8e c0 8e e0 8e e8 8e d0 81 e2 ff 00 00 00 6a | ...............j
+0190 | 00 52 68 26 48 00 00 68 00 0b 07 00 e8 5f 82 06 | .Rh.H..h........
+01a0 | 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 00 | ................
+01b0 | 00 00 00 00 00 00 00 00 d0 49 19 7c 00 00 80 01 | .........I......
+01c0 | 02 00 07 02 0e 00 40 00 00 00 4c 00 00 00 00 02 | ..........L.....
+01d0 | 0f 00 ef 5d 29 00 8c 00 00 00 80 16 00 00 00 5d | ................
+01e0 | 2a 00 af ae 0a 00 0c 17 00 00 d0 13 00 00 00 ae | ................
+01f0 | 0b 00 07 b7 2b 00 dc 2a 00 00 58 02 00 00 55 aa | ..........X...U.
+Got 1 CPUs
+[90m[00000.120][0m [ [94mINFO[0m ]  CPU#0 is already online (BSP/Boostrap Processor)
+Hello, World! from a userspace init process
+
