@@ -45,14 +45,14 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Write a PS2 keyboard driver and PS2 mouse driver with an event system
 - [x] Line discipline
 - [x] EDID driver
-- [ ] AHCI disk driver
+- [x] AHCI disk driver
 - [ ] NVMe disk driver
-- [ ] FAT32 file system
+- [x] FAT32 file system
 - [ ] HLFS file system
-- [ ] Partitions with MBR
-- [ ] Partitions with GPT
+- [x] Partitions with MBR
+- [x] Partitions with GPT
 - [ ] Userspace graphics driver
-- [x] Network cards drivers
+- [ ] Network cards drivers
 - [ ] DHCP support
 - [ ] UDP support
 - [ ] TCP/IP support
