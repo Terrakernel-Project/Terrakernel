@@ -7,6 +7,7 @@
 #include <mem/mem.hpp>
 #include <cstring>
 #include <panic.hpp>
+#include <cstdio>
 
 char* __libc_parse_number(char* input, int* output) {
 	int idx = 0;

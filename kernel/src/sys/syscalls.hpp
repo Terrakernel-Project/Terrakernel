@@ -17,8 +17,8 @@ int64_t HlPositionedReadFile(Handle* hptr, size_t offset, void* __restrict buf, 
 void HlSyncFile(Handle* hptr);
 void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFlags);
 void HlCloseDirectory(Handle* hptr);
-void HlMakeDirectory(Handle* hptr, const char* __restrict path);
-void HlRemoveDirectory(Handle* hptr, const char* __restrict path);
+void HlMakeDirectory(const char* __restrict path);
+void HlRemoveDirectory(const char* __restrict path);
 void HlListDirectory(Handle* hptr, void* __restrict buf);
 void HlResetDirectoryReadOffset(Handle* hptr);
 void* HlMemoryPoolAllocate(size_t n);

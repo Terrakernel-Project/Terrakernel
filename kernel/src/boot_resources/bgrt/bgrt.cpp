@@ -5,7 +5,7 @@
 #include <lib/Flanterm/gfx.h>
 #include <cstdint>
 #include <cstdio>
-#include <ramfs/ramfs.hpp>
+#include <subsystems/ramfs/ramfs.hpp>
 #include <mem/mem.hpp>
 
 extern uint64_t g_scr_width, g_scr_height;

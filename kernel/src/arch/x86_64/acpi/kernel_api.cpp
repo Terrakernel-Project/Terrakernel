@@ -7,7 +7,7 @@
 #include <drivers/timers/apic/apic.hpp>
 #include <panic.hpp>
 #include <cstdint>
-#include <proc/spinlocks.hpp>
+#include <threadsafety/spinlocks.hpp>
 #include "kernel_api.hpp"
 
 extern "C" {

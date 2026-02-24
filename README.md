@@ -28,7 +28,7 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] (Other) Write a VFS and RamFS and parse a USTAR Initrd archive
 - [x] Multiprocessing
 - [ ] Scheduling and multithreading*
-- [ ] IPC
+- [x] IPC (this isn't unix-like, just open a normal ramfs file)
 - [x] Switching to userspace
 - [x] Write some basic syscalls
 - [x] Load x86_64 ELF binaries, static and relocatable

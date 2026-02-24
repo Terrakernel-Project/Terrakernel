@@ -152,10 +152,11 @@ char* strrchr(const char* s, int c) {
 }
 
 char* strdup(const char* s) {
-	size_t szs = strlen(s);
-	char* new_str = (char*)mem::heap::malloc(szs);
-	mem::memcpy((void*)new_str, (void*)s, szs);
-	return new_str;
+    size_t szs = strlen(s);
+    char* new_str = (char*)mem::heap::malloc(szs + 1);
+    mem::memcpy((void*)new_str, (void*)s, szs);
+    new_str[szs] = '\0';
+    return new_str;
 }
 
 char* strndup(const char* s, unsigned int n) {

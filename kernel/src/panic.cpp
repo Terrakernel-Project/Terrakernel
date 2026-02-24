@@ -1,9 +1,15 @@
-#include <panic.hpp>
+#include "panic.hpp"
+#include <drivers/serial/printf.h>
 
-void panic(char* error_code) {
-    printf("PANIC!\n\rError code: %s\n\r", error_code);
+__attribute__((noreturn))
+void _panic(const char* func, const char* error_code) {
+    printf("PANIC! %s\nError code: %s\n", func, error_code);
 
-    asm volatile ("cli;hlt;");
+    asm volatile ("cli");
+
+    while (1) {
+        asm volatile ("hlt");
+    }
 }
 
 void assert(bool expected) {

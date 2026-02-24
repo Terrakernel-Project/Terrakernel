@@ -1,265 +1,296 @@
 #include <mem/mem.hpp>
 #include <mem/heap.hpp>
-#include <cstdio>
 #include <panic.hpp>
 
-void* heap_base = nullptr;
+void*  heap_base = nullptr;
 size_t heap_size = 0;
+size_t allocated = 0;
 
 struct heap_block {
-    void* base;
     size_t length;
     bool is_free;
     heap_block* prev;
     heap_block* next;
+    heap_block* fl_prev;
+    heap_block* fl_next;
 };
+
+static constexpr int N_BINS = 24;
+static heap_block*   bins[N_BINS] = {};
+
+static constexpr size_t MIN_ALIGN = sizeof(void*);
+
+static constexpr size_t MIN_SPLIT = 8;
+
+static inline void* block_to_ptr(heap_block* b) {
+    return (void*)((uint8_t*)b + sizeof(heap_block));
+}
+static inline heap_block* ptr_to_block(void* p) {
+    return (heap_block*)((uint8_t*)p - sizeof(heap_block));
+}
+static inline size_t align_up(size_t n, size_t a) {
+    return (n + a - 1) & ~(a - 1);
+}
+
+static inline int bin_of(size_t n) {
+    if (n < 8) n = 8;
+    int bit = 63 - __builtin_clzll((unsigned long long)n);
+    int b   = bit - 3;
+    if (b < 0)      b = 0;
+    if (b >= N_BINS) b = N_BINS - 1;
+    return b;
+}
+
+static void fl_insert(heap_block* b) {
+    int idx = bin_of(b->length);
+    b->fl_prev = nullptr;
+    b->fl_next = bins[idx];
+    if (bins[idx]) bins[idx]->fl_prev = b;
+    bins[idx] = b;
+}
+
+static void fl_remove(heap_block* b) {
+    int idx = bin_of(b->length);
+    if (b->fl_prev) b->fl_prev->fl_next = b->fl_next;
+    else            bins[idx] = b->fl_next;
+    if (b->fl_next) b->fl_next->fl_prev = b->fl_prev;
+    b->fl_prev = b->fl_next = nullptr;
+}
+
+static void split(heap_block* b, size_t n) {
+    if (b->length < n + sizeof(heap_block) + MIN_SPLIT) return;
+
+    heap_block* tail = (heap_block*)((uint8_t*)b + sizeof(heap_block) + n);
+    tail->length  = b->length - n - sizeof(heap_block);
+    tail->is_free = true;
+    tail->prev    = b;
+    tail->next    = b->next;
+    tail->fl_prev = tail->fl_next = nullptr;
+    if (b->next) b->next->prev = tail;
+    b->next   = tail;
+    b->length = n;
+    fl_insert(tail);
+}
+
+static heap_block* coalesce(heap_block* b) {
+    if (b->next && b->next->is_free) {
+        fl_remove(b->next);
+        b->length += sizeof(heap_block) + b->next->length;
+        b->next    = b->next->next;
+        if (b->next) b->next->prev = b;
+    }
+
+    if (b->prev && b->prev->is_free) {
+        heap_block* p = b->prev;
+        fl_remove(p);
+        p->length += sizeof(heap_block) + b->length;
+        p->next    = b->next;
+        if (b->next) b->next->prev = p;
+        b = p;
+    }
+    return b;
+}
+
+static heap_block* find_free(size_t n) {
+    int start = bin_of(n);
+
+    {
+        heap_block* best = nullptr;
+        for (heap_block* cur = bins[start]; cur; cur = cur->fl_next) {
+            if (cur->length >= n) {
+                if (!best || cur->length < best->length) best = cur;
+                if (best->length == n) break;
+            }
+        }
+        if (best) { fl_remove(best); return best; }
+    }
+
+    for (int b = start + 1; b < N_BINS; b++) {
+        if (!bins[b]) continue;
+        heap_block* cur = bins[b];
+        fl_remove(cur);
+        return cur;
+    }
+
+    return nullptr;
+}
 
 namespace mem::heap {
 
 void initialise() {
     const size_t initial_size = 0x100000000;
-    const size_t min_heap_size = 0x100000;
+    const size_t min_size     = 0x100000;
     size_t divisor = 1;
     heap_base = nullptr;
 
-    while (heap_base == nullptr && initial_size / divisor >= min_heap_size) {
+    while (!heap_base && initial_size / divisor >= min_size) {
         heap_size = initial_size / divisor;
-        size_t num_pages = heap_size / 0x1000;
-
-        heap_base = mem::pmm::reserve_heap(num_pages);
-
-        if (heap_base != nullptr) {
-        } else {
-        }
-
-        divisor *= 2;
+        heap_base = mem::pmm::reserve_heap(heap_size / 0x1000);
+        divisor  *= 2;
     }
-
-    if (heap_base == nullptr) {
-    } else {
-    }
-
+    if (!heap_base) panic("heap: failed to reserve memory");
     heap_base = (void*)mem::vmm::pa_to_va((uint64_t)heap_base);
 
-    heap_block* first_block = (heap_block*)heap_base;
-    first_block->base = (void*)((uint8_t*)first_block + sizeof(heap_block));
-    first_block->length = heap_size - sizeof(heap_block);
-    first_block->is_free = true;
-    first_block->prev = nullptr;
-    first_block->next = nullptr;
+    for (int i = 0; i < N_BINS; i++) bins[i] = nullptr;
+
+    heap_block* first = (heap_block*)heap_base;
+    first->length  = heap_size - sizeof(heap_block);
+    first->is_free = true;
+    first->prev = first->next = nullptr;
+    first->fl_prev = first->fl_next = nullptr;
+    fl_insert(first);
 }
 
 void defragment() {
-    if (heap_base == nullptr) {
-        Log::errf("Heap not initialized, cannot defragment");
-        return;
-    }
-
-    heap_block* current = (heap_block*)heap_base;
-    while (current != nullptr) {
-        if (current->is_free && current->next != nullptr && current->next->is_free) {
-            current->length += current->next->length + sizeof(heap_block);
-            current->next = current->next->next;
-
-            if (current->next != nullptr) {
-                current->next->prev = current;
-            }
-        } else {
-            current = current->next;
-        }
+    for (heap_block* cur = (heap_block*)heap_base; cur; cur = cur->next) {
+        if (!cur->is_free) continue;
+        fl_remove(cur);
+        cur = coalesce(cur);
+        fl_insert(cur);
     }
 }
 
 void* malloc(size_t n) {
-    heap_block* current = (heap_block*)heap_base;
-    heap_block* best_fit = nullptr;
+    if (!n) return nullptr;
+    n = align_up(n, MIN_ALIGN);
 
-    while (current != nullptr) {
-        if (current->is_free && current->length >= n) {
-            if (best_fit == nullptr || current->length < best_fit->length) {
-                best_fit = current;
-            }
-        }
-        current = current->next;
-    }
+    heap_block* b = find_free(n);
+    if (!b) { defragment(); b = find_free(n); }
+    if (!b) panic("heap::malloc: out of memory");
 
-    if (best_fit == nullptr) {
-        // Log::errf("Malloc: No suitable free block found for %zu bytes", n);
-        panic("no memory");
-        return nullptr;
-    }
-
-    if (best_fit->length > n + sizeof(heap_block)) {
-        heap_block* new_block = (heap_block*)((uint8_t*)best_fit + sizeof(heap_block) + n);
-        new_block->base = (void*)((uint8_t*)new_block + sizeof(heap_block));
-        new_block->length = best_fit->length - n - sizeof(heap_block);
-        new_block->is_free = true;
-        new_block->next = best_fit->next;
-        if (best_fit->next) {
-            best_fit->next->prev = new_block;
-        }
-        best_fit->next = new_block;
-        new_block->prev = best_fit;
-        best_fit->length = n;
-    }
-
-    best_fit->is_free = false;
-    return best_fit->base;
+    split(b, n);
+    b->is_free = false;
+    allocated += b->length;
+    return block_to_ptr(b);
 }
 
 void* malloc_aligned(size_t n, size_t alignment) {
-    if ((alignment & (alignment - 1)) != 0) {
-        return nullptr;
-    }
+    if (!n)                              return nullptr;
+    if (!alignment || (alignment & (alignment - 1))) return nullptr;
+    if (alignment <= MIN_ALIGN)          return malloc(n);
 
-    heap_block* current = (heap_block*)heap_base;
-    heap_block* best_fit = nullptr;
+    n = align_up(n, alignment);
 
-    while (current != nullptr) {
-        if (current->is_free && current->length >= n + alignment) {
-            if (best_fit == nullptr || current->length < best_fit->length) {
-                best_fit = current;
-            }
-        }
-        current = current->next;
-    }
+    heap_block* found   = nullptr;
+    size_t      found_waste = ~(size_t)0;
 
-    if (best_fit == nullptr) {
-        // Log::errf("malloc_aligned: No suitable free block found for %zu bytes", n);
-        panic("no memory");
-        return nullptr;
-    }
+    auto try_block = [&](heap_block* cur) {
+        uintptr_t data = (uintptr_t)cur + sizeof(heap_block);
+        uintptr_t aln  = align_up(data, alignment);
+        size_t    pad  = aln - data;
 
-    uintptr_t raw_addr = (uintptr_t)best_fit->base;
-    uintptr_t aligned_addr = (raw_addr + alignment - 1) & ~(alignment - 1);
-    size_t padding = aligned_addr - raw_addr;
-
-    if (padding > 0) {
-        if (best_fit->length <= padding + sizeof(heap_block)) {
-            panic("no memory");
-            return nullptr;
+        if (pad != 0 && pad < sizeof(heap_block) + MIN_SPLIT) {
+            aln += alignment;
+            pad  = aln - data;
         }
 
-        heap_block* pad_block = (heap_block*)((uint8_t*)best_fit + sizeof(heap_block) + padding);
-        pad_block->base = (void*)((uint8_t*)pad_block + sizeof(heap_block));
-        pad_block->length = best_fit->length - padding - sizeof(heap_block);
-        pad_block->is_free = true;
-        pad_block->next = best_fit->next;
-        if (best_fit->next) best_fit->next->prev = pad_block;
-        pad_block->prev = best_fit;
+        if (cur->length < pad + n) return;
+        size_t waste = cur->length - pad - n;
+        if (waste < found_waste) { found_waste = waste; found = cur; }
+    };
 
-        best_fit->length = padding;
-        best_fit->next = pad_block;
-        best_fit = pad_block;
+    for (int b = bin_of(n + alignment); b < N_BINS; b++)
+        for (heap_block* cur = bins[b]; cur; cur = cur->fl_next)
+            try_block(cur);
+
+    for (int b = 0; b < bin_of(n + alignment); b++)
+        for (heap_block* cur = bins[b]; cur; cur = cur->fl_next)
+            try_block(cur);
+
+    if (!found) { defragment(); /* retry */ }
+    if (!found) {
+        found_waste = ~(size_t)0;
+        for (int b = 0; b < N_BINS; b++)
+            for (heap_block* cur = bins[b]; cur; cur = cur->fl_next)
+                try_block(cur);
+    }
+    if (!found) panic("heap::malloc_aligned: out of memory");
+
+    fl_remove(found);
+
+    uintptr_t data = (uintptr_t)found + sizeof(heap_block);
+    uintptr_t aln  = align_up(data, alignment);
+    size_t    pad  = aln - data;
+
+    if (pad != 0 && pad < sizeof(heap_block) + MIN_SPLIT) {
+        aln += alignment;
+        pad  = aln - data;
     }
 
-    if (best_fit->length > n + sizeof(heap_block)) {
-        heap_block* new_block = (heap_block*)((uint8_t*)best_fit + sizeof(heap_block) + n);
-        new_block->base = (void*)((uint8_t*)new_block + sizeof(heap_block));
-        new_block->length = best_fit->length - n - sizeof(heap_block);
-        new_block->is_free = true;
-        new_block->next = best_fit->next;
-        if (best_fit->next) new_block->next->prev = new_block;
-        new_block->prev = best_fit;
-        best_fit->next = new_block;
-        best_fit->length = n;
+    if (pad >= sizeof(heap_block) + MIN_SPLIT) {
+        size_t prefix_data = pad - sizeof(heap_block);
+        split(found, prefix_data);
+        heap_block* aligned_blk = found->next;
+        fl_remove(aligned_blk);
+
+        found->is_free = true;
+        fl_insert(found);
+
+        split(aligned_blk, n);
+        aligned_blk->is_free = false;
+        allocated += aligned_blk->length;
+        return block_to_ptr(aligned_blk);
     }
 
-    best_fit->is_free = false;
-    return best_fit->base;
+    split(found, n);
+    found->is_free = false;
+    allocated += found->length;
+    return block_to_ptr(found);
 }
 
 void* realloc(void* ptr, size_t n) {
-    if (ptr == nullptr) {
-        return malloc(n);
+    if (!ptr) return malloc(n);
+    if (!n)   { free(ptr); return nullptr; }
+
+    n = align_up(n, MIN_ALIGN);
+    heap_block* b       = ptr_to_block(ptr);
+    size_t      old_len = b->length;
+
+    if (old_len == n) return ptr;
+
+    if (old_len > n) {
+        split(b, n);
+        allocated -= old_len - b->length;
+        return ptr;
     }
 
-    if (n == 0) {
-        free(ptr);
-        return nullptr;
+    if (b->next && b->next->is_free &&
+        b->length + sizeof(heap_block) + b->next->length >= n) {
+        fl_remove(b->next);
+        b->length += sizeof(heap_block) + b->next->length;
+        b->next    = b->next->next;
+        if (b->next) b->next->prev = b;
+        split(b, n);
+        allocated += b->length - old_len;
+        return ptr;
     }
 
-    heap_block* current = (heap_block*)heap_base;
-    while (current != nullptr) {
-        if (current->base == ptr) {
-            if (current->length >= n) {
-                current->length = n;
-                return current->base;
-            }
-
-            void* new_ptr = malloc(n);
-            if (new_ptr) {
-                memcpy(new_ptr, ptr, current->length);
-                free(ptr);
-                return new_ptr;
-            }
-
-            // Log::errf("Realloc: Failed to allocate %zu bytes", n);
-            panic("no memory");
-            return nullptr;
-        }
-        current = current->next;
-    }
-
-    // Log::errf("Realloc: Failed to find memory block for %p", ptr);
-    panic("no memory");
-    return nullptr;
+    void* p = malloc(n);
+    if (!p) panic("heap::realloc: out of memory");
+    memcpy(p, ptr, old_len);
+    free(ptr);
+    return p;
 }
 
 void* calloc(size_t n, size_t size) {
-    size_t total_size = n * size;
-
-    void* ptr = malloc(total_size);
-    if (ptr) {
-        memset(ptr, 0, total_size);
-    }
-
-    return ptr;
+    void* p = malloc(n * size);
+    if (p) memset(p, 0, n * size);
+    return p;
 }
 
 void free(void* ptr) {
-    if (ptr == nullptr) {
-        return;
-    }
-
-    heap_block* current = (heap_block*)heap_base;
-    while (current != nullptr) {
-        if (current->base == ptr) {
-            current->is_free = true;
-            if (current->next && current->next->is_free) {
-                current->length += current->next->length + sizeof(heap_block);
-                current->next = current->next->next;
-                if (current->next) {
-                    current->next->prev = current;
-                }
-            }
-
-            if (current->prev && current->prev->is_free) {
-                current->prev->length += current->length + sizeof(heap_block);
-                current->prev->next = current->next;
-                if (current->next) {
-                    current->next->prev = current->prev;
-                }
-            }
-
-            return;
-        }
-        current = current->next;
-    }
-
-    Log::errf("Free: Attempted to free a block that wasn't allocated: %p", ptr);
+    if (!ptr) return;
+    heap_block* b = ptr_to_block(ptr);
+    if (b->is_free) panic("heap::free: double free");
+    allocated -= b->length;
+    b->is_free = true;
+    b = coalesce(b);
+    fl_insert(b);
 }
 
 }
 
 extern "C" {
-
-extern void* exposed_malloc(size_t n) {
-	return mem::heap::malloc(n);
-}
-
-extern void exposed_free(void* p) {
-	mem::heap::free(p);
-}
-
+    void* exposed_malloc(size_t n) { return mem::heap::malloc(n); }
+    void  exposed_free(void* p)    { mem::heap::free(p); }
 }

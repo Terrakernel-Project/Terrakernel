@@ -227,6 +227,35 @@ static void remove_child(Inode* parent, Inode* child) {
     }
 }
 
+static void make_path(Inode* child, char* out_path, size_t out_size) {
+    if (!child || !out_path || out_size == 0) return;
+
+    char temp[NAME_MAX + 1];
+    char* p = temp + sizeof(temp);
+    *--p = '\0';
+
+    Inode* current = child;
+    while (current) {
+        size_t len = strlen(current->name);
+        if (len > 0) {
+            if (p - temp < (ptrdiff_t)len + 1) break;
+            for (size_t i = 0; i < len; i++) {
+                *--p = current->name[len - 1 - i];
+            }
+            *--p = '/';
+        }
+        current = current->parent;
+    }
+
+    if (*p == '\0') {
+        if (p - temp < 1) p--;
+        *--p = '/';
+    }
+
+    strncpy(out_path, p, out_size);
+    out_path[out_size - 1] = '\0';
+}
+
 void initialise() {
     mem::memset(inode_table, 0, sizeof(inode_table));
     mem::memset(fd_table, 0, sizeof(fd_table));
@@ -286,7 +315,7 @@ int open(const char* pathname, int flags, uint32_t mode) {
     fd_table[fd].inode = inode;
     fd_table[fd].offset = (flags & O_APPEND) ? inode->size : 0;
     fd_table[fd].flags = flags;
-    
+
     return fd;
 }
 
@@ -583,6 +612,13 @@ DIR* opendir(const char* name) {
     return dir;
 }
 
+DIR* fdopendir(int fd) {
+	char path[4096];
+	make_path(fd_table[fd].inode, path, 4096);
+
+	return opendir(path);
+}
+
 struct dirent* readdir(DIR* dirp) {
     if (!dirp) return nullptr;
     
@@ -812,6 +848,8 @@ static void create_parent_directories(const char* path) {
 }
 
 static int load_ustar_archive(void* base, size_t size, const char* path_prefix) {
+    if (!base) return -1;
+
     unsigned char* data = (unsigned char*)base;
     size_t offset = 0;
     int files_loaded = 0;
@@ -819,9 +857,9 @@ static int load_ustar_archive(void* base, size_t size, const char* path_prefix) 
     size_t prefix_len = strlen(path_prefix);
     bool needs_slash = prefix_len > 0 && path_prefix[prefix_len - 1] != '/';
     
-    while (offset + 512 <= size) {
+    while ((offset + 512) <= size) {
         USTARHeader* header = (USTARHeader*)(data + offset);
-        
+
         if (header->name[0] == '\0') {
             break;
         }
@@ -892,8 +930,6 @@ static int load_ustar_archive(void* base, size_t size, const char* path_prefix) 
                 }
                 files_loaded++;
             }
-            
-            offset += 512;
         } else if (header->typeflag == '0' || header->typeflag == '\0') {
             offset += 512;
             
@@ -941,8 +977,10 @@ static int load_ustar_archive(void* base, size_t size, const char* path_prefix) 
             link(target_path, final_path);
             files_loaded++;
         } else if (header->typeflag == '2') {
+            offset += 512;
             offset += (file_size + 511) & ~511ULL;
         } else {
+            offset += 512;
             uint64_t aligned_size = (file_size + 511) & ~511ULL;
             offset += aligned_size;
         }

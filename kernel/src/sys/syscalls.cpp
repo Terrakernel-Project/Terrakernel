@@ -2,13 +2,13 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
-#include <ramfs/ramfs.hpp>
 #include <mem/mem.hpp>
 #include <drivers/tty/ldisc/ldisc.hpp>
 #include <panic.hpp>
-#include <proc/exec.hpp>
 #include <lib/Flanterm/gfx.h>
 #include <config.hpp>
+#include <vfs/vfs.hpp>
+#include <subsystems/ramfs/ramfs.hpp>
 
 //hptr->HandleType != type
 #define VALID_HNDL(hptr, type, DOCODE)                 \
@@ -56,16 +56,11 @@ void HlDestroyHandle(Handle* hptr) {
 }
 
 void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
-	SDPRINTF("opening file: handle=%p, path='%s', flags=0x%x", hptr, path, OpenFlags);
+    SDPRINTF("opening file: handle=%p, path='%s', flags=0x%x", hptr, path, OpenFlags);
 
-    //if (hptr->HandleType != HANDLE_TYPE_GENERIC) {
-    //    printf("Expected handle of type HANDLE_TYPE_GENERIC\n\r");
-    //    return;
-    //} allow handle smashing for now
-    
-    stat s;
-    if (ramfs::stat(path, &s) != 0) {
-        SDPRINTF("stat failed: path='%s'", path);
+    int fd = vfs::open(path, OpenFlags);
+    if (fd < 0) {
+        SDPRINTF("open failed: path='%s', error=%d", path, fd);
         hptr->LastError = -1;
         return;
     }
@@ -77,48 +72,36 @@ void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
     hptr->LastError = 0;
 
     hptr->Payload.File.FilePath = path;
-    hptr->Payload.File.FileDescriptor = ramfs::open(path, OpenFlags);
-    
-    if (hptr->Payload.File.FileDescriptor < 0) {
-        SDPRINTF("open failed: path='%s', fd=%d", path, hptr->Payload.File.FileDescriptor);
-        hptr->HandleType = HANDLE_TYPE_GENERIC;
-        hptr->LastError = -1;
-        return;
-    }
-    
+    hptr->Payload.File.FileDescriptor = fd;
     hptr->Payload.File.FileOffset = 0;
-    hptr->Payload.File.FileSize = s.st_size;
+    hptr->Payload.File.FileSize = vfs::stat_sz(fd);
+    hptr->Payload.File.OpenFlags = OpenFlags;
+    hptr->Payload.File.FileSystemID = 0;
 
     if (OpenFlags & FLAG_FILE_LOAD_MEMORY) {
-        size_t npages = (s.st_size + 0xFFF) / 0x1000;
+        size_t npages = (hptr->Payload.File.FileSize + 0xFFF) / 0x1000;
         hptr->Payload.File.MappedAddress = mem::usr::alloc(npages);
         hptr->Payload.File.MappedSize = npages;
         
         SDPRINTF("loading file into memory: addr=%p, pages=%zu, size=%zu", 
-                 hptr->Payload.File.MappedAddress, npages, s.st_size);
+                 hptr->Payload.File.MappedAddress, npages, hptr->Payload.File.FileSize);
         
-        ramfs::lseek(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
-        ramfs::read(hptr->Payload.File.FileDescriptor, 
-                   hptr->Payload.File.MappedAddress, 
-                   s.st_size);
+        vfs::seek_file(fd, 0, SEEK_SET);
+        vfs::read_file(fd, hptr->Payload.File.MappedAddress, hptr->Payload.File.FileSize);
     }
 
-    hptr->Payload.File.OpenFlags = OpenFlags;
-    hptr->Payload.File.FileSystemID = 0;
-
-    ramfs::lseek(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
+    vfs::seek_file(fd, 0, SEEK_SET);
     
-    SDPRINTF("file opened successfully: fd=%d, size=%zu", 
-             hptr->Payload.File.FileDescriptor, s.st_size);
+    SDPRINTF("file opened successfully: fd=%d, size=%zu", fd, hptr->Payload.File.FileSize);
 }
 
 void HlCloseFile(Handle* hptr) {
-	SDPRINTF("closing file: handle=%p", hptr);
+    SDPRINTF("closing file: handle=%p", hptr);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return)
     
     int fd = hptr->Payload.File.FileDescriptor;
-    ramfs::close(fd);
+    vfs::close(fd);
     
     if (hptr->Payload.File.OpenFlags & FLAG_FILE_LOAD_MEMORY) {
         SDPRINTF("freeing mapped memory: addr=%p, pages=%zu", 
@@ -134,22 +117,22 @@ void HlCloseFile(Handle* hptr) {
 }
 
 uint64_t HlStatFileSize(Handle* hptr) {
-	SDPRINTF("stat file size: handle=%p", hptr);
+    SDPRINTF("stat file size: handle=%p", hptr);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return (uint64_t)-1)
 
-    stat s;
-    ramfs::fstat(hptr->Payload.File.FileDescriptor, &s);
+    uint64_t size = vfs::stat_sz(hptr->Payload.File.FileDescriptor);
 
-    SDPRINTF("file size: %zu bytes", s.st_size);
-    return s.st_size;
+    SDPRINTF("file size: %zu bytes", size);
+    return size;
 }
 
 int64_t HlSeekFile(Handle* hptr, int64_t offset, int whence) {
-	SDPRINTF("seeking file: handle=%p, offset=%ld, whence=%d", hptr, offset, whence);
+    SDPRINTF("seeking file: handle=%p, offset=%ld, whence=%d", hptr, offset, whence);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
-    int64_t result = ramfs::lseek(hptr->Payload.File.FileDescriptor, offset, whence);
+    
+    int64_t result = vfs::seek_file(hptr->Payload.File.FileDescriptor, offset, whence);
     if (result >= 0) {
         hptr->Payload.File.FileOffset = result;
         SDPRINTF("seek successful: new_offset=%ld", result);
@@ -160,7 +143,7 @@ int64_t HlSeekFile(Handle* hptr, int64_t offset, int whence) {
 }
 
 int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
-	SDPRINTF("writing file: handle=%p, data=%p, count=%zu", hptr, dat, count);
+    SDPRINTF("writing file: handle=%p, data=%p, count=%zu", hptr, dat, count);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
 
@@ -186,7 +169,7 @@ int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
         return to_copy;
     }
 
-    int64_t r = ramfs::write(
+    int64_t r = vfs::write_file(
         hptr->Payload.File.FileDescriptor,
         dat,
         count
@@ -201,10 +184,9 @@ int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
 }
 
 int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count) {
-	SDPRINTF("reading file: handle=%p, buffer=%p, count=%zu", hptr, buf, count);
+    SDPRINTF("reading file: handle=%p, buffer=%p, count=%zu", hptr, buf, count);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
-
 
     if (hptr->Payload.File.OpenFlags & FLAG_FILE_LOAD_MEMORY) {
         size_t off = hptr->Payload.File.FileOffset;
@@ -228,7 +210,7 @@ int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count) {
         return to_copy;
     }
 
-    int64_t r = ramfs::read(
+    int64_t r = vfs::read_file(
         hptr->Payload.File.FileDescriptor,
         buf,
         count
@@ -248,7 +230,7 @@ int64_t HlPositionedWriteFile(
     const void* __restrict dat,
     size_t count
 ) {
-	SDPRINTF("positioned write: handle=%p, offset=%zu, data=%p, count=%zu", hptr, offset, dat, count);
+    SDPRINTF("positioned write: handle=%p, offset=%zu, data=%p, count=%zu", hptr, offset, dat, count);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
 
@@ -272,21 +254,12 @@ int64_t HlPositionedWriteFile(
         return to_copy;
     }
 
-    int64_t off = ramfs::tell(hptr->Payload.File.FileDescriptor);
-    ramfs::lseek(hptr->Payload.File.FileDescriptor, offset, SEEK_SET);
-    int64_t r = ramfs::write(
+    return vfs::pwrite_file(
         hptr->Payload.File.FileDescriptor,
+        offset,
         dat,
         count
     );
-    ramfs::lseek(hptr->Payload.File.FileDescriptor, off, SEEK_SET);
-    
-    if (r > 0) {
-        SDPRINTF("positioned write successful: bytes=%ld at offset=%zu", r, offset);
-    } else {
-        SDPRINTF("positioned write failed: error=%ld", r);
-    }
-    return r;
 }
 
 int64_t HlPositionedReadFile(
@@ -295,7 +268,7 @@ int64_t HlPositionedReadFile(
     void* __restrict buf,
     size_t count
 ) {
-	SDPRINTF("positioned read: handle=%p, offset=%zu, buffer=%p, count=%zu", hptr, offset, buf, count);
+    SDPRINTF("positioned read: handle=%p, offset=%zu, buffer=%p, count=%zu", hptr, offset, buf, count);
 
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return -1)
 
@@ -319,21 +292,12 @@ int64_t HlPositionedReadFile(
         return to_copy;
     }
 
-    int64_t off = ramfs::tell(hptr->Payload.File.FileDescriptor);
-    ramfs::lseek(hptr->Payload.File.FileDescriptor, offset, SEEK_SET);
-    int64_t r = ramfs::read(
+    return vfs::pread_file(
         hptr->Payload.File.FileDescriptor,
+        offset,
         buf,
         count
     );
-    ramfs::lseek(hptr->Payload.File.FileDescriptor, off, SEEK_SET);
-    
-    if (r > 0) {
-        SDPRINTF("positioned read successful: bytes=%ld at offset=%zu", r, offset);
-    } else {
-        SDPRINTF("positioned read failed: error=%ld", r);
-    }
-    return r;
 }
 
 void HlSyncFile(Handle* hptr) {
@@ -342,24 +306,22 @@ void HlSyncFile(Handle* hptr) {
     VALID_HNDL(hptr, HANDLE_TYPE_FILEIO, return)
 
     if (hptr->Payload.File.OpenFlags & FLAG_FILE_LOAD_MEMORY) {
-        int64_t off = ramfs::tell(hptr->Payload.File.FileDescriptor);
-        ramfs::lseek(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
+        int64_t current_offset = vfs::seek_file(hptr->Payload.File.FileDescriptor, 0, SEEK_CUR);
+        vfs::seek_file(hptr->Payload.File.FileDescriptor, 0, SEEK_SET);
         
-        ramfs::ftruncate(hptr->Payload.File.FileDescriptor, hptr->Payload.File.FileSize);
-        int64_t written = ramfs::write(
+        int64_t written = vfs::write_file(
             hptr->Payload.File.FileDescriptor,
             hptr->Payload.File.MappedAddress,
             hptr->Payload.File.FileSize
         );
         
-        ramfs::lseek(hptr->Payload.File.FileDescriptor, off, SEEK_SET);
+        vfs::seek_file(hptr->Payload.File.FileDescriptor, current_offset, SEEK_SET);
         
-        stat s;
-        if (ramfs::fstat(hptr->Payload.File.FileDescriptor, &s) == 0) {
-            hptr->Payload.File.FileSize = s.st_size;
-        }
+        hptr->Payload.File.FileSize = vfs::stat_sz(hptr->Payload.File.FileDescriptor);
         
         SDPRINTF("file synced: bytes_written=%ld, new_size=%zu", written, hptr->Payload.File.FileSize);
+    } else {
+        vfs::sync_file(hptr->Payload.File.FileDescriptor);
     }
 }
 
@@ -373,9 +335,9 @@ void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFla
         return;
     }
 
-    DIR* dir = ramfs::opendir(path);
-    if (!dir) {
-        SDPRINTF("opendir failed: path='%s'", path);
+    int dfd = vfs::open_dir(path, OpenFlags);
+    if (dfd < 0) {
+        SDPRINTF("open_dir failed: path='%s', error=%d", path, dfd);
         hptr->LastError = -1;
         return;
     }
@@ -387,11 +349,11 @@ void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFla
     hptr->LastError = 0;
 
     hptr->Payload.Directory.DirPath = path;
-    hptr->Payload.Directory.DirDescriptor = (int64_t)dir;
+    hptr->Payload.Directory.DirDescriptor = dfd;
     hptr->Payload.Directory.ReadOffset = 0;
     hptr->Payload.Directory.EntryCountCache = 0;
     
-    SDPRINTF("directory opened: dir=%p", dir);
+    SDPRINTF("directory opened: dfd=%d", dfd);
 }
 
 void HlCloseDirectory(Handle* hptr) {
@@ -399,71 +361,45 @@ void HlCloseDirectory(Handle* hptr) {
     
     VALID_HNDL(hptr, HANDLE_TYPE_DIRIO, return)
 
-    DIR* dir = (DIR*)hptr->Payload.Directory.DirDescriptor;
-    if (dir) {
-        ramfs::closedir(dir);
-        SDPRINTF("directory closed: dir=%p", dir);
-    }
+    int dfd = hptr->Payload.Directory.DirDescriptor;
+    vfs::close_dir(dfd);
+    SDPRINTF("directory closed: dfd=%d", dfd);
 
     hptr->Payload.Directory.DirDescriptor = 0;
     hptr->HandleType = HANDLE_TYPE_GENERIC;
 }
 
-void HlMakeDirectory(Handle* hptr, const char* __restrict path) {
-    SDPRINTF("creating directory: handle=%p, path='%s'", hptr, path);
+void HlMakeDirectory(const char* __restrict path) {
+    SDPRINTF("creating directory: path='%s'", path);
     
-    (void)hptr;
-    int result = ramfs::mkdir(path, 0777);
+    vfs::make_dir(path);
     
-    if (result == 0) {
-        SDPRINTF("directory created successfully: path='%s'", path);
-    } else {
-        SDPRINTF("mkdir failed: path='%s', error=%d", path, result);
-    }
+    SDPRINTF("directory creation initiated: path='%s'", path);
 }
 
-void HlRemoveDirectory(Handle* hptr, const char* __restrict path) {
-    SDPRINTF("removing directory: handle=%p, path='%s'", hptr, path);
+void HlRemoveDirectory(const char* __restrict path) {
+    SDPRINTF("removing directory: path='%s'", path);
     
-    (void)hptr;
-    int result = ramfs::rmdir(path);
+    vfs::remove_dir(path);
     
-    if (result == 0) {
-        SDPRINTF("directory removed successfully: path='%s'", path);
-    } else {
-        SDPRINTF("rmdir failed: path='%s', error=%d", path, result);
-    }
+    SDPRINTF("directory removal initiated: path='%s'", path);
 }
 
-// buf must be 1024 bytes, first 8 bytes are number of entries, followed by a 2D array of strings
 void HlListDirectory(Handle* hptr, void* __restrict buf) {
     SDPRINTF("listing directory: handle=%p, buffer=%p", hptr, buf);
     
     VALID_HNDL(hptr, HANDLE_TYPE_DIRIO, return)
 
-    DIR* dir = (DIR*)hptr->Payload.Directory.DirDescriptor;
-    if (!dir) {
+    int dfd = hptr->Payload.Directory.DirDescriptor;
+    if (dfd < 0) {
         SDPRINTF("invalid directory descriptor");
         return;
     }
 
+    vfs::list_dir(dfd, buf);
+    
     uint64_t* count = (uint64_t*)buf;
-    char* base = (char*)buf + sizeof(uint64_t);
-
-    *count = 0;
-
-    for (size_t i = 0; i < 64; ++i) {
-        dirent* ent = ramfs::readdir(dir);
-        if (!ent)
-            break;
-
-        char* dst = base + i * (NAME_MAX + 1);
-        strncpy(dst, ent->d_name, NAME_MAX);
-        dst[NAME_MAX] = '\0';
-
-        (*count)++;
-        hptr->Payload.Directory.ReadOffset++;
-    }
+    hptr->Payload.Directory.ReadOffset += *count;
     
     SDPRINTF("directory listed: entries=%lu, total_offset=%lu", *count, hptr->Payload.Directory.ReadOffset);
 }
@@ -473,29 +409,16 @@ void HlResetDirectoryReadOffset(Handle* hptr) {
     
     VALID_HNDL(hptr, HANDLE_TYPE_DIRIO, return)
 
-    DIR* dir = (DIR*)hptr->Payload.Directory.DirDescriptor;
-    if (!dir) {
+    int dfd = hptr->Payload.Directory.DirDescriptor;
+    if (dfd < 0) {
         SDPRINTF("invalid directory descriptor");
         return;
     }
 
-    const char* path = hptr->Payload.Directory.DirPath;
-    
-    ramfs::closedir(dir);
-    
-    dir = ramfs::opendir(path);
-    if (!dir) {
-        SDPRINTF("failed to reopen directory: path='%s'", path);
-        hptr->Payload.Directory.DirDescriptor = 0;
-        hptr->LastError = -1;
-        return;
-    }
-    
-    hptr->Payload.Directory.DirDescriptor = (int64_t)dir;
+    vfs::reset_dir_read_off(dfd);
     hptr->Payload.Directory.ReadOffset = 0;
-    hptr->LastError = 0;
     
-    SDPRINTF("directory read offset reset: dir=%p", dir);
+    SDPRINTF("directory read offset reset");
 }
 
 void* HlMemoryPoolAllocate(size_t n) {
@@ -515,7 +438,7 @@ void HlMemoryPoolFree(void* ptr) {
 }
 
 struct Pool {
-    void* pool_base; // kernel prespective, this is void*, but app prespective, it is const void*
+    void* pool_base;
     size_t nbytes;
     size_t npages;
 };
@@ -588,7 +511,7 @@ void HlTerminateProcess(int64_t pid) {
 int HlExec(const char* __restrict path, const char* args[], const char* env_vars[]) {
     SDPRINTF("executing: path='%s'", path);
     
-    return proc::exec::execve(path, args, env_vars);
+    return -1;
 }
 
 void HlExit(int error_code) {

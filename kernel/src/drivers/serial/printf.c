@@ -886,7 +886,7 @@ static int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <proc/spinlocks.h>
+#include <threadsafety/spinlocks.h>
 
 struct spinlock printf_lock = {
 	.name = "PRINTF",

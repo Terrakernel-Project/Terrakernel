@@ -11,14 +11,101 @@
 #	define ADPRINTF(fmt, ...)
 #endif
 
+struct ahci_mbr_struct {
+	uint8_t mbr_bootstrap[440];
+	uint32_t unique_disk_id;
+	uint16_t reserved;
+	uint8_t rsv[64]; // partitions are here, but who cares we are just checking if boot disk
+	uint16_t mbr_sig;
+} __attribute__((packed));
+
+struct ahci_identify_struc {
+    uint16_t general_config;
+    uint16_t obsolete1[9];
+
+    char     serial_number[20];
+
+    uint16_t obsolete2[3];
+
+    char     firmware_revision[8];
+    char     model_number[40];
+
+    uint16_t max_sectors_per_interrupt;
+
+    uint16_t trusted_computing;
+
+    uint16_t capabilities1;
+    uint16_t capabilities2;
+
+    uint16_t obsolete3[2];
+
+    uint16_t validity_flags;
+
+    uint16_t obsolete4[5];
+
+    uint16_t multi_sector_settings;
+
+    uint32_t lba28_total_sectors;
+
+    uint16_t obsolete5;
+
+    uint16_t multiword_dma;
+    uint16_t pio_modes;
+
+    uint16_t min_mwdma_cycle_time;
+    uint16_t rec_mwdma_cycle_time;
+    uint16_t min_pio_cycle_time;
+    uint16_t min_pio_cycle_time_iordy;
+
+    uint16_t reserved1[6];
+
+    uint16_t queue_depth;
+
+    uint16_t sata_capabilities;
+    uint16_t sata_reserved;
+    uint16_t sata_features_supported;
+    uint16_t sata_features_enabled;
+
+    uint16_t major_version;
+    uint16_t minor_version;
+
+    uint16_t command_set1;
+    uint16_t command_set2;
+    uint16_t command_set3;
+    uint16_t command_set_enabled1;
+    uint16_t command_set_enabled2;
+    uint16_t command_set_default;
+
+    uint16_t ultra_dma_modes;
+
+    uint16_t reserved2[4];
+
+    uint16_t hw_reset_result;
+
+    uint16_t reserved3[5];
+
+    uint16_t lba48_total_sectors[4];
+
+    uint16_t reserved4[23];
+
+    uint16_t removable_media_status;
+    uint16_t security_status;
+
+    uint16_t reserved5[127];
+};
+
 struct internal_port {
 	HBA_PORT* hba_port;
 	uint8_t port_id;
 	char port_name[16]; // preferably follow sata_a, sata_b, sata_c, ...
 	bool online;
+
+	ahci_identify_struc port_info;
+	ahci_mbr_struct mbr;
 };
 
 internal_port driver_ports[32];
+int installed_ports;
 int counter = 0;
 const char* port_name_reference_table = "abcdefghijklmnopqrstuvwxyzABCDEF";
 
@@ -30,15 +117,13 @@ void get_next_port_name(char* name) {
 	strncpy(name, port_name, 7);
 }
 
-int port_idx = 0;
-
 internal_port* implement_port(HBA_PORT* port) {
-	driver_ports[port_idx].hba_port = port;
-	driver_ports[port_idx].port_id = port_idx;
-	get_next_port_name(driver_ports[port_idx].port_name);
-	driver_ports[port_idx].online = false;
+	driver_ports[installed_ports].hba_port = port;
+	driver_ports[installed_ports].port_id = installed_ports;
+	get_next_port_name(driver_ports[installed_ports].port_name);
+	driver_ports[installed_ports].online = false;
 	
-	return &driver_ports[port_idx++];
+	return &driver_ports[installed_ports++];
 }
 
 void stop_port(HBA_PORT* port) {
@@ -85,6 +170,10 @@ bool supported_port_type(HBA_PORT* hba_port) {
 }
 
 bool ahci_identify(HBA_PORT* hba_port, uint16_t* identify_buffer);
+int64_t ahci_read(int disk_sn, uint64_t lba, uint64_t count, uint8_t* buffer, size_t len);
+int64_t ahci_write(int disk_sn, uint64_t lba, uint64_t count, const uint8_t* data, size_t len);
+int ahci_disk_count();
+bool ahci_disk_info(int disk_sn, disk_info* info);
 
 void setup_port(internal_port* port) {
 	ADPRINTF("Setting up port %s\n\r", port->port_name);
@@ -187,16 +276,13 @@ void setup_port(internal_port* port) {
 	ADPRINTF("Starting port %s\n\r", port->port_name);
 	start_port(hba_port);
 
+	ahci_identify(hba_port, (uint16_t*)&port->port_info); // identify disk
+	ahci_read(port->port_id, 0, 1, (uint8_t*)&port->mbr, 512); // read mbr
+
 	ADPRINTF("===============================\n\r\n\r");
 }
 
-
-
 HBA_MEM* abar;
-
-bool ahci_identify(HBA_PORT* hba_port, uint16_t* identify_buffer);
-int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len);
-int64_t ahci_write(uint64_t lba, uint64_t count, const uint8_t* data, size_t len);
 
 void error_dump(FIS_REG_H2D* fis, HBA_CMD_TBL* cmd_tbl, HBA_CMD_HEADER* cmd_header) {
 	ADPRINTF("FIS dump:\n\r");
@@ -214,11 +300,13 @@ void error_dump(FIS_REG_H2D* fis, HBA_CMD_TBL* cmd_tbl, HBA_CMD_HEADER* cmd_head
 }
 
 void ahci_init(pcie_device* dev, disk_driver* driver) {
-	printf("Initialising AHCI disk controller\n\r");
+	ADPRINTF("Initialising AHCI disk controller\n\r");
 	
 	driver->name = "AHCI";
 	driver->read = ahci_read;
 	driver->write = ahci_write;
+	driver->get_disk_count = ahci_disk_count;
+	driver->get_disk_info = ahci_disk_info;
 	
 	pcie::enable_bus_mastering(dev);
 	
@@ -364,7 +452,7 @@ bool ahci_identify(HBA_PORT* hba_port, uint16_t* identify_buffer) {
 	return true;
 }
 
-int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len) {
+int64_t ahci_read(int disk_sn, uint64_t lba, uint64_t count, uint8_t* buffer, size_t len) {
 	if (len < (count * 512)) {
 		return -1;
 	}
@@ -373,20 +461,24 @@ int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len) {
 		return -1;
 	}
 
+	if (0 <= disk_sn && disk_sn < installed_ports) {} else {
+		return -1;
+	}
+
 	size_t dma_pages = ((count * 512) + 0xFFF) / 0x1000;
 	void* intrnl_buf_phys = mem::pmm::palloc(dma_pages);
 	void* intrnl_buf = (void*)mem::vmm::pa_to_va((uint64_t)intrnl_buf_phys);
 	mem::memset(intrnl_buf, 0, dma_pages * 0x1000);
 
-	ADPRINTF("Reading from port %s: LBA=%lu count=%lu\n\r", driver_ports[0].port_name, lba, count);
+	ADPRINTF("Reading from port %s: LBA=%lu count=%lu\n\r", driver_ports[disk_sn].port_name, lba, count);
 	
-	if (port_idx == 0) {
+	if (installed_ports == 0) {
 		ADPRINTF("No ports available\n\r");
 		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
 		return -1;
 	}
 	
-	internal_port* port = &driver_ports[0];
+	internal_port* port = &driver_ports[disk_sn];
 	if (!port->online) {
 		ADPRINTF("Port is offline\n\r");
 		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
@@ -502,12 +594,16 @@ int64_t ahci_read(uint64_t lba, uint64_t count, uint8_t* buffer, size_t len) {
 	return count * 512;
 }
 
-int64_t ahci_write(uint64_t lba, uint64_t count, const uint8_t* data, size_t len) {
+int64_t ahci_write(int disk_sn, uint64_t lba, uint64_t count, const uint8_t* data, size_t len) {
 	if (len < (count * 512)) {
 		return -1;
 	}
 
 	if (count == 0 || count > 65536) {
+		return -1;
+	}
+
+	if (0 <= disk_sn && disk_sn < installed_ports) {} else {
 		return -1;
 	}
 
@@ -517,15 +613,15 @@ int64_t ahci_write(uint64_t lba, uint64_t count, const uint8_t* data, size_t len
 
 	mem::memcpy(intrnl_buf, data, count * 512);
 
-	ADPRINTF("Writing to port %s: LBA=%lu count=%lu\n\r", driver_ports[0].port_name, lba, count);
+	ADPRINTF("Writing to port %s: LBA=%lu count=%lu\n\r", driver_ports[disk_sn].port_name, lba, count);
 	
-	if (port_idx == 0) {
+	if (installed_ports == 0) {
 		ADPRINTF("No ports available\n\r");
 		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
 		return -1;
 	}
 	
-	internal_port* port = &driver_ports[0];
+	internal_port* port = &driver_ports[disk_sn];
 	if (!port->online) {
 		ADPRINTF("Port is offline\n\r");
 		mem::pmm::free(intrnl_buf_phys, (len + 0xFFF) / 0x1000);
@@ -637,4 +733,62 @@ int64_t ahci_write(uint64_t lba, uint64_t count, const uint8_t* data, size_t len
 	
 	ADPRINTF("Write completed, transferred %u bytes\n\r", cmd_header->prdbc);
 	return count * 512;
+}
+
+int ahci_disk_count() {
+	return installed_ports;
+}
+
+#include <limine.h>
+
+extern volatile limine_executable_file_request executable_file_request;
+
+limine_file* exec_file = nullptr;
+
+bool ahci_disk_info(int disk_sn, disk_info* info) {
+	if (!exec_file && executable_file_request.response) {
+		exec_file = executable_file_request.response->executable_file;
+	}
+
+	if (!info) return false;
+
+	if (0 <= disk_sn && disk_sn < installed_ports) {} else {
+		return false;
+	}
+
+	ahci_identify_struc identify_struc_ins;
+	ahci_identify_struc* identify_struc = &identify_struc_ins; // ptr
+	
+	ahci_identify(driver_ports[disk_sn].hba_port, (uint16_t*)identify_struc);
+
+	uint64_t lba48 =
+		((uint64_t)identify_struc->lba48_total_sectors[3] << 48) |
+	    ((uint64_t)identify_struc->lba48_total_sectors[2] << 32) |
+	    ((uint64_t)identify_struc->lba48_total_sectors[1] << 16) |
+	    ((uint64_t)identify_struc->lba48_total_sectors[0]);
+
+	info->size_bytes = lba48 * 512;
+	info->size_kib = info->size_bytes * 1024;
+	info->size_mib = info->size_bytes * 1024 * 1024;
+	info->size_gib = info->size_bytes * 1024 * 1024 * 1024;
+	mem::memcpy(&info->name, &driver_ports[disk_sn].port_name, 16);
+
+	info->media_type = DISKGENERIC_MEDIA_TYPE_AHCI_SATA;
+
+	if (exec_file) {
+		uint32_t uuid_on_disk = driver_ports[disk_sn].mbr.unique_disk_id;
+		uint32_t limine_boot_disk_id = exec_file->mbr_disk_id;
+
+		if (uuid_on_disk == limine_boot_disk_id) {
+			ADPRINTF("Disk %d is the boot disk\n\r", uuid_on_disk);
+
+			info->boot_disk = true;
+		} else {
+			ADPRINTF("Disk is not boot disk, (on-disk)%d:(limine-resource)%d", uuid_on_disk, limine_boot_disk_id);
+
+			info->boot_disk = false;
+		}
+	}
+
+	return true;
 }

@@ -1,5 +1,5 @@
 #include "handlers.hpp"
-#include <proc/spinlocks.hpp>
+#include <threadsafety/spinlocks.hpp>
 #include <cstring>
 #include <cstdint>
 #include <cstdio>

@@ -303,63 +303,83 @@ void disasm_at_memory(uint64_t addr, uint64_t len, uint64_t paging_len, uint64_t
 namespace stacktrace {
 
 static inline bool is_canonical(uint64_t addr) {
-    return ((int64_t)addr) == (int64_t)(addr << 16 >> 16);
+    uint64_t top = addr >> 47;
+    return top == 0 || top == 0x1FFFF;
 }
 
-void stacktrace(uint64_t addr, uint64_t len, uint64_t paging_len) {
-    if (paging_len == 0 || paging_len % 16 != 0)
-        paging_len = 16;
-        
-    uint64_t rbp = addr;
+static inline bool is_mapped(uint64_t addr) {
+    return mem::vmm::va_to_pa(addr) != (uint64_t)-1;
+}
+
+static bool safe_read64(uint64_t addr, uint64_t& out) {
+    if (!addr || (addr & 7))         return false;
+    if (!is_canonical(addr))         return false;
+    if (!is_mapped(addr))            return false;
+    out = *reinterpret_cast<uint64_t*>(addr);
+    return true;
+}
+
+void stacktrace(uint64_t rbp, uint64_t max_frames, uint64_t page_size) {
+    if (page_size == 0 || page_size % 16 != 0) page_size = 16;
+
+    printf(" ----==== STACKTRACE ====----\n\r");
+    printf("%-4s %-32s %-18s %s\n\r", "#", "FUNCTION", "RIP", "OFFSET");
+    printf("------------------------------------------------------------\n\r");
+
     int frame = 0;
-    
-    printf(" ----==== STACKTRACE ====---- \n\r");
-    printf("NOTE: -fomit-frame-pointer must be DISABLED for accurate traces\n\r");
-    printf("Add -fno-omit-frame-pointer to your CFLAGS\n\r");
-    printf("--------------------------------------------------------------\n\r");
-    
-    while (rbp != 0 && frame < len) {
+
+    while (frame < (int)max_frames) {
+        if (!rbp) break;
+
         if (!is_canonical(rbp)) {
-            printf("#%d: <non-canonical frame pointer 0x%llX - chain broken>\n",
+            printf("#%-3d <non-canonical rbp=0x%016llX — chain broken>\n\r",
                    frame, (unsigned long long)rbp);
-            printf("This is expected with -fomit-frame-pointer\n\r");
             break;
         }
-        
-        uint64_t ret_addr = *((uint64_t*)(rbp + 8));
+
+        if (!is_mapped(rbp) || !is_mapped(rbp + 8)) {
+            printf("#%-3d <unmapped frame at rbp=0x%016llX — chain broken>\n\r",
+                   frame, (unsigned long long)rbp);
+            break;
+        }
+
+        uint64_t ret_addr = 0, next_rbp = 0;
+        if (!safe_read64(rbp + 8, ret_addr) || !safe_read64(rbp, next_rbp)) {
+            printf("#%-3d <read fault at rbp=0x%016llX — chain broken>\n\r",
+                   frame, (unsigned long long)rbp);
+            break;
+        }
+
+        if (!ret_addr || !is_canonical(ret_addr)) {
+            if (ret_addr)
+                printf("#%-3d <non-canonical ret=0x%016llX — base or broken frame>\n\r",
+                       frame, (unsigned long long)ret_addr);
+            break;
+        }
+
         uint64_t offset = 0;
         const char* func = find_symbol(ret_addr, &offset);
-        
-        printf("#%d: <%s+0x%llX> (RIP=%016llX)\n", 
-               frame, func, (unsigned long long)offset, 
-               (unsigned long long)ret_addr);
-        
-        uint64_t prev_rbp = rbp;
-        rbp = *((uint64_t*)rbp);
-        
-        if (rbp != 0 && rbp <= prev_rbp) {
-            printf("#%d: <frame pointer went backwards or stayed same - broken chain>\n",
-                   frame + 1);
-            break;
-        }
-        
+        printf("#%-3d %-32s 0x%016llX +0x%llX\n\r",
+               frame,
+               func ? func : "???",
+               (unsigned long long)ret_addr,
+               (unsigned long long)offset);
+
+        rbp = next_rbp;
         frame++;
-        
-        if (frame % paging_len == 0 && frame != 0) {
-            printf("Press any key to continue stacktrace\n\r");
+
+        if (page_size && frame > 0 && frame % (int)page_size == 0) {
+            printf("-- press any key for more --\n\r");
             char c;
             drivers::tty::ldisc::read(false, &c, 1);
             printf("\033[2J\033[H");
         }
     }
-    
-    if (frame == 0) {
-        printf(
-        	"ERROR: Could not unwind stack at all!\n\r"
-        	"Likely cause: -fomit-frame-pointer is enabled\n\r"
-	        "Solution: Add -fno-omit-frame-pointer to CFLAGS\n\r"
-        );
-    }
+
+    if (frame == 0)
+        printf("ERROR: could not unwind at all — bad rbp or no frame at entry point\n\r");
+    else
+        printf("---- %d frame(s) ----\n\r", frame);
 }
 
 }

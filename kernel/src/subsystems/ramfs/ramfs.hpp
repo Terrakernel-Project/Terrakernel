@@ -84,6 +84,7 @@ int unlink(const char* pathname);
 int link(const char* oldpath, const char* newpath);
 int rename(const char* oldpath, const char* newpath);
 DIR* opendir(const char* name);
+DIR* fdopendir(int fd);
 struct dirent* readdir(DIR* dirp);
 int closedir(DIR* dirp);
 int chdir(const char* path);

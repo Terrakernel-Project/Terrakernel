@@ -4,6 +4,7 @@
 #ifdef CONFIG_FALLBACK_TO_PIT
 #	include <drivers/timers/pit/pit.hpp> // fallback if no apic available
 #endif
+#include <subsystems/sched/sched.hpp>
 #include <cstdio>
 
 volatile uint64_t ticks = 0;
@@ -12,7 +13,7 @@ extern "C" void apic_timer_interrupt_handler();
 extern "C" ApicCpuContext* apic_timer_c_handler(ApicCpuContext* ctx) {
 	arch::x86_64::cpu::idt::send_eoi(0);
 
-	return ctx;
+	return (ApicCpuContext*)__sched_yield((uint64_t)ctx);
 }
 
 void initialise_timer() {

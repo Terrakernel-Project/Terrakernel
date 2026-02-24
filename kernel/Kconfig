@@ -93,6 +93,12 @@ endmenu # APIC Timer
 
 endmenu # Timers
 
+menu "Disk Generic Driver"
+
+config DISK_GENERIC_VERBOSE
+	bool "Disk Generic verbose output"
+	default n
+
 menu "AHCI"
 
 config AHCI_VERBOSE
@@ -101,7 +107,25 @@ config AHCI_VERBOSE
 
 endmenu # AHCI
 
+menu "NVMe"
+
+config NVME_VERBOSE
+	bool "NVMe verbose output"
+	default n
+
+endmenu # NVMe
+
+endmenu # Disk Generic driver
+
 menu "Filesystems"
+
+menu "Partitons"
+
+config CONFIG_PARTITONS_VERBOSE
+	bool "Partitions verbose output"
+	default n
+
+endmenu
 
 menu "FAT32"
 
@@ -138,9 +162,9 @@ config EXCEPTION_SHOW_DEFAULT_MENU
 	default n
 
 config EXCEPTION_DEFAULT
-	int "Default menu"
-	default 1
-	range 0 5
+	int "Default menu" if EXCEPTION_SHOW_DEFAULT_MENU
+	default 1 if EXCEPTION_SHOW_DEFAULT_MENU
+	range 0 5 if EXCEPTION_SHOW_DEFAULT_MENU
 	help
 		0: DISASM ONLY
 		1: EXCEPTION ONLY
@@ -211,6 +235,14 @@ config ENABLE_KERNEL_MESSAGES
 endmenu # Kernel Messages
 
 menu "MISC"
+
+menu "Stack Manager"
+
+config DEBUG_STACK_MGR
+	bool "Debug stack manager"
+	default n
+
+endmenu # Stack Manager
 
 menu "Boot Resources"
 

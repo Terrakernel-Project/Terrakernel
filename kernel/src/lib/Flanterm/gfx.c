@@ -11,14 +11,36 @@ volatile struct limine_framebuffer_request fb_request = {
     .revision = 0
 };
 
+// ======= Flanterm theme, just for looks (kernel log, pre-TTY) =======
+static uint32_t ft_ansi_colours[8] = {
+	0x00101114, /* black */
+	0x008b2e2e, /* red */
+	0x003a7d44, /* green */
+	0x008b6f1f, /* yellow */
+	0x002f4f7f, /* blue */
+	0x006a3f7a, /* magenta */
+	0x002f6f73, /* cyan */
+	0x00c5c8c6, /* white */
+};
+
+static uint32_t ft_ansi_bright_colours[8] = {
+	0x00202024, /* bright black (dark gray) */
+	0x00b84a4a, /* bright red */
+	0x004fae66, /* bright green */
+	0x00b8952e, /* bright yellow */
+	0x004c78c4, /* bright blue */
+	0x008c5fbf, /* bright magenta */
+	0x004fb3b8, /* bright cyan */
+	0x00e6e6e6, /* bright white */
+};
+static uint32_t ft_default_bg = 0x000d0f12; /* near-black */
+static uint32_t ft_default_fg = 0x00d0d0d0; /* neutral light gray */
+static uint32_t ft_default_bg_bright = 0x0015151a; /* slightly lifted */
+static uint32_t ft_default_fg_bright = 0x00ffffff; /* clean white */
+
 static struct limine_framebuffer* fb;
 
-#define MAX_TTYS 6
-
-struct flanterm_context *ttys[MAX_TTYS];
-int active_tty = 0;
-
-static struct flanterm_context *active_tty_ctx;
+struct flanterm_context *tty;
 
 uint64_t g_scr_height, g_scr_width;
 
@@ -29,27 +51,21 @@ void flanterm_initialise() {
 
     fb = fb_request.response->framebuffers[0];
 
-    for (int i = 0; i < MAX_TTYS; i++) {
-    	ttys[i] = flanterm_fb_init(
-	        NULL,
-	        NULL,
-	        fb->address, fb->width, fb->height, fb->pitch,
-	        fb->red_mask_size, fb->red_mask_shift,
-	        fb->green_mask_size, fb->green_mask_shift,
-	        fb->blue_mask_size, fb->blue_mask_shift,
-	        NULL,
-	        NULL, NULL,
-	        NULL, NULL,
-	        NULL, NULL,
-	        NULL, 0, 0, 1,
-	        0, 0,
-	        5
-	    );
-    }
-
-    active_tty_ctx = ttys[0];
-    flanterm_full_refresh(active_tty_ctx);
-    active_tty = 0;
+    tty = flanterm_fb_init(
+		NULL,
+	    NULL,
+	    fb->address, fb->width, fb->height, fb->pitch,
+	    fb->red_mask_size, fb->red_mask_shift,
+	    fb->green_mask_size, fb->green_mask_shift,
+	    fb->blue_mask_size, fb->blue_mask_shift,
+	    NULL,
+	    ft_ansi_colours, ft_ansi_bright_colours,
+	    &ft_default_bg, &ft_default_fg,
+	    &ft_default_bg_bright, &ft_default_fg_bright,
+	    NULL, 0, 0, 1,
+	    0, 0,
+	    5
+	);
 
     g_scr_height = fb->height;
     g_scr_width = fb->width;
@@ -86,12 +102,16 @@ uint32_t getpx(int x, int y) {
 	return ((volatile uint32_t *)fb->address)[y * (fb->pitch/4) + x];
 }
 
-void* get_ftctx() {return (void*)active_tty_ctx;}
+void* get_ftctx() {return (void*)tty;}
 
 void fb_clrscr(int lazy_to_remove) {
-    flanterm_write(active_tty_ctx, "\033[2J\033[H", 7);
-    for (size_t i = 0; i < fb->height * fb->pitch; i++) {
-        ((volatile uint32_t*)fb->address)[0] = 0;
+    flanterm_write(tty, "\033[2J\033[H", 7);
+
+    size_t pixels = (fb->pitch * fb->height) / 4;
+    volatile uint32_t* buf = (volatile uint32_t*)fb->address;
+
+    for (size_t i = 0; i < pixels; i++) {
+        buf[i] = 0;
     }
 }
 
@@ -108,24 +128,13 @@ uint64_t get_bpp() {
 }
 
 uint64_t get_stride() {
-    return get_pitch() / get_bpp();
+    return fb->pitch / (fb->bpp / 8);
 }
 
 struct limine_framebuffer* get_fb() {
     return fb;
 }
 
-void switch_to_tty(int tty) {
-    if (active_tty == tty && active_tty_ctx == ttys[tty]) return; // save time
-    if (tty >= MAX_TTYS || tty < 0) return;
-
-    printf("Switching from tty %d to tty %d\n", active_tty, tty);
-
-    active_tty_ctx = ttys[tty];
-    active_tty = tty;
-    flanterm_full_refresh(active_tty_ctx);
-}
-
 void refresh_tty() {
-	flanterm_full_refresh(active_tty_ctx);
+	flanterm_full_refresh(tty);
 }

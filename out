@@ -1,0 +1,73 @@
+[2J[001;001H[=3h[2J[001;001H[2J[001;001H[8;042;160t[2J[001;001H[2J[001;001H[8;056;240t[2J[001;001HBdsDxe: loading Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x2,0x0)/Sata(0x0,0xFFFF,0x0)
+BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x2,0x0)/Sata(0x0,0xFFFF,0x0)
+[2J[001;001H[001;001H[2J[001;001H[001;001H[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mFlanterm Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mSerial Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mGDT Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mIDT Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mPMM Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mVMM Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mFramebuffer remapped, write combining enabled[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mHeap Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mPIT Initialised (FREQ=300)[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;44m INFO    [0m [34mDisabling COM1 serial output, falling back to graphical interface[0m
+[2J[H[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mSerial Disabled[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35muACPI Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35muACPI Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mAPIC Initialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mPIT Reinitialised[0m
+[90m[48;2;64;64;72m[00000.000][0m [30;45m OK      [0m [35mAPIC Timer Initialised[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mRamFS Initialised[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mstdin fd = 0[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mstdout fd = 1[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mstderr fd = 2[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mLoaded initrd[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mDetected 6 PCI devices (Normal PCI is deprecated, use PCIe)[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mDetected 6 PCIe devices[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mSyscalls Initialised[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mPS2K Initialised[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mPS2M Initialised[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mLine Discipline Initialised[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mSyscall handlers Initialised, there are 38 valid syscalls[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1280x800x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 640x480x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 800x480x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 800x600x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 832x624x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 960x640x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1024x600x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1024x768x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1152x864x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1152x870x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1280x720x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1280x760x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1280x768x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1280x960x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1280x1024x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1360x768x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1366x768x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1400x1050x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1440x900x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1600x900x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1600x1200x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1680x1050x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1920x1080x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1920x1200x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 1920x1440x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 2000x2000x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 2048x1536x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 2048x2048x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 2560x1440x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;44m INFO    [0m [34mDiscovered 2560x1600x32 mode[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;43m WARNING [0m [33mEDID purely discovers modes and is not able to change video modes[0m
+[90m[48;2;64;64;72m[00000.007][0m [30;45m OK      [0m [35mEDID Driver Initialised[0m
+[90m[48;2;64;64;72m[00000.022][0m [30;45m OK      [0m [35mBlock I/O Initialised[0m
+[90m[48;2;64;64;72m[00000.044][0m [30;44m INFO    [0m [34mFound boot disk, boot disk serial number is 0[0m
+[90m[48;2;64;64;72m[00000.077][0m [30;45m OK      [0m [35mPartitions Initialised[0m
+[90m[48;2;64;64;72m[00000.094][0m [30;45m OK      [0m [35mFilesystem Subsystem Initialised[0m
+[90m[48;2;64;64;72m[00000.115][0m [30;45m OK      [0m [35mVFS Initialised[0m
+[90m[48;2;64;64;72m[00000.125][0m [30;45m OK      [0m [35mScheduler Initialised[0m
+[90m[48;2;64;64;72m[00000.138][0m [30;45m OK      [0m [35mParsed command-line[0m
+Got 1 CPUs
+[90m[48;2;64;64;72m[00000.151][0m [30;44m INFO    [0m [34mCPU#0 is already online (BSP/Boostrap Processor)[0m
+[test_sched] procs: p0(pid=1, 4 threads) p1(pid=2, 3 threads) p2(pid=3, 3 threads)
+[test_sched] PASS: 3 procs, 10 threads total

@@ -3,6 +3,13 @@
 #include <cstring>
 #include <cstdio>
 #include <mem/mem.hpp>
+#include <config.hpp>
+
+#ifdef CONFIG_PARTITONS_VERBOSE
+#	define PDPRINTF(fmt, ...) printf("[ %s ] " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+#else
+#	define PDPRINTF(fmt, ...)
+#endif
 
 struct mbr_partition_entry {
 	uint8_t drive_attributes;
@@ -114,15 +121,15 @@ void utf16_to_ascii(const uint16_t* utf16, char* ascii, size_t max_len) {
 }
 
 void prepare_part_table_gpt() {
-	printf("Parsing GPT partition table\n");
-	printf("GPT Header:\n");
-	printf("  Revision: 0x%08x\n", gpt_hdr->gpt_revision);
-	printf("  Header size: %u bytes\n", gpt_hdr->hdr_size);
-	printf("  First usable LBA: %lu\n", gpt_hdr->first_usable_lba);
-	printf("  Last usable LBA: %lu\n", gpt_hdr->last_usable_lba);
-	printf("  Partition entry LBA: %lu\n", gpt_hdr->part_entry_lba);
-	printf("  Number of partition entries: %u\n", gpt_hdr->num_part_entries);
-	printf("  Partition entry size: %u bytes\n", gpt_hdr->part_entry_size);
+	PDPRINTF("Parsing GPT partition table\n");
+	PDPRINTF("GPT Header:\n");
+	PDPRINTF("  Revision: 0x%08x\n", gpt_hdr->gpt_revision);
+	PDPRINTF("  Header size: %u bytes\n", gpt_hdr->hdr_size);
+	PDPRINTF("  First usable LBA: %lu\n", gpt_hdr->first_usable_lba);
+	PDPRINTF("  Last usable LBA: %lu\n", gpt_hdr->last_usable_lba);
+	PDPRINTF("  Partition entry LBA: %lu\n", gpt_hdr->part_entry_lba);
+	PDPRINTF("  Number of partition entries: %u\n", gpt_hdr->num_part_entries);
+	PDPRINTF("  Partition entry size: %u bytes\n", gpt_hdr->part_entry_size);
 	
 	uint32_t entries_to_read = gpt_hdr->num_part_entries;
 	if (entries_to_read > 128) entries_to_read = 128;
@@ -133,6 +140,7 @@ void prepare_part_table_gpt() {
 	uint8_t* entry_buffer = (uint8_t*)mem::heap::malloc(sectors_needed * 512);
 	
 	int64_t read_result = drivers::blockio::diskgeneric::raw_read(
+		drivers::blockio::diskgeneric::get_boot_disk_sn(),
 		gpt_hdr->part_entry_lba, 
 		sectors_needed, 
 		entry_buffer, 
@@ -140,7 +148,7 @@ void prepare_part_table_gpt() {
 	);
 	
 	if (read_result != (int64_t)(sectors_needed * 512)) {
-		printf("Failed to read GPT partition entries\n");
+		PDPRINTF("Failed to read GPT partition entries\n");
 		mem::heap::free(entry_buffer);
 		return;
 	}
@@ -167,14 +175,14 @@ void prepare_part_table_gpt() {
 			guid_compare(entry->part_type_guid, LINUX_FS_GUID) ||
 			parts[num_partitions].esp;
 		
-		printf("Partition %d:\n", num_partitions);
-		printf("  Name: %s\n", parts[num_partitions].name);
-		printf("  LBA range: %lu - %lu\n", parts[num_partitions].first_lba, parts[num_partitions].last_lba);
-		printf("  Size: %lu sectors (%lu MB)\n", 
+		PDPRINTF("Partition %d:\n", num_partitions);
+		PDPRINTF("  Name: %s\n", parts[num_partitions].name);
+		PDPRINTF("  LBA range: %lu - %lu\n", parts[num_partitions].first_lba, parts[num_partitions].last_lba);
+		PDPRINTF("  Size: %lu sectors (%lu MB)\n", 
 			parts[num_partitions].last_lba - parts[num_partitions].first_lba + 1,
 			((parts[num_partitions].last_lba - parts[num_partitions].first_lba + 1) * 512) / (1024 * 1024));
-		printf("  ESP: %s\n", parts[num_partitions].esp ? "Yes" : "No");
-		printf("  Type GUID: %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
+		PDPRINTF("  ESP: %s\n", parts[num_partitions].esp ? "Yes" : "No");
+		PDPRINTF("  Type GUID: %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
 			entry->part_type_guid[3], entry->part_type_guid[2], entry->part_type_guid[1], entry->part_type_guid[0],
 			entry->part_type_guid[5], entry->part_type_guid[4],
 			entry->part_type_guid[7], entry->part_type_guid[6],
@@ -187,14 +195,14 @@ void prepare_part_table_gpt() {
 	
 	mem::heap::free(entry_buffer);
 	
-	printf("Found %d GPT partitions\n", num_partitions);
+	PDPRINTF("Found %d GPT partitions\n", num_partitions);
 }
 
 void prepare_part_table_mbr() {
-	printf("Parsing MBR partition table\n");
+	PDPRINTF("Parsing MBR partition table\n");
 	
 	if (mbr_sectors->mbr_sig != 0xAA55) {
-		printf("Invalid MBR signature: 0x%04x\n", mbr_sectors->mbr_sig);
+		PDPRINTF("Invalid MBR signature: 0x%04x\n", mbr_sectors->mbr_sig);
 		return;
 	}
 	
@@ -224,29 +232,29 @@ void prepare_part_table_mbr() {
 			entry->part_type == 0xEF     // ESP
 		);
 		
-		printf("Partition %d:\n", num_partitions);
-		printf("  Type: 0x%02x\n", entry->part_type);
-		printf("  LBA range: %u - %lu\n", entry->lba_part_start, parts[num_partitions].last_lba);
-		printf("  Size: %u sectors (%lu MB)\n", 
+		PDPRINTF("Partition %d:\n", num_partitions);
+		PDPRINTF("  Type: 0x%02x\n", entry->part_type);
+		PDPRINTF("  LBA range: %u - %lu\n", entry->lba_part_start, parts[num_partitions].last_lba);
+		PDPRINTF("  Size: %u sectors (%lu MB)\n", 
 			entry->num_sects,
 			((uint64_t)entry->num_sects * 512) / (1024 * 1024));
-		printf("  Bootable: %s\n", (entry->drive_attributes & 0x80) ? "Yes" : "No");
-		printf("  ESP: %s\n", parts[num_partitions].esp ? "Yes" : "No");
+		PDPRINTF("  Bootable: %s\n", (entry->drive_attributes & 0x80) ? "Yes" : "No");
+		PDPRINTF("  ESP: %s\n", parts[num_partitions].esp ? "Yes" : "No");
 		
 		num_partitions++;
 	}
 	
-	printf("Found %d MBR partitions\n", num_partitions);
+	PDPRINTF("Found %d MBR partitions\n", num_partitions);
 }
 
 namespace drivers::blockio::diskgeneric::partitions {
 
 void initialise() {
-	printf("Initializing partition table\n");
+	PDPRINTF("Initializing partition table\n");
 	
 	uint8_t* sectors_1_to_3 = (uint8_t*)mem::heap::malloc(512*3);
 	
-	if (drivers::blockio::diskgeneric::raw_read(0, 3, sectors_1_to_3, 512 * 3) != 512 * 3) {
+	if (drivers::blockio::diskgeneric::raw_read(drivers::blockio::diskgeneric::get_boot_disk_sn(), 0, 3, sectors_1_to_3, 512 * 3) != 512 * 3) {
 		panic("Failed to read disk sectors");
 	}
 	
@@ -255,11 +263,11 @@ void initialise() {
 	
 	if (gpt_hdr->sig == GPT_SIG) {
 		is_gpt = true;
-		printf("Detected GPT partition table\n");
+		PDPRINTF("Detected GPT partition table\n");
 		prepare_part_table_gpt();
 	} else {
 		is_gpt = false;
-		printf("Detected MBR partition table\n");
+		PDPRINTF("Detected MBR partition table\n");
 		prepare_part_table_mbr();
 	}
 }

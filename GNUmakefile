@@ -2,11 +2,13 @@
 
 ARCH := x86_64
 
+QEMU_EXTRA_FLAGS :=
+
 # TAP
-#QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0
+#QEMUFLAGS := -rtc base=localtime -m 8G -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
 
 # NO TAP
-#QEMUFLAGS := -rtc base=localtime -M q35,accel=kvm,kernel-irqchip=on -m 6G -smp cores=2,threads=4 -cpu max,x2apic -netdev user,id=net0 -device e1000,netdev=net0
+QEMUFLAGS := -rtc base=localtime -m 8G -netdev user,id=net0 -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
 
 QEMUFLAGS_NORM := -rtc base=localtime -M q35 -m 6G
 QEMUFLAGS_DINT := $(QEMUFLAGS_NORM) -d int
@@ -38,11 +40,12 @@ initrd:
 	cd initrd && tar -cf "../kernel/bin-$(ARCH)/initrd.img" -H ustar ./*
 	@echo "initrd.img created at kernel/bin-$(ARCH)/initrd.img"
 
-.PHONY: run
-run: run-$(ARCH)
+#.PHONY: run
+#run: run-$(ARCH)
 
-.PHONY: run-hdd
-run-hdd: run-hdd-$(ARCH)
+# was run-hdd, but i changed it because im used to make run
+.PHONY: run
+run: run-hdd-$(ARCH)
 
 run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
@@ -151,7 +154,7 @@ ifeq ($(ARCH),x86_64)
 	@cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	@cp -v limine/BOOTIA32.EFI iso_root/EFI/BOOT/
 	@cp -v kernel/bin-$(ARCH)/initrd.img iso_root/boot/initrd.img
-	@cp -rfv kernel/bin-$(ARCH)/other/* iso_root/
+	@cp -rfv imginc/* iso_root/
 	@xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
 		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
@@ -192,33 +195,34 @@ $(IMAGE_NAME).hdd: limine/limine kernel
 	@rm -f $(IMAGE_NAME).hdd
 	@dd if=/dev/zero bs=1M count=64 of=$(IMAGE_NAME).hdd
 ifeq ($(ARCH),x86_64)
-	@PATH=$$PATH:/usr/sbin:/sbin sgdisk $(IMAGE_NAME).hdd -n 1:2048 -t 1:ef00 -m 1
+	@PATH=$$PATH:/usr/sbin:/sbin sgdisk $(IMAGE_NAME).hdd -n 1:2048:4095 -t 1:ef02 -n 2:4096 -t 2:ef00
 	@./limine/limine bios-install $(IMAGE_NAME).hdd
 else
 	@PATH=$$PATH:/usr/sbin:/sbin sgdisk $(IMAGE_NAME).hdd -n 1:2048 -t 1:ef00
 endif
-	@mformat -i $(IMAGE_NAME).hdd@@1M &> /dev/null
-	@mmd -i $(IMAGE_NAME).hdd@@1M ::/EFI
-	@mmd -i $(IMAGE_NAME).hdd@@1M ::/EFI/BOOT
-	@mmd -i $(IMAGE_NAME).hdd@@1M ::/boot
-	@mmd -i $(IMAGE_NAME).hdd@@1M ::/boot/limine
-	@mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/kernel ::/boot &> /dev/null
-	@mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/initrd.img ::/boot &> /dev/null
-	@mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/other/* ::/ &> /dev/null
-	@mcopy -i $(IMAGE_NAME).hdd@@1M limine.conf ::/boot/limine &> /dev/null
+	@dd if=/dev/zero of=$(IMAGE_NAME).hdd bs=512 seek=4096 count=126976 conv=notrunc
+	@mkfs.fat -F 16 -n "TERRABOOT" --offset 4096 $(IMAGE_NAME).hdd
+	@mmd -i $(IMAGE_NAME).hdd@@2M ::/EFI
+	@mmd -i $(IMAGE_NAME).hdd@@2M ::/EFI/BOOT
+	@mmd -i $(IMAGE_NAME).hdd@@2M ::/boot
+	@mmd -i $(IMAGE_NAME).hdd@@2M ::/boot/limine
+	@mcopy -i $(IMAGE_NAME).hdd@@2M kernel/bin-$(ARCH)/kernel ::/boot
+	@mcopy -i $(IMAGE_NAME).hdd@@2M kernel/bin-$(ARCH)/initrd.img ::/boot
+	@mcopy -i $(IMAGE_NAME).hdd@@2M imginc/* ::/
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine.conf ::/boot/limine
 ifeq ($(ARCH),x86_64)
-	@mcopy -i $(IMAGE_NAME).hdd@@1M limine/limine-bios.sys ::/boot/limine &> /dev/null
-	@mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTX64.EFI ::/EFI/BOOT &> /dev/null
-	@mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTIA32.EFI ::/EFI/BOOT &> /dev/null
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/limine-bios.sys ::/boot/limine
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/BOOTX64.EFI ::/EFI/BOOT
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/BOOTIA32.EFI ::/EFI/BOOT
 endif
 ifeq ($(ARCH),aarch64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTAA64.EFI ::/EFI/BOOT
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/BOOTAA64.EFI ::/EFI/BOOT
 endif
 ifeq ($(ARCH),riscv64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTRISCV64.EFI ::/EFI/BOOT
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/BOOTRISCV64.EFI ::/EFI/BOOT
 endif
 ifeq ($(ARCH),loongarch64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTLOONGARCH64.EFI ::/EFI/BOOT
+	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/BOOTLOONGARCH64.EFI ::/EFI/BOOT
 endif
 
 .PHONY: clean

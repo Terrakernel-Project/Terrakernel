@@ -19,7 +19,7 @@ const char* exception_names[] = {
 };
 
 bool is_solvable(int excvec) {
-	return false; // for now lets solve problems
+	return false;
 	switch (excvec) {
 		case 0:
 		case 3:
@@ -51,37 +51,44 @@ void fix_exceptions(
 			break;
 		}
 		case 14: {
-			Log::infof("Page Fault Exception handled");
-			printf("Page Fault at CR2: 0x%llX\n", cr2);
-			printf("Error Code: %d\n", error_code);
-
-			if (cr2 & ~0xFFF == 0) {
-				Log::errf("Null pointer dereference detected");
-				asm volatile ("cli;hlt;");
-			}
-
-			if (cr2 < 0x00007FFFFFFFFFFF) {
-				Log::errf("Invalid user space address access detected");
-				asm volatile ("cli;hlt;");
-			}
-
-			if (error_code & 0x1) {
-				Log::infof("Page fault caused by protection violation");
-				asm volatile ("cli;hlt;");
-			} else {
-				Log::infof("Page fault caused by non-present page");
-				mem::vmm::mmap(
-					(void*)(cr2 & ~0xFFF),
-					(void*)(cr2 & ~0xFFF),
-					1,
-					PAGE_PRESENT |
-					PAGE_RW |
-					PAGE_USER
-				);
-				Log::infof("Mapped page for address 0x%llX", cr2);
-			}
-
-			break;
+		    Log::infof("Page Fault Exception handled");
+		    printf("Page Fault at CR2: 0x%llX\n", cr2);
+		    printf("Error Code: %d\n", error_code);
+		
+		    // Kernel mode HHDM fault - map physical equivalent
+		    if (!(error_code & 0x4) && (cr2 >= 0xFFFF800000000000)) {
+		        uint64_t phys = cr2 - 0xFFFF800000000000;
+		        uint64_t page = cr2 & ~0xFFFULL;
+		        uint64_t phys_page = phys & ~0xFFFULL;
+		
+		        mem::vmm::mmap(
+		            (void*)page,
+		            (void*)phys_page,
+		            1,
+		            PAGE_PRESENT | PAGE_RW
+		        );
+		        Log::infof("Mapped HHDM page 0x%llX -> phys 0x%llX", page, phys_page);
+		        break;
+		    }
+		
+		    if ((cr2 & ~0xFFFULL) == 0) {
+		        Log::errf("Null pointer dereference detected");
+		        asm volatile ("cli;hlt;");
+		    }
+		
+		    if (error_code & 0x1) {
+		        Log::infof("Page fault caused by protection violation");
+		        asm volatile ("cli;hlt;");
+		    }
+		
+		    if (error_code & 0x4) {
+		        Log::errf("User space page fault, unhandled");
+		        asm volatile ("cli;hlt;");
+		    }
+		
+		    Log::errf("Unhandled kernel page fault at 0x%llX", cr2);
+		    asm volatile ("cli;hlt;");
+		    break;
 		}
 		default:
 			Log::errf("No handler for exception vector %d", excvec);
@@ -298,23 +305,24 @@ extern "C" void exception_handler(exception_frame* frame) {
 		asm ("cli;hlt");
 	}
 
+	if (vec == 0xE)
 		decode_pf_err(err);
 #ifdef CONFIG_EXCEPTIONS_RUN_DEBUGGER
-		debugger(frame);
+	debugger(frame);
 #else
 #ifdef CONFIG_EXCEPTION_SHOW_DEFAULT_MENU
 #if CONFIG_EXCEPTION_DEFAULT == 0
-		debugger_show_disasm(frame);
+	debugger_show_disasm(frame);
 #elif CONFIG_EXCEPTION_DEFAULT == 1
-		// do nothing, it is already shown
+	// do nothing, it is already shown
 #elif CONFIG_EXCEPTION_DEFAULT == 2
-		debugger_show_memview(frame);
+	debugger_show_memview(frame);
 #elif CONFIG_EXCEPTION_DEFAULT == 3
-		debugger_show_disasm_and_except(frame);
+	debugger_show_disasm_and_except(frame);
 #elif CONFIG_EXCEPTION_DEFAULT == 4
-		debugger_show_memview_and_except(frame);
+	debugger_show_memview_and_except(frame);
 #elif CONFIG_EXCEPTION_DEFAULT == 5
-		debugger_show_stacktrace(frame);
+	debugger_show_stacktrace(frame);
 #endif // #else is impossible, Kconfig limits 0-5
 #endif
 #endif
