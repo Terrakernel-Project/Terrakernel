@@ -5,3 +5,4 @@ edk2-ovmf
 *.config
 *.config.old
 /initrd/init
+/kernel/src/config.hpp

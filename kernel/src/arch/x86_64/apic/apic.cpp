@@ -9,7 +9,6 @@
 #include <drivers/timers/pit/pit.hpp>
 #include <drivers/timers/apic/apic.hpp>
 #include <config.hpp>
-#include <stack.hpp>
 
 #define MADT_ENTRY_LAPIC    0x0
 #define MADT_ENTRY_IOAPIC   0x1
@@ -183,8 +182,8 @@ static void register_new_cpu_unit(madt_lapic_entry* lapic, uint32_t index) {
     new_unit->is_bsp = is_bsp(lapic->apic_id);
     new_unit->online = false;
     new_unit->lapic_base = (void*)lapic_base;
-    new_unit->kernel_stack = nullptr;//stack_manager_get_new_stack(2, false);
-    new_unit->interrupt_stack = nullptr;//stack_manager_get_new_stack(2, false);
+    new_unit->kernel_stack = stack_manager_get_new_stack(2, false);
+    new_unit->interrupt_stack = stack_manager_get_new_stack(2, false);
     new_unit->current_thread_id = 0;
     new_unit->gdt_base = get_gdt_base();
     new_unit->idt_base = get_idt_base();

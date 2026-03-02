@@ -138,6 +138,8 @@ void rtl8139_init(pcie_device* dev, net_card_driver* driver) {
     write_reg(CMD, 0x0C);
 
     arch::x86_64::cpu::idt::set_descriptor(0x20 + dev->interrupt_line, (uint64_t)rtl8139_handler, 0x8E);
+    arch::x86_64::cpu::idt::send_eoi(dev->interrupt_line);
+    arch::x86_64::cpu::idt::irq_clear_mask(dev->interrupt_line);
     printf("interrupt_line = %X\n\r", dev->interrupt_line);
 }
 

@@ -6,6 +6,7 @@
 
 #define NAME_MAX 255
 #define PATH_MAX 4096
+#define SYSARG(arg) ((uint64_t)arg)
 
 static inline uint64_t syscall0(
 	uint64_t n
@@ -147,7 +148,46 @@ typedef struct {
     size_t		NPages;
 } HlPool;
 
-#define SYSARG(arg) ((uint64_t)arg);
+/* Syscall table:
+ *  0  HlKernelMessage
+ *  1  HlCreateNewHandle
+ *  2  HlDestroyHandle
+ *  3  HlOpenFile
+ *  4  HlCloseFile
+ *  5  HlStatFileSize
+ *  6  HlSeekFile
+ *  7  HlWriteFile
+ *  8  HlReadFile
+ *  9  HlPositionedWriteFile
+ * 10  HlPositionedReadFile
+ * 11  HlSyncFile
+ * 12  HlOpenDirectory
+ * 13  HlCloseDirectory
+ * 14  HlMakeDirectory
+ * 15  HlRemoveDirectory
+ * 16  HlListDirectory
+ * 17  HlResetDirectoryReadOffset
+ * 18  HlMemoryPoolAllocate
+ * 19  HlMemoryPoolFree
+ * 20  HlMemoryAllocatePool
+ * 21  HlMemoryFreePool
+ * 22  HlMemoryAllocateAligned
+ * 23  HlMemoryFreeAligned
+ * 24  HlMemorySetAttributes
+ * 25  HlCreateNewProcess
+ * 26  HlKillProcess
+ * 27  HlTerminateProcess
+ * 28  HlExec
+ * 29  HlExit
+ * 30  HlOpenConsole
+ * 31  HlWaitForInputConsole
+ * 32  HlReadConsole
+ * 33  HlWriteConsole
+ * 34  HlObtainFramebuffer
+ * 35  HlStatFramebuffer
+ * 36  HlRetrieveFileMappedMemory
+ * 37  HlRetrieveMappedFileSize
+ */
 
 void HlKernelMessage(const char* __restrict dat) {
 	syscall1(0, SYSARG(dat));
@@ -158,147 +198,151 @@ Handle* HlCreateNewHandle() {
 }
 
 void HlDestroyHandle(Handle* hptr) {
-	
+	syscall1(2, SYSARG(hptr));
 }
 
 void HlOpenFile(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
-	
+	syscall3(3, SYSARG(hptr), SYSARG(path), SYSARG(OpenFlags));
 }
 
 void HlCloseFile(Handle* hptr) {
-	
+	syscall1(4, SYSARG(hptr));
 }
 
 uint64_t HlStatFileSize(Handle* hptr) {
-	
+	return syscall1(5, SYSARG(hptr));
 }
 
 int64_t HlSeekFile(Handle* hptr, int64_t offset, int whence) {
-	
+	return (int64_t)syscall3(6, SYSARG(hptr), SYSARG(offset), SYSARG(whence));
 }
 
 int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
-	
+	return (int64_t)syscall3(7, SYSARG(hptr), SYSARG(dat), SYSARG(count));
 }
 
 int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count) {
-	
+	return (int64_t)syscall3(8, SYSARG(hptr), SYSARG(buf), SYSARG(count));
 }
 
 int64_t HlPositionedWriteFile(Handle* hptr, size_t offset, const void* __restrict dat, size_t count) {
-	
+	return (int64_t)syscall4(9, SYSARG(hptr), SYSARG(offset), SYSARG(dat), SYSARG(count));
 }
 
 int64_t HlPositionedReadFile(Handle* hptr, size_t offset, void* __restrict buf, size_t count) {
-	
+	return (int64_t)syscall4(10, SYSARG(hptr), SYSARG(offset), SYSARG(buf), SYSARG(count));
 }
 
 void HlSyncFile(Handle* hptr) {
-	
+	syscall1(11, SYSARG(hptr));
 }
 
 void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
-	
+	syscall3(12, SYSARG(hptr), SYSARG(path), SYSARG(OpenFlags));
 }
 
 void HlCloseDirectory(Handle* hptr) {
-	
+	syscall1(13, SYSARG(hptr));
 }
 
 void HlMakeDirectory(const char* __restrict path) {
-	
+	syscall1(14, SYSARG(path));
 }
 
 void HlRemoveDirectory(const char* __restrict path) {
-	
+	syscall1(15, SYSARG(path));
 }
 
 void HlListDirectory(Handle* hptr, void* __restrict buf) {
-	
+	syscall2(16, SYSARG(hptr), SYSARG(buf));
 }
 
 void HlResetDirectoryReadOffset(Handle* hptr) {
-	
+	syscall1(17, SYSARG(hptr));
 }
 
 void* HlMemoryPoolAllocate(size_t n) {
-	
+	return (void*)syscall1(18, SYSARG(n));
 }
 
 void HlMemoryPoolFree(void* ptr) {
-	
+	syscall1(19, SYSARG(ptr));
 }
 
-void* HlMemoryAllocatePool(size_t nbytes) {
-	
+HlPool* HlMemoryAllocatePool(size_t nbytes) {
+	return (HlPool*)syscall1(20, SYSARG(nbytes));
 }
 
-void HlMemoryFreePool(void* poolptr) {
-	
+void HlMemoryFreePool(HlPool* poolptr) {
+	syscall1(21, SYSARG(poolptr));
 }
 
 void* HlMemoryAllocateAligned(size_t npages) {
-
+	return (void*)syscall1(22, SYSARG(npages));
 }
 
 void HlMemoryFreeAligned(void* ptr, size_t npages) {
-	
+	syscall2(23, SYSARG(ptr), SYSARG(npages));
 }
 
 void HlMemorySetAttributes(void* ptr, size_t npages, uint64_t attributes) {
-	
+	syscall3(24, SYSARG(ptr), SYSARG(npages), SYSARG(attributes));
 }
 
 int64_t HlCreateNewProcess() {
-	
+	return (int64_t)syscall0(25);
 }
 
 void HlKillProcess(int64_t pid) {
-	
+	syscall1(26, SYSARG(pid));
 }
 
 void HlTerminateProcess(int64_t pid) {
-	
+	syscall1(27, SYSARG(pid));
 }
 
 int HlExec(const char* __restrict path, const char* args[], const char* env_vars[]) {
-	
+	return (int)syscall3(28, SYSARG(path), SYSARG(args), SYSARG(env_vars));
 }
 
 void HlExit(int error_code) {
-	
+	syscall1(29, SYSARG(error_code));
 }
 
 void HlOpenConsole(Handle* portR, Handle* portW) {
-	
+	syscall2(30, SYSARG(portR), SYSARG(portW));
 }
 
 void HlWaitForInputConsole(Handle* portR) {
-	
+	syscall1(31, SYSARG(portR));
 }
 
 int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count) {
-	
+	return (int64_t)syscall3(32, SYSARG(portW), SYSARG(buf), SYSARG(count));
 }
 
 int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count) {
-	
+	return (int64_t)syscall3(33, SYSARG(portW), SYSARG(dat), SYSARG(count));
 }
 
 void HlObtainFramebuffer(Handle* hptr) {
-	
+	syscall1(34, SYSARG(hptr));
 }
 
 void HlStatFramebuffer(Handle* hptr, HlFb* buf) {
-	
+	syscall2(35, SYSARG(hptr), SYSARG(buf));
 }
 
 void* HlRetrieveFileMappedMemory(Handle* hptr) {
-	
+	return (void*)syscall1(36, SYSARG(hptr));
 }
 
 uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
-	
+	return syscall1(37, SYSARG(hptr));
+}
+
+void HlSleepMs(uint64_t ms) {
+	syscall1(38, SYSARG(ms));
 }
 
 #endif

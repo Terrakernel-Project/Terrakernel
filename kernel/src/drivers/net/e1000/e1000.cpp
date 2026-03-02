@@ -388,6 +388,7 @@ void e1000_init(pcie_device* dev, net_card_driver* driver) {
 		write_command(0x5200 + i * 4, 0);
 
 	arch::x86_64::cpu::idt::set_descriptor(0x20 + dev->interrupt_line, (uint64_t)fire, 0x8E);
+	arch::x86_64::cpu::idt::send_eoi(dev->interrupt_line);
 	arch::x86_64::cpu::idt::irq_clear_mask(dev->interrupt_line);
 	printf("vector = %02X\n\r", 0x20 + dev->interrupt_line);
 

@@ -78,7 +78,7 @@ config FALLBACK_TO_PIT
 
 config APIC_INACCURACY_PROT
 	bool "APIC inaccuracy protection"
-	default n
+	default y
 	help
 		Enabled: improves accuracy of the APIC timer
 		Disabled: improves boot time, by a couple of milliseconds
@@ -158,13 +158,13 @@ config EXCEPTIONS_RUN_DEBUGGER
 menu "Default menu"
 
 config EXCEPTION_SHOW_DEFAULT_MENU
-	bool "Show the default menu"
-	default n
+	bool "Show the default menu" if !EXCEPTIONS_RUN_DEBUGGER
+	default n if !EXCEPTIONS_RUN_DEBUGGER
 
 config EXCEPTION_DEFAULT
-	int "Default menu" if EXCEPTION_SHOW_DEFAULT_MENU
-	default 1 if EXCEPTION_SHOW_DEFAULT_MENU
-	range 0 5 if EXCEPTION_SHOW_DEFAULT_MENU
+	int "Default menu" if EXCEPTION_SHOW_DEFAULT_MENU && !EXCEPTIONS_RUN_DEBUGGER
+	default 1 if EXCEPTION_SHOW_DEFAULT_MENU && !EXCEPTIONS_RUN_DEBUGGER
+	range 0 5 if EXCEPTION_SHOW_DEFAULT_MENU && !EXCEPTIONS_RUN_DEBUGGER
 	help
 		0: DISASM ONLY
 		1: EXCEPTION ONLY

@@ -9,6 +9,8 @@
 #include <config.hpp>
 #include <vfs/vfs.hpp>
 #include <subsystems/ramfs/ramfs.hpp>
+#include <drivers/display/gfx.hpp>
+#include <drivers/timers/apic/apic.hpp>
 
 //hptr->HandleType != type
 #define VALID_HNDL(hptr, type, DOCODE)                 \
@@ -569,7 +571,7 @@ int64_t HlWriteConsole(Handle* portR, const void* __restrict dat, size_t count) 
     return bytes;
 }
 
-extern "C" uint64_t g_scr_height, g_scr_width;
+extern uint64_t g_scr_height, g_scr_width;
 
 #define QUICK_FB_ACCESS hptr->Payload.Framebuffer
 void HlObtainFramebuffer(Handle* hptr) {
@@ -583,7 +585,7 @@ void HlObtainFramebuffer(Handle* hptr) {
     hptr->OwnerPID = 0;
     hptr->LastError = 0;
 
-    QUICK_FB_ACCESS.BaseAddress = (void*)get_base_fb();
+    QUICK_FB_ACCESS.BaseAddress = (void*)get_user_fb();
     QUICK_FB_ACCESS.Width = g_scr_width;;
     QUICK_FB_ACCESS.Height = g_scr_height;
     QUICK_FB_ACCESS.Pitch = get_pitch();
@@ -626,8 +628,10 @@ uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
     return size;
 }
 
-void HlPrintInt64(uint64_t int_) {
-    SDPRINTF("printing integer: value=%lu", int_);
-    
-	printf("%lu\n\r", int_);
+void HlSleepMs(uint64_t ms) {
+	SDPRINTF("sleeping for %zu milliseconds", ms);
+
+	printf("sleeping %zu ms\n\r", ms);
+
+	drivers::timers::apic::sleep_ms(ms);
 }

@@ -41,5 +41,6 @@ void HlObtainFramebuffer(Handle* hptr);
 void HlStatFramebuffer(Handle* hptr, void* buf);
 void* HlRetrieveFileMappedMemory(Handle* hptr);
 uint64_t HlRetrieveMappedFileSize(Handle* hptr);
+void HlSleepMs(uint64_t ms);
 
 #endif

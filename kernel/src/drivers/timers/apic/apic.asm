@@ -30,7 +30,7 @@ apic_timer_interrupt_handler:
     pushfq
     mov rax, cr3
     push rax
-    push rsp ; last because it is modified during push
+    push rsp
 
     mov rdi, rsp
     call apic_timer_c_handler

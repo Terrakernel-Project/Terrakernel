@@ -82,8 +82,16 @@ uint64_t pa_to_va(uint64_t pa) {
     return (pa >= 0xFFFF800000000000) ? pa : pa + 0xFFFF800000000000;
 }
 
+void* pa_to_va(void* pa) {
+    return ((uint64_t)pa >= 0xFFFF800000000000) ? (void*)pa : (void*)((uint64_t)pa + 0xFFFF800000000000);
+}
+
 uint64_t va_to_pa(uint64_t va) {
     return (va < 0xFFFF800000000000) ? va : va - 0xFFFF800000000000;
+}
+
+void* va_to_pa(void* va) {
+    return ((uint64_t)va < 0xFFFF800000000000) ? va : (void*)((uint64_t)va - 0xFFFF800000000000);
 }
 
 void initialise() {

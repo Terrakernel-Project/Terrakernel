@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <config.hpp>
 
-static uint64_t ticks = 0;
+static volatile uint64_t ticks = 0;
 
 #define CHx_DATA(ch) (0x40 + (ch))
 #define CHx_MODE_CMD_REG(ch) (0x43)
@@ -35,18 +35,25 @@ void initialise() {
     arch::x86_64::cpu::idt::irq_clear_mask(0);
 }
 
-void sleep_ms(uint64_t ms) {
+void sleep_ms(uint64_t ms, bool called_by_apic) {
     if (CONFIG_PIT_FREQUENCY == 0) {
     	return;
     }
-    asm ("sti");
-    arch::x86_64::cpu::idt::irq_clear_mask(0);
-    
+
     uint64_t current_ticks = ticks;
     uint64_t blocking_ticks = (ms * CONFIG_PIT_FREQUENCY) / 1000;
     uint64_t final_ticks = current_ticks + blocking_ticks;
 
-    while (ticks < final_ticks) asm ("pause");
+	uint64_t counter = 0;
+
+    while (ticks < final_ticks) {
+    	if (called_by_apic) {
+    		counter++;
+    		if (counter % 100 == 0) {
+    			printf("Checkpoint\n\r");
+    		}
+    	}
+   	}
 }
 
 uint64_t ns_elapsed_time() {
@@ -54,9 +61,9 @@ uint64_t ns_elapsed_time() {
 }
 
 void disable() {
-	//arch::x86_64::io::outb(CHx_MODE_CMD_REG(0), 0x30);
-	//arch::x86_64::io::outb(CHx_DATA(0), 0x00);
-	//arch::x86_64::io::outb(CHx_DATA(0), 0x00);	
+	arch::x86_64::io::outb(CHx_MODE_CMD_REG(0), 0x30);
+	arch::x86_64::io::outb(CHx_DATA(0), 0x00);
+	arch::x86_64::io::outb(CHx_DATA(0), 0x00);	
 }
 
 uint64_t get_ticks() {

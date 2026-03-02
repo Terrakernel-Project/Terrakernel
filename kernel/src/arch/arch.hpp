@@ -135,6 +135,12 @@ namespace cpu {
 		bool is_am();
 		bool is_pm();
 	}
+
+	namespace sse {
+		void initialise();
+		void save(void* addr);
+		void restore(void* addr);
+	}
 }
 namespace ringctl {
 	extern "C" void execute_ring3(void (*entry)(), void* stack_base);

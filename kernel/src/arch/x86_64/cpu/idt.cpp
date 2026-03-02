@@ -196,6 +196,8 @@ void debugger_event_handler(key_event& ev, exception_frame* frame) {
 			dbg::memview::print_memory_contents_at(frame->rip-50, 150, 0, frame->rip);
 			printf("\n\r\n\rCR2\n\r");
 			dbg::memview::print_memory_contents_at(frame->cr2-50, 150, 0, frame->rip);
+			printf("\n\r\n\rRSP\n\r");
+			dbg::memview::print_memory_contents_at(frame->rsp-50, 150, 0, frame->rip);
 			break;
 		case KEY_F3:
 			clr();
@@ -495,4 +497,3 @@ void* get_base() {
 }
 
 }
-

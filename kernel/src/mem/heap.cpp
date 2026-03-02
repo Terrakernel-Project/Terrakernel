@@ -1,6 +1,7 @@
 #include <mem/mem.hpp>
 #include <mem/heap.hpp>
 #include <panic.hpp>
+#include <cstdio>
 
 void*  heap_base = nullptr;
 size_t heap_size = 0;
@@ -156,7 +157,7 @@ void* malloc(size_t n) {
 
     heap_block* b = find_free(n);
     if (!b) { defragment(); b = find_free(n); }
-    if (!b) panic("heap::malloc: out of memory");
+    if (!b) { printf("%zu/%zu\n\r", allocated, heap_size); panic("heap::malloc: out of memory"); }
 
     split(b, n);
     b->is_free = false;

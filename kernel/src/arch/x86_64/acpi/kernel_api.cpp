@@ -469,6 +469,7 @@ uacpi_status uacpi_kernel_install_interrupt_handler(
     *out_irq_handle = i;
 
     arch::x86_64::cpu::idt::set_descriptor(vector, (uint64_t)handler, 0x8E);
+    arch::x86_64::cpu::idt::irq_clear_mask(i->irq);
 
 #ifdef CONFIG_ACPI_VERBOSE
     Log::infof("Loaded and cached interrupt: cache_id=%d vector=0x%02X handle=0x%016X attr=0x%02X", idx, i->vector, (uint64_t)i->handler, 0x8E);
@@ -484,6 +485,7 @@ uacpi_status uacpi_kernel_uninstall_interrupt_handler(
     interrupt* i = (interrupt*)irq_handle;
     if (i && i->active) {
         arch::x86_64::cpu::idt::clear_descriptor(i->vector);
+        arch::x86_64::cpu::idt::irq_set_mask(i->irq);
         i->active = false;
     }
     return UACPI_STATUS_OK;
@@ -494,6 +496,7 @@ void acpi_reload_interrupts() {
         if (cached_interrupts[idx].active) {
             interrupt* i = &cached_interrupts[idx];
             arch::x86_64::cpu::idt::set_descriptor(i->vector, (uint64_t)i->handler, 0x8E);
+            arch::x86_64::cpu::idt::irq_clear_mask(i->irq);
 #ifdef CONFIG_ACPI_VERBOSE
             Log::infof("Reloaded interrupt: cache_id=%d vector=0x%02X handle=0x%016X attr=0x%02X", idx, i->vector, (uint64_t)i->handler, 0x8E);
 #endif

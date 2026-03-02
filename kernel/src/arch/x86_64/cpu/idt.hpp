@@ -34,7 +34,7 @@ typedef struct {
 } __attribute__((packed)) idt_entry_t;
 
 typedef struct {
-	idt_entry_t entries[512];
+	idt_entry_t entries[256];
 } __attribute__((packed)) idt_t;
 
 extern "C" void idt_load(const idtr_t* idtr);
@@ -48,6 +48,7 @@ void clear_descriptor(uint8_t vector);
 
 void irq_clear_mask(uint8_t irq);
 void irq_set_mask(uint8_t irq);
+bool irq_get_mask(uint8_t irq);
 
 void send_eoi(uint8_t irq);
 

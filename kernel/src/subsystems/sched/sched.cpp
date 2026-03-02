@@ -58,29 +58,49 @@ static void ctx_init_kernel(cpu_context& ctx, void (*entry)(), void* stack_top) 
 static void ctx_init_user(cpu_context& ctx, void (*entry)(), void* stack_top) {
     ctx            = {};
     ctx.rip        = (uint64_t)entry;
-    ctx.user_rsp   = (uint64_t)stack_top;
+    ctx.user_rsp   = (uint64_t)stack_top - 8;
+    ctx.rsp        = (uint64_t)stack_top;
     ctx.cs         = 0x1B;
     ctx.ss         = 0x23;
     ctx.rflags_cpu = 0x202;
-
-    ctx.user_rsp += 8*5;
-	ctx.rsp = ctx.user_rsp;
 }
 
 static void push_empty_ctx(tcb* t) {
     uint64_t* sp = (uint64_t*)t->ctx.rsp;
 
-    sp -= 18;
-        
+    if (is_ring3(t)) {
+        *--sp = t->ctx.ss;
+        *--sp = t->ctx.user_rsp;
+    }
+
+    *--sp = t->ctx.rflags_cpu;
+    *--sp = t->ctx.cs;
+    *--sp = t->ctx.rip;
+
+    *--sp = 0; // rax
+    *--sp = 0; // rbx
+    *--sp = 0; // rcx
+    *--sp = 0; // rdx
+    *--sp = 0; // rdi
+    *--sp = 0; // rsi
+    *--sp = 0; // rbp
+    *--sp = 0; // r8
+    *--sp = 0; // r9
+    *--sp = 0; // r10
+    *--sp = 0; // r11
+    *--sp = 0; // r12
+    *--sp = 0; // r13
+    *--sp = 0; // r14
+    *--sp = 0; // r15
+
     *--sp = 0x202;
     *--sp = mem::vmm::get_cr3();
-    *--sp = (uint64_t)t->ctx.rsp + (8 * 18);
 
     t->ctx.rsp = (uint64_t)sp;
 }
 
 static tcb* make_tcb(void (*entry)(), const char* name, pcb* proc, bool user) {
-    void* stack_top = stack_manager_get_new_stack(2, user);
+    void* stack_top = stack_manager_get_new_stack(64, user);
     if (!stack_top) return nullptr;
 
     tcb* t = (tcb*)mem::heap::calloc(1, sizeof(tcb));
@@ -153,7 +173,9 @@ tcb* rr_advance_thrd() {
 uint64_t __sched_yield(uint64_t current_rsp) {
     if (!ready) return current_rsp;
 
-    if (running_tcb) {
+    tcb* tmp_tcb = running_tcb;
+
+    if (running_tcb && running_tcb->state == TASK_STATE::RUNNING) {
         running_tcb->ctx   = *(cpu_context*)current_rsp;
         running_tcb->state = TASK_STATE::READY;
     }
@@ -196,15 +218,18 @@ void initialise() {
 
 void sched_ready() {
     current_pcb = rr_advance_proc();
-    if (!current_pcb) return;
-    running_tcb = rr_advance_thrd();
-    if (!running_tcb) return;
-    running_tcb->state = TASK_STATE::RUNNING;
-    ready = true;
-
-    if (!ready) {
-    	printf("Failed to mark scheduler ready\n\r");
+    if (!current_pcb) {
+        printf("Failed to mark scheduler ready: no ready process\n\r");
+        return;
     }
+
+    running_tcb = rr_advance_thrd();
+    if (!running_tcb) {
+        printf("Failed to mark scheduler ready: no ready thread\n\r");
+        return;
+    }
+
+    ready = true;
 }
 
 tcb* new_thread(void (*entry)(), const char* name, pcb* parent, bool user) {

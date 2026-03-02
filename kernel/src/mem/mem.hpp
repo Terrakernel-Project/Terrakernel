@@ -25,7 +25,9 @@ namespace mem {
 
 	namespace vmm {
 		uint64_t pa_to_va(uint64_t pa);
+		void* pa_to_va(void* pa);
 		uint64_t va_to_pa(uint64_t va);
+		void* va_to_pa(void* va);
 		
 		void initialise();
 		void* valloc(size_t npages);

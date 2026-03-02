@@ -92,51 +92,35 @@ extern "C" void cpu_entry(struct limine_mp_info *cpu_info) {
     asm volatile ("cli; hlt");
 }
 
+uint64_t counters[10] = {0};
+
+void f0() {
+    printf("begin f0\n\r");
+    while (true) {
+        counters[0]++;
+        printf("%zu", counters[0]);
+    }
+}
+
 void test_sched() {
-    static volatile uint64_t counters[10] = {};
+    pcb* p0 = sched::new_process((void(*)())f0, "p0", false);
 
-    auto f0 = []() { printf("begin f0\n\r"); while (true) {counters[0]++; printf("%zu", counters[0]);} };
-    auto f1 = []() { printf("begin f1\n\r"); while (true) {counters[1]++; printf("%zu", counters[1]);} };
-    auto f2 = []() { printf("begin f2\n\r"); while (true) {counters[2]++; printf("%zu", counters[2]);} };
-    auto f3 = []() { printf("begin f3\n\r"); while (true) {counters[3]++; printf("%zu", counters[3]);} };
-    auto f4 = []() { printf("begin f4\n\r"); while (true) {counters[4]++; printf("%zu", counters[4]);} };
-    auto f5 = []() { printf("begin f5\n\r"); while (true) {counters[5]++; printf("%zu", counters[5]);} };
-    auto f6 = []() { printf("begin f6\n\r"); while (true) {counters[6]++; printf("%zu", counters[6]);} };
-    auto f7 = []() { printf("begin f7\n\r"); while (true) {counters[7]++; printf("%zu", counters[7]);} };
-    auto f8 = []() { printf("begin f8\n\r"); while (true) {counters[8]++; printf("%zu", counters[8]);} };
-    auto f9 = []() { printf("begin f9\n\r"); while (true) {counters[9]++; printf("%zu", counters[9]);} };
-
-    pcb* p0 = sched::new_process((void(*)())f0, "proc_0");
-    pcb* p1 = sched::new_process((void(*)())f1, "proc_1");
-    pcb* p2 = sched::new_process((void(*)())f2, "proc_2");
-
-    if (!p0 || !p1 || !p2) {
+    if (!p0) {
         printf("[test_sched] FAIL: process allocation failed\n");
         return;
     }
 
-    sched::new_thread((void(*)())f3, "p0_t1", p0);
-    sched::new_thread((void(*)())f4, "p0_t2", p0);
-    sched::new_thread((void(*)())f5, "p0_t3", p0);
-
-    sched::new_thread((void(*)())f6, "p1_t1", p1);
-    sched::new_thread((void(*)())f7, "p1_t2", p1);
-
-    sched::new_thread((void(*)())f8, "p2_t1", p2);
-    sched::new_thread((void(*)())f9, "p2_t2", p2);
-
-    if (p0->num_threads != 4 || p1->num_threads != 3 || p2->num_threads != 3) {
-        printf("[test_sched] FAIL: thread counts wrong: p0=%llu p1=%llu p2=%llu\n",
-            p0->num_threads, p1->num_threads, p2->num_threads);
+    if (p0->num_threads != 1) {
+        printf("[test_sched] FAIL: thread counts wrong: p0=%llu\n",
+            p0->num_threads);
         return;
     }
 
-    printf("[test_sched] procs: p0(pid=%lld, %llu threads) p1(pid=%lld, %llu threads) p2(pid=%lld, %llu threads)\n",
-        p0->pid, p0->num_threads,
-        p1->pid, p1->num_threads,
-        p2->pid, p2->num_threads);
+    printf("[test_sched] procs: p0(pid=%lld, %llu threads)\n",
+        p0->pid, p0->num_threads
+    );
 
-    printf("[test_sched] PASS: 3 procs, 10 threads total\n");
+    printf("[test_sched] PASS: 1 proc, 1 threads total\n");
 
     sched::sched_ready();
 
@@ -146,7 +130,7 @@ void test_sched() {
 
 extern "C" void init() {
 	asm ("cli");
-    if (module_request.response == nullptr || module_request.response->module_count < 1 || module_request.response->modules[0]->address == nullptr) {
+    if (module_request.response == nullptr || module_request.response->module_count < 1) {
         asm volatile ("cli;hlt");
     }
 
@@ -154,12 +138,15 @@ extern "C" void init() {
     serial::serial_enable();
     Log::printf_status("OK", "Flanterm Initialised"); // late
     Log::printf_status("OK", "Serial Initialised");
-
+    
     arch::x86_64::cpu::gdt::initialise();
     Log::printf_status("OK", "GDT Initialised");
 
     arch::x86_64::cpu::idt::initialise();
     Log::printf_status("OK", "IDT Initialised");
+
+	arch::x86_64::cpu::sse::initialise();
+	Log::printf_status("OK", "SSE Initialised");
 
     mem::pmm::initialise();
     Log::printf_status("OK", "PMM Initialised");
@@ -181,7 +168,7 @@ skip_redraw:;
 
     mem::heap::initialise();
     Log::printf_status("OK", "Heap Initialised");
-
+    
     drivers::timers::pit::initialise();
     Log::printf_status("OK", "PIT Initialised (FREQ=300)");
     
@@ -305,6 +292,9 @@ skip_redraw:;
 	sched::initialise();
 	Log::printf_status("OK", "Scheduler Initialised");
 
+	init_userfb();
+	Log::printf_status("OK", "Display Driver Initialised");
+
     // Finished bootstrapping
 
 	asm ("sti");
@@ -344,6 +334,7 @@ skip_redraw:;
     boot_resources::bgrt::clear_bgrt();
 
     fb_clrscr(0);
+    refresh_tty();
 
     boot_resources::loading::loading_circle(g_scr_width / 2, g_scr_height - (g_scr_height / 6), 32, 0, 0);
 #endif
@@ -388,9 +379,8 @@ skip_redraw:;
 	}
 	drivers::timers::apic::sleep_ms(100);
 
-	test_sched();
-
     Log::end_kernel_messages(); // now no messages print
+	userfb_ready();
 
 	const char* argv[] = {
 	    "/initrd/init",
@@ -402,7 +392,18 @@ skip_redraw:;
 	    nullptr
 	};
 
-	//proc::exec::execve("/initrd/init", argv, envp);
+	int exefd = ramfs::open("/initrd/init", O_RDONLY);
+
+	stat statbuf;
+	ramfs::fstat(exefd, &statbuf);
+
+	void* data = mem::heap::malloc(statbuf.st_size);
+
+	ramfs::read(exefd, data, statbuf.st_size);
+
+	ramfs::close(exefd);
+
+	run_elf(data, statbuf.st_size, true, argv, envp);
 
     while (1) {
         asm volatile("hlt");

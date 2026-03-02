@@ -86,6 +86,8 @@ end:
     arch::x86_64::cpu::idt::send_eoi(12);
 }
 
+bool mLmb, mMmb, mRmb;
+
 void process_mouse() {
     if (!mouse_packet_ready) return;
 
@@ -134,8 +136,6 @@ void process_mouse() {
         }
     }
 
-    bool mLmb = false, mMmb = false, mRmb = false;
-
     if (mouse_packet[0] & PS2Leftbutton) mLmb = true;
     else mLmb = false;
     
@@ -172,6 +172,7 @@ void initialise() {
 
     arch::x86_64::cpu::idt::set_descriptor(0x2C, (uint64_t)ps2m_interrupt_handler, 0x8E);
     arch::x86_64::cpu::idt::irq_set_mask(2);
+    arch::x86_64::cpu::idt::irq_set_mask(12);
 
     mouse_wait();
     arch::x86_64::io::outb(0x64, 0x20);
@@ -198,13 +199,31 @@ void initialise() {
     mouse_write(0x03);
     mouse_read();
 
+    arch::x86_64::cpu::idt::send_eoi(12);
     arch::x86_64::cpu::idt::irq_clear_mask(2);
+    arch::x86_64::cpu::idt::irq_clear_mask(12);
 
     mouse_write(0xF4);
     mouse_read();
 
     mouse_pos.x = g_scr_width / 2;
     mouse_pos.y = g_scr_height / 2;
+}
+
+MousePoint get_mouse_position() {
+	return (MousePoint){mouse_pos.x, mouse_pos.y};
+}
+
+bool get_mouse_lmb_state() {
+	return mLmb;
+}
+
+bool get_mouse_mmb_state() {
+	return mMmb;
+}
+
+bool get_mouse_rmb_state() {
+	return mRmb;
 }
 
 }

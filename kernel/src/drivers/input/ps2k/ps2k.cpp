@@ -305,8 +305,9 @@ void initialise() {
         reinterpret_cast<uint64_t>(ps2k_interrupt_handler),
         0x8E
     );
-    
     arch::x86_64::cpu::idt::send_eoi(1);
+    arch::x86_64::cpu::idt::irq_clear_mask(1);
+    
 }
 
 bool read(key_event& ev) {

@@ -8,7 +8,7 @@ QEMU_EXTRA_FLAGS :=
 #QEMUFLAGS := -rtc base=localtime -m 8G -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
 
 # NO TAP
-QEMUFLAGS := -rtc base=localtime -m 8G -netdev user,id=net0 -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
+QEMUFLAGS := -rtc base=localtime -m 8G -netdev user,id=net0 -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS) -display gtk
 
 QEMUFLAGS_NORM := -rtc base=localtime -M q35 -m 6G
 QEMUFLAGS_DINT := $(QEMUFLAGS_NORM) -d int
@@ -35,10 +35,10 @@ all: $(IMAGE_NAME).hdd
 initrd:
 	$(MAKE) -C ./binaries
 	@echo "Creating initrd.img..."
-	mkdir -p kernel/bin-$(ARCH)
-	rm -rf kernel/bin-$(ARCH)/initrd.img
-	cd initrd && tar -cf "../kernel/bin-$(ARCH)/initrd.img" -H ustar ./*
-	@echo "initrd.img created at kernel/bin-$(ARCH)/initrd.img"
+	mkdir -p imginc
+	rm -rf imginc/initrd.img
+	cd initrd && tar -cf "../imginc/initrd.img" -H ustar ./*
+	@echo "initrd.img created at imginc/initrd.img"
 
 #.PHONY: run
 #run: run-$(ARCH)
@@ -153,8 +153,8 @@ ifeq ($(ARCH),x86_64)
 	@cp -v limine/limine-bios.sys limine/limine-bios-cd.bin limine/limine-uefi-cd.bin iso_root/boot/limine/
 	@cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	@cp -v limine/BOOTIA32.EFI iso_root/EFI/BOOT/
-	@cp -v kernel/bin-$(ARCH)/initrd.img iso_root/boot/initrd.img
-	@cp -rfv imginc/* iso_root/
+	@cp -v imginc/initrd.img iso_root/boot/initrd.img
+	@cp -rfv imginc/fs/* iso_root/
 	@xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
 		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
@@ -207,8 +207,8 @@ endif
 	@mmd -i $(IMAGE_NAME).hdd@@2M ::/boot
 	@mmd -i $(IMAGE_NAME).hdd@@2M ::/boot/limine
 	@mcopy -i $(IMAGE_NAME).hdd@@2M kernel/bin-$(ARCH)/kernel ::/boot
-	@mcopy -i $(IMAGE_NAME).hdd@@2M kernel/bin-$(ARCH)/initrd.img ::/boot
-	@mcopy -i $(IMAGE_NAME).hdd@@2M imginc/* ::/
+	@mcopy -i $(IMAGE_NAME).hdd@@2M imginc/initrd.img ::/boot
+	@mcopy -i $(IMAGE_NAME).hdd@@2M imginc/fs/* ::/
 	@mcopy -i $(IMAGE_NAME).hdd@@2M limine.conf ::/boot/limine
 ifeq ($(ARCH),x86_64)
 	@mcopy -i $(IMAGE_NAME).hdd@@2M limine/limine-bios.sys ::/boot/limine
