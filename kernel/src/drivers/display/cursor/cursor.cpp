@@ -1,40 +1,10 @@
 #include "cursor.hpp"
 #include <drivers/display/gfx.hpp>
-
-#define CURSOR_WIDTH 32
-#define CURSOR_HEIGHT 32
-
-#define PxW 0xFFFFFFFF
-#define PxB 0xFF000000
-#define PxE 0 // empty
+#include "cursor_image.hpp"
 
 uint32_t cursor_buffer[CURSOR_WIDTH][CURSOR_HEIGHT] = {0};
 uint64_t prev_x = 0, prev_y = 0;
 bool first_render = true;
-
-const uint32_t cursor_image[CURSOR_WIDTH][CURSOR_HEIGHT] = {
-    {PxB},
-    {PxB,PxB},
-    {PxB,PxW,PxB},
-    {PxB,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxW,PxW,PxW,PxW,PxB,PxB,PxB,PxB,PxB},
-    {PxB,PxW,PxW,PxW,PxB,PxW,PxW,PxB},
-    {PxB,PxW,PxW,PxB,PxB,PxW,PxW,PxB},
-    {PxB,PxW,PxB,PxE,PxE,PxB,PxW,PxW,PxB},
-    {PxB,PxB,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
-    {PxB,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
-    {PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
-    {PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
-    {PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxW,PxW,PxB},
-    {PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxE,PxB,PxB,PxW},
-};
 
 namespace drivers::display::cursor {
 

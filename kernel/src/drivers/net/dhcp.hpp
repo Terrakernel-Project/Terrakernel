@@ -2,6 +2,7 @@
 #define DHCP_HPP 1
 
 #include <cstdint>
+#include "unions.hpp"
 
 struct dhcp_packet {
 	uint8_t op;
@@ -21,24 +22,12 @@ struct dhcp_packet {
 	uint8_t options[64];
 } __attribute__((packed));
 
-typedef union ip {
-	uint8_t ip_p[4];
-	uint32_t ip;
-} ip_u;
-
-typedef union mac {
-	uint8_t mac_p[6];
-	uint64_t mac;
-} mac_u;
-
 typedef struct ip_configuration {
 	ip_u ip;
 	ip_u subnet_mask;
 	ip_u gateway_ip;
 	ip_u dns_ip;
 } ip_configuration_t;
-
-ip_u parse_ip(const char* in);
 
 // form a DHCP packet
 void dhcp_make_packet(dhcp_packet* packet, uint8_t msg_type, uint32_t request_ip, uint32_t transaction_identifier, char* hostname, mac_u mac);

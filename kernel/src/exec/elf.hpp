@@ -98,4 +98,9 @@ struct proc_address_space {
     size_t num_pages;
 };
 
+proc_address_space* load_elf(void* base, size_t filesz, bool user, const char* argv[], const char* envp[]);
+void exec_elf(proc_address_space* addr_space, void* base, size_t filesz, bool user, const char* argv[], const char* envp[]);
+void* get_elf_entry_point_user(proc_address_space* addr_space, void* base, size_t filesz, bool user, const char* argv[], const char* envp[], void** out_stack);
+void free_addr_space(proc_address_space* addr_space);
+
 #endif

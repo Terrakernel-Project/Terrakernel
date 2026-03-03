@@ -747,18 +747,29 @@ proc_address_space* load_elf_to_address_space(void* elf_base, size_t elf_file_si
     return addr_space;
 }
 
-void free_address_space(proc_address_space* addr_space) {
+void free_addr_space(proc_address_space* addr_space) {
     if (!addr_space) return;
     
     uint64_t base = reinterpret_cast<uint64_t>(addr_space->base);
-    
     for (size_t i = 0; i < addr_space->num_pages; i++) {
         void* va = reinterpret_cast<void*>(base + i * PAGE_SIZE);
         uint64_t pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(va));
         mem::vmm::munmap(va, 1);
-        mem::pmm::free(reinterpret_cast<void*>(pa), 1);
+        if (pa) mem::pmm::free(reinterpret_cast<void*>(pa), 1);
     }
     
+    if (addr_space->stack_base && addr_space->stack_size > 0) {
+        size_t stack_pages = addr_space->stack_size / PAGE_SIZE;
+        uint64_t stack_bottom = reinterpret_cast<uint64_t>(addr_space->stack_base)
+                                - addr_space->stack_size;
+        for (size_t i = 0; i < stack_pages; i++) {
+            void* va = reinterpret_cast<void*>(stack_bottom + i * PAGE_SIZE);
+            uint64_t pa = mem::vmm::va_to_pa(reinterpret_cast<uint64_t>(va));
+            mem::vmm::munmap(va, 1);
+            if (pa) mem::pmm::free(reinterpret_cast<void*>(pa), 1);
+        }
+    }
+
     mem::heap::free(addr_space);
 }
 
@@ -888,5 +899,103 @@ void run_elf(void* base, size_t filesz, bool user, const char* argv[], const cha
     }
     
     execute_elf(addr_space, base, filesz, user, argv, envp);
+}
+
+proc_address_space* load_elf(void* base, size_t filesz, bool user, const char* argv[], const char* envp[]) {
+	proc_address_space* addr_space = load_elf_to_address_space(base, filesz, user);
+	if (!addr_space) {
+		Log::errf("Failed to load ELF");
+		return nullptr;
+	}
+
+	return addr_space;
+}
+
+void exec_elf(proc_address_space* addr_space, void* base, size_t filesz, bool user, const char* argv[], const char* envp[]) {
+	execute_elf(addr_space, base, filesz, user, argv, envp);
+}
+
+void* get_elf_entry_point_user(proc_address_space* addr_space, void* base, size_t filesz, bool user, const char* argv[], const char* envp[], void** out_stack) {
+    if (!addr_space) {
+        Log::errf("Invalid address space");
+        return nullptr;
+    }
     
+    void* entry_point = get_entry_point_from_elf(base, filesz);
+    if (!entry_point) {
+        Log::errf("Failed to get entry point");
+        return nullptr;
+    }
+    
+    int argc = 0;
+    while (argv && argv[argc]) argc++;
+    
+    int envc = 0;
+    while (envp && envp[envc]) envc++;
+    
+    Log::infof("Executing ELF: entry=%p stack=%p user=%B argc=%d envc=%d", 
+               entry_point, addr_space->stack_base, user,
+               argc, envc);
+    
+    uint64_t stack_ptr = reinterpret_cast<uint64_t>(addr_space->stack_base);
+    
+    uint64_t* envp_user_ptrs = (uint64_t*)mem::heap::malloc(sizeof(uint64_t)*(envc+1));
+    for (int i = envc - 1; i >= 0; i--) {
+        size_t len = strlen(envp[i]) + 1;
+        stack_ptr -= len;
+        mem::memcpy(reinterpret_cast<void*>(stack_ptr), envp[i], len);
+        envp_user_ptrs[i] = stack_ptr;
+    }
+    envp_user_ptrs[envc] = 0;
+    
+    uint64_t* argv_user_ptrs = (uint64_t*)mem::heap::malloc(sizeof(uint64_t)*(argc+1));
+    for (int i = argc - 1; i >= 0; i--) {
+        size_t len = strlen(argv[i]) + 1;
+        stack_ptr -= len;
+        mem::memcpy(reinterpret_cast<void*>(stack_ptr), argv[i], len);
+        argv_user_ptrs[i] = stack_ptr;
+    }
+    argv_user_ptrs[argc] = 0;
+    
+    size_t total_ptr_bytes = 8 + 8 * (argc + 1) + 8 * (envc + 1);
+    
+    stack_ptr &= ~0xFULL;
+    
+    if ((stack_ptr - total_ptr_bytes) % 16 != 0) {
+        stack_ptr -= 8;
+    }
+    
+    for (int i = envc; i >= 0; i--) {
+        stack_ptr -= 8;
+        *reinterpret_cast<uint64_t*>(stack_ptr) = envp_user_ptrs[i];
+    }
+    uint64_t envp_ptr = stack_ptr;
+    
+    for (int i = argc; i >= 0; i--) {
+        stack_ptr -= 8;
+        *reinterpret_cast<uint64_t*>(stack_ptr) = argv_user_ptrs[i];
+    }
+    uint64_t argv_ptr = stack_ptr;
+    
+    stack_ptr -= 8;
+    *reinterpret_cast<uint64_t*>(stack_ptr) = argc;
+    
+    mem::heap::free(argv_user_ptrs);
+    mem::heap::free(envp_user_ptrs);
+    
+    if (stack_ptr % 16 != 0) {
+        Log::errf("Stack misaligned! RSP=%p (should be 16-byte aligned)", 
+                  reinterpret_cast<void*>(stack_ptr));
+    }
+    
+    Log::infof("Stack setup complete: RSP=%p argc=%d argv=%p envp=%p", 
+               reinterpret_cast<void*>(stack_ptr),
+               argc,
+               reinterpret_cast<void*>(argv_ptr),
+               reinterpret_cast<void*>(envp_ptr));
+
+
+	*out_stack = (void*)stack_ptr;
+    
+	return (void*)entry_point;
 }

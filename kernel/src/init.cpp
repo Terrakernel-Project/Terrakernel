@@ -38,6 +38,13 @@
 #include <drivers/fs/fat32/fat32.hpp>
 #include <vfs/vfs.hpp>
 #include <subsystems/sched/sched.hpp>
+#include <drivers/timers/hpet/hpet.hpp>
+#include <drivers/net/utils.hpp>
+#include <drivers/net/dns/dns.hpp>
+#include <drivers/net/udp/udp.hpp>
+#include <drivers/net/arp/arp.hpp>
+#include <drivers/net/icmp/icmp.hpp>
+#include <drivers/net/tcpip/tcpip.hpp>
 
 #define UACPI_ERROR(name, isinit) \
 if (uacpi_unlikely_error(uacpi_result)) { \
@@ -169,9 +176,6 @@ skip_redraw:;
     mem::heap::initialise();
     Log::printf_status("OK", "Heap Initialised");
     
-    drivers::timers::pit::initialise();
-    Log::printf_status("OK", "PIT Initialised (FREQ=300)");
-    
     Log::info("Disabling COM1 serial output, falling back to graphical interface");
     serial::serial_putc('\033');
     serial::serial_putc('[');
@@ -187,6 +191,9 @@ skip_redraw:;
     UACPI_ERROR("Initialise", 1);
 
     Log::printf_status("OK", "uACPI Initialised");
+
+	drivers::timers::hpet::initialise();
+    Log::printf_status("OK", "HPET Initialised");
 
 #ifndef CONFIG_PRINT_INFO
 #ifndef CONFIG_PRINT_STATUS
@@ -204,9 +211,6 @@ skip_redraw:;
 	arch::x86_64::apic::initialise();
 	arch::x86_64::ioapic::initialise();
 	Log::printf_status("OK", "APIC Initialised");
-
-	drivers::timers::pit::initialise();
-	Log::printf_status("OK", "PIT Reinitialised");
 
 	asm ("sti");
 	drivers::timers::apic::initialise();
@@ -258,8 +262,14 @@ skip_redraw:;
     drivers::display::edid::initialise();
     Log::printf_status("OK", "EDID Driver Initialised");
 
-	//drivers::net::netgeneric::initialise();
-	//Log::printf_status("OK", "Networking Initialised");
+	drivers::net::netgeneric::initialise();
+	Log::printf_status("OK", "Networking Initialised");
+
+	const char* lookup_hostname = "google.com";
+	printf("Looking up DNS hostname \"%s\"\r\n", lookup_hostname);
+	ip_u target = drivers::net::dns::dns_lookup(lookup_hostname);
+	printf("Pinging\r\n");
+	drivers::net::icmp::icmp_ping_print(parse_ip("10.0.0.1"), 4);
 
 	drivers::blockio::diskgeneric::initialise();
 	Log::printf_status("OK", "Block I/O Initialised");	
@@ -291,9 +301,6 @@ skip_redraw:;
 
 	sched::initialise();
 	Log::printf_status("OK", "Scheduler Initialised");
-
-	init_userfb();
-	Log::printf_status("OK", "Display Driver Initialised");
 
     // Finished bootstrapping
 
@@ -380,7 +387,7 @@ skip_redraw:;
 	drivers::timers::apic::sleep_ms(100);
 
     Log::end_kernel_messages(); // now no messages print
-	userfb_ready();
+	//userfb_ready();
 
 	const char* argv[] = {
 	    "/initrd/init",
@@ -403,7 +410,7 @@ skip_redraw:;
 
 	ramfs::close(exefd);
 
-	run_elf(data, statbuf.st_size, true, argv, envp);
+	//run_elf(data, statbuf.st_size, true, argv, envp);
 
     while (1) {
         asm volatile("hlt");

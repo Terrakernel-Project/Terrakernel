@@ -1,6 +1,13 @@
 #include <arch/x86_64/syscall/handlers.hpp>
 #include "syscalls.hpp"
 #include <cstdio>
+#include <config.hpp>
+
+#ifdef CONFIG_VERBOSE_SYSCALL_CREATION
+#	define SDPRINTF(fmt, ...) printf("[ %s ] " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+#else
+#	define SDPRINTF(fmt, ...)
+#endif
 
 int64_t no_handler() {
 	return 0;
@@ -17,7 +24,8 @@ void set_no_handler(uint64_t vector) {
 }
 
 #define set_handler(vec, func, nargs) \
-	register_syscall(vec, (void*)func, nargs, "#func#", "C++ pretty func not available");
+    SDPRINTF("registering syscall %s at vector %zu\r\n", #func, vec); \
+    register_syscall(vec, (void*)func, nargs, #func, "C++ pretty func not available");
 
 void HlStatHandleType_Temp(Handle* hptr) {
 	printf("hptr->HandleType=%d\n\r", hptr->HandleType);
@@ -46,27 +54,28 @@ void initialise_syscalls() {
 	set_handler(16, HlListDirectory, 2);
 	set_handler(17, HlResetDirectoryReadOffset, 1);
 	set_handler(18, HlMemoryPoolAllocate, 1);
-	set_handler(19, HlMemoryPoolFree, 1);
-	set_handler(20, HlMemoryAllocatePool, 1);
-	set_handler(21, HlMemoryFreePool, 1);
+	set_handler(19, HlMemoryPoolFree, 2);
+	set_handler(20, HlMemoryNewPool, 1);
+	set_handler(21, HlMemoryDestroyPool, 1);
 	set_handler(22, HlMemoryAllocateAligned, 1);
 	set_handler(23, HlMemoryFreeAligned, 2);
 	set_handler(24, HlMemorySetAttributes, 3);
 	set_handler(25, HlCreateNewProcess, 0);
 	set_handler(26, HlKillProcess, 1);
 	set_handler(27, HlTerminateProcess, 1);
-	set_handler(28, HlExec, 1);
+	set_handler(28, HlExec, 3);
 	set_handler(29, HlExit, 1);
 	set_handler(30, HlOpenConsole, 2);
 	set_handler(31, HlWaitForInputConsole, 1);
 	set_handler(32, HlReadConsole, 3);
 	set_handler(33, HlWriteConsole, 3);
+	set_handler(34, HlStatConsole, 2);
 	/* HlApi 1.1 */
-	set_handler(34, HlObtainFramebuffer, 1);
-	set_handler(35, HlStatFramebuffer, 2);
+	set_handler(35, HlObtainFramebuffer, 1);
+	set_handler(36, HlStatFramebuffer, 2);
 	/* HlApi 1.2 */
-	set_handler(36, HlRetrieveFileMappedMemory, 1);
-	set_handler(37, HlRetrieveMappedFileSize, 1);
-	set_handler(38, HlSleepMs, 1);
+	set_handler(37, HlRetrieveFileMappedMemory, 1);
+	set_handler(38, HlRetrieveMappedFileSize, 1);
+	set_handler(39, HlSleepMs, 1);
 }
 

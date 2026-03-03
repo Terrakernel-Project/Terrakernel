@@ -1,6 +1,7 @@
 #include "netgeneric.hpp"
 #include <panic.hpp>
 #include <mem/mem.hpp>
+#include <cstdio>
 #include "dhcp.hpp"
 #include "e1000/e1000.hpp"
 #include "rtl8139/rtl8139.hpp"
@@ -169,10 +170,10 @@ void (*init_card_funcs[MAX_CARDS])(pcie_device*,net_card_driver*) = {
 
 namespace drivers::net::netgeneric {
 
-static ip_u ip_address;
+static ip_configuration ipconfig;
 
 void initialise() {
-	int idx;
+	int idx = 0;
 	for (int i = 0; i < MAX_CARDS; i++) {
 		idx = i;
 		device = pcie::get_device_vendor_id(net_cards[i].vendor, net_cards[i].device);
@@ -192,7 +193,30 @@ void initialise() {
 	mac_u mac;
 	get_mac(mac.mac_p);
 
-	ip_address = dhcp_request(transaction_id, "Terrakernel", mac);
+	printf("sending DHCP request\r\n");
+	ip_u offer = dhcp_request(transaction_id, "Terrakernel", mac);
+	if (offer.ip == 0) panic("dhcp: no offer received");
+
+	printf("requesting IP from DHCP\r\n");
+	ipconfig = dhcp_request_ip(offer, transaction_id, "Terrakernel", mac);
+	if (ipconfig.ip.ip == 0) panic("dhcp: no ack received");
+
+	printf("net: IP address: %d.%d.%d.%d\n\r",
+		ipconfig.ip.ip_p[0], ipconfig.ip.ip_p[1],
+		ipconfig.ip.ip_p[2], ipconfig.ip.ip_p[3]);
+
+	printf("setting ARP source IP\r\n");
+	arp_set_src_ip(ipconfig.ip);
+	printf("setting config for ICMP\r\n");
+	icmp_set_config(ipconfig.ip, ipconfig.gateway_ip);
+	printf("setting config for TCP/IP\r\n");
+	tcpip_set_config(ipconfig.ip, 49152, 80);
+	printf("setting config for UDP\r\n");
+	udp_set_config(ipconfig.ip, 49152, 53);
+	printf("setting gateway for UDP\r\n");
+	udp_set_gateway(ipconfig.gateway_ip);
+	printf("setting server for DNS\r\n");
+	dns_set_server(ipconfig.dns_ip);
 }
 
 bool send(const uint8_t* data, size_t length) {
@@ -206,18 +230,19 @@ bool send(const uint8_t* data, size_t length) {
 }
 
 size_t recv(uint8_t* buffer, size_t buffer_len) {
-	stats.packets_received++;
-	if (driver->receive(buffer, buffer_len)) {
-		return true;
+	size_t received = driver->receive(buffer, buffer_len);
+	if (received > 0) {
+		stats.packets_received++;
 	} else {
 		stats.errors++;
-		return false;
 	}
+	return received;
 }
 
 size_t listen(uint8_t* buffer, size_t buffer_len) {
+	size_t received = driver->listen(buffer, buffer_len);
 	stats.packets_received++;
-	return driver->listen(buffer, buffer_len);
+	return received;
 }
 
 bool get_mac(uint8_t mac[6]) {

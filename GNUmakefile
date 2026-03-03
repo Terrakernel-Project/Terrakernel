@@ -5,10 +5,10 @@ ARCH := x86_64
 QEMU_EXTRA_FLAGS :=
 
 # TAP
-#QEMUFLAGS := -rtc base=localtime -m 8G -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
+QEMUFLAGS := -rtc base=localtime -m 8G -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
 
 # NO TAP
-QEMUFLAGS := -rtc base=localtime -m 8G -netdev user,id=net0 -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS) -display gtk
+#QEMUFLAGS := -rtc base=localtime -m 8G -netdev user,id=net0 -device e1000,netdev=net0 $(QEMU_EXTRA_FLAGS)
 
 QEMUFLAGS_NORM := -rtc base=localtime -M q35 -m 6G
 QEMUFLAGS_DINT := $(QEMUFLAGS_NORM) -d int
@@ -49,7 +49,7 @@ run: run-hdd-$(ARCH)
 
 run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35,sata=off \
+		-machine q35,acpi=on,i8042=true,pic=on,pit=on,sata=off,usb=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-drive if=none,id=hdd0,format=raw,file=$(IMAGE_NAME).iso \
 		-device ich9-ahci,id=ahci \
@@ -58,7 +58,7 @@ run-x86_64: edk2-ovmf $(IMAGE_NAME).iso
 
 run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 	qemu-system-$(ARCH) \
-		-machine q35,sata=off \
+		-machine q35,acpi=on,i8042=true,pic=on,pit=on,sata=off,usb=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-drive if=none,id=hdd0,format=raw,file=$(IMAGE_NAME).hdd \
 		-device ich9-ahci,id=ahci \
@@ -67,7 +67,7 @@ run-hdd-x86_64: edk2-ovmf $(IMAGE_NAME).hdd
 
 run-norm: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35 \
+		-machine q35,acpi=on,i8042=true,pic=on,pit=on,sata=off,usb=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
 		-blockdev driver=raw,node-name=disk0,file=diskfile \
@@ -77,7 +77,7 @@ run-norm: edk2-ovmf $(IMAGE_NAME).iso
 
 run-dint: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35 \
+		-machine q35,acpi=on,i8042=true,pic=on,pit=on,sata=off,usb=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
 		-blockdev driver=raw,node-name=disk0,file=diskfile \
@@ -87,7 +87,7 @@ run-dint: edk2-ovmf $(IMAGE_NAME).iso
 
 run-gdb: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35 \
+		-machine q35,acpi=on,i8042=true,pic=on,pit=on,sata=off,usb=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
 		-blockdev driver=raw,node-name=disk0,file=diskfile \
@@ -97,7 +97,7 @@ run-gdb: edk2-ovmf $(IMAGE_NAME).iso
 
 run-a: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-$(ARCH) \
-		-machine q35 \
+		-machine q35,acpi=on,i8042=true,pic=on,pit=on,sata=off,usb=off \
 		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-$(ARCH).fd,readonly=on \
 		-blockdev driver=file,node-name=diskfile,filename=$(IMAGE_NAME).iso \
 		-blockdev driver=raw,node-name=disk0,file=diskfile \
@@ -138,7 +138,7 @@ kernel/.deps-obtained:
 
 .PHONY: kernel
 kernel: kernel/.deps-obtained genconfig
-	$(MAKE) -C ./binaries
+	$(MAKE) -C ./binaries -B
 	$(initrd)
 	$(MAKE) -C kernel
 

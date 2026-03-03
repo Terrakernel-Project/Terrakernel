@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <mem/mem.hpp>
 #include <exec/elf.hpp>
-#include <drivers/timers/pit/pit.hpp>
+#include <drivers/timers/hpet/hpet.hpp>
 #include <drivers/timers/apic/apic.hpp>
 #include <config.hpp>
 
@@ -413,11 +413,11 @@ uint64_t calibrate_pit() {
     arch::x86_64::apic::bsp->write_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_INITIAL, 0xFFFFFFFF);
     
 #ifdef CONFIG_APIC_INACCURACY_PROT
-    drivers::timers::pit::sleep_ms(CONFIG_APIC_INACCURACY_PROT_DELAY);
+    drivers::timers::hpet::sleep_ms(CONFIG_APIC_INACCURACY_PROT_DELAY);
     uint32_t elapsed = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
     uint32_t ticks_in_1ms = elapsed / CONFIG_APIC_INACCURACY_PROT_DELAY;
 #else
-    drivers::timers::pit::sleep_ms(40);
+    drivers::timers::hpet::sleep_ms(40);
     uint32_t elapsed = 0xFFFFFFFF - arch::x86_64::apic::bsp->read_reg(arch::x86_64::apic::bsp, APIC_REG_TIMER_CURRENT);
     uint32_t ticks_in_1ms = elapsed / 40;
 #endif

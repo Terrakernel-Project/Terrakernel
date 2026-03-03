@@ -72,8 +72,8 @@ endmenu # PIT
 
 menu "APIC Timer"
 
-config FALLBACK_TO_PIT
-	bool "Fallback to PIT if APIC not available"
+config FALLBACK_TO_HPET
+	bool "Fallback to HPET if APIC not available"
 	default y
 
 config APIC_INACCURACY_PROT
@@ -90,6 +90,14 @@ config APIC_INACCURACY_PROT_DELAY
 	default 40 if APIC_INACCURACY_PROT
 
 endmenu # APIC Timer
+
+menu "HPET"
+
+config HPET_VERBOSE
+	bool "Verbose HPET timer"
+	default n
+
+endmenu # HPET
 
 endmenu # Timers
 

@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 void flanterm_initialise();
+void* get_ctx_voidp();
 
 __attribute__((hot))
 void putpx(int x, int y, uint32_t colour);

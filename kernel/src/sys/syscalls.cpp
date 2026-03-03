@@ -5,12 +5,15 @@
 #include <mem/mem.hpp>
 #include <drivers/tty/ldisc/ldisc.hpp>
 #include <panic.hpp>
-#include <lib/Flanterm/gfx.h>
 #include <config.hpp>
 #include <vfs/vfs.hpp>
 #include <subsystems/ramfs/ramfs.hpp>
 #include <drivers/display/gfx.hpp>
-#include <drivers/timers/apic/apic.hpp>
+#include <drivers/timers/hpet/hpet.hpp>
+#include <lib/Flanterm/gfx.h>
+#include <lib/Flanterm/flanterm.h>
+#include <exec/elf.hpp>
+#include <arch/arch.hpp>
 
 //hptr->HandleType != type
 #define VALID_HNDL(hptr, type, DOCODE)                 \
@@ -433,10 +436,11 @@ void* HlMemoryPoolAllocate(size_t n) {
     return addr;
 }
 
-void HlMemoryPoolFree(void* ptr) {
+void HlMemoryPoolFree(void* ptr, size_t n) {
     SDPRINTF("freeing memory pool: addr=%p", ptr);
-    
-    mem::usr::free(ptr, 1);
+
+    size_t npages = (n + 0xFFF) / 0x1000;
+    mem::usr::free(ptr, npages);
 }
 
 struct Pool {
@@ -445,7 +449,7 @@ struct Pool {
     size_t npages;
 };
 
-void* HlMemoryAllocatePool(size_t nbytes) {
+void* HlMemoryNewPool(size_t nbytes) {
     SDPRINTF("allocating memory pool: bytes=%zu", nbytes);
     
     size_t meta_pages = (sizeof(Pool) + 0xFFF) / 0x1000;
@@ -460,7 +464,7 @@ void* HlMemoryAllocatePool(size_t nbytes) {
     return (void*)newpool;
 }
 
-void HlMemoryFreePool(void* poolptr) {
+void HlMemoryDestroyPool(void* poolptr) {
     SDPRINTF("freeing memory pool: pool=%p", poolptr);
     
     Pool* pool = (Pool*)poolptr;
@@ -508,6 +512,36 @@ void HlTerminateProcess(int64_t pid) {
     SDPRINTF("terminating process (stub): pid=%ld", pid);
     
     (void)pid;
+}
+
+struct proc {
+	uint64_t parent_rip;
+	uint64_t parent_stack;
+	proc_address_space* addr_space;
+	void* mem;
+	size_t mem_sz;
+};
+
+proc proctab[1024];
+int counter_proctab = 0;
+
+static void push_proc(uint64_t rip, uint64_t stack, proc_address_space* addr_space, void* mem, size_t mem_sz) {
+	if (counter_proctab >= (sizeof(proctab)/sizeof(proctab[0]))) return;
+	proctab[counter_proctab].parent_rip = rip;
+	proctab[counter_proctab].parent_stack = stack;
+	proctab[counter_proctab].addr_space = addr_space;
+	proctab[counter_proctab].mem = mem;
+	proctab[counter_proctab].mem_sz = mem_sz;
+	counter_proctab++;
+}
+
+static void pop_proc(uint64_t* rip, uint64_t* stack, proc_address_space** addr_space, void** mem, size_t* mem_sz) {
+	if (counter_proctab <= 0) return;
+	*rip = proctab[--counter_proctab].parent_rip;
+	*stack = proctab[counter_proctab].parent_stack;
+	*addr_space = proctab[counter_proctab].addr_space;
+	*mem = proctab[counter_proctab].mem;
+	*mem_sz = proctab[counter_proctab].mem_sz;
 }
 
 int HlExec(const char* __restrict path, const char* args[], const char* env_vars[]) {
@@ -571,7 +605,53 @@ int64_t HlWriteConsole(Handle* portR, const void* __restrict dat, size_t count) 
     return bytes;
 }
 
+#include <cstdint>
+
+struct HlConsole {
+    uint32_t width_cells;
+    uint32_t height_cells;
+
+    uint32_t width_pixels;
+    uint32_t height_pixels;
+
+    uint32_t cell_width_pixels;
+    uint32_t cell_height_pixels;
+
+    bool supports_colour;
+    bool supports_unicode;
+    bool supports_mouse;
+    bool supports_resize;
+
+    uint32_t max_width_cells;
+    uint32_t max_height_cells;
+};
+
 extern uint64_t g_scr_height, g_scr_width;
+
+void HlStatConsole(Handle* anyport, void* buf) {
+	HlConsole* con = (HlConsole*)buf;
+
+	size_t w, h;
+
+	flanterm_get_dimensions((flanterm_context*)get_ctx_voidp(), &w, &h);
+
+	con->width_cells = w;
+	con->height_cells = h-1;
+
+	con->width_pixels = g_scr_width;
+	con->height_pixels = g_scr_height;
+
+	con->cell_width_pixels = con->width_pixels / con->width_cells;
+	con->cell_height_pixels = con->height_pixels / (con->height_cells+1);
+
+	con->supports_colour = true;
+	con->supports_unicode = false;
+	con->supports_mouse = false;
+	con->supports_resize = false;
+
+	con->max_width_cells = con->width_cells;
+	con->max_height_cells = con->height_cells;
+}
 
 #define QUICK_FB_ACCESS hptr->Payload.Framebuffer
 void HlObtainFramebuffer(Handle* hptr) {
@@ -585,7 +665,7 @@ void HlObtainFramebuffer(Handle* hptr) {
     hptr->OwnerPID = 0;
     hptr->LastError = 0;
 
-    QUICK_FB_ACCESS.BaseAddress = (void*)get_user_fb();
+    QUICK_FB_ACCESS.BaseAddress = (void*)nullptr;
     QUICK_FB_ACCESS.Width = g_scr_width;;
     QUICK_FB_ACCESS.Height = g_scr_height;
     QUICK_FB_ACCESS.Pitch = get_pitch();
@@ -631,7 +711,5 @@ uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
 void HlSleepMs(uint64_t ms) {
 	SDPRINTF("sleeping for %zu milliseconds", ms);
 
-	printf("sleeping %zu ms\n\r", ms);
-
-	drivers::timers::apic::sleep_ms(ms);
+	drivers::timers::hpet::sleep_ms(ms);
 }

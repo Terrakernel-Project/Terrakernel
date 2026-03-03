@@ -71,6 +71,10 @@ void flanterm_initialise() {
     g_scr_width = fb->width;
 }
 
+void* get_ctx_voidp() {
+	return (void*)tty;
+}
+
 __attribute__((hot))
 uint32_t lerpRGB(uint32_t src, uint32_t dst, uint8_t intensity) {
     uint32_t sr = (src >> 16) & 0xFF;

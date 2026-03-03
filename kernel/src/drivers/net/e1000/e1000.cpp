@@ -94,7 +94,7 @@
 #define TSTA_LC                         (1 << 2)    // Late Collision
 #define LSTA_TU                         (1 << 3)    // Transmit Underrun
 
-#define E1000_NUM_RX_DESC 32
+#define E1000_NUM_RX_DESC 128
 #define E1000_NUM_TX_DESC 8
 
 struct e1000_rx_desc {
@@ -127,11 +127,11 @@ uint8_t mac[6];
 e1000_rx_desc* rx_descs[E1000_NUM_RX_DESC];
 e1000_tx_desc* tx_descs[E1000_NUM_TX_DESC];
 
-// Track virtual addresses of RX buffers for memcpy
 uint8_t* rx_virt_addrs[E1000_NUM_RX_DESC];
 
-uint16_t rx_cur;
-uint16_t tx_cur;
+volatile uint16_t rx_cur;
+volatile uint16_t tx_cur;
+volatile uint8_t interrupt_line;
 
 void write_command(uint16_t p_address, uint32_t p_value) {
 	if (bar_type == 0) {
@@ -240,7 +240,7 @@ void rx_init() {
     write_command(REG_RXDESCHEAD, 0);
     write_command(REG_RXDESCTAIL, E1000_NUM_RX_DESC - 1);
     rx_cur = 0;
-    write_command(REG_RCTRL, RCTL_EN | RCTL_SBP | RCTL_UPE | RCTL_MPE | RCTL_LBM_NONE | RTCL_RDMTS_HALF | RCTL_BAM | RCTL_SECRC  | RCTL_BSIZE_8192);
+    write_command(REG_RCTRL, RCTL_EN | RCTL_LBM_NONE | RTCL_RDMTS_HALF | RCTL_BAM | RCTL_SECRC | RCTL_BSIZE_8192);
 }
 
 void tx_init() {
@@ -281,23 +281,13 @@ void enable_interrupt() {
 	read_command(0xC0);
 }
 
-void handle_receive() {
-    uint16_t old_cur;
-    bool got_packet = false;
- 
-    while((rx_descs[rx_cur]->status & 0x1)) {
-            got_packet = true;
-            uint8_t *buf = (uint8_t *)rx_descs[rx_cur]->addr;
-            uint16_t len = rx_descs[rx_cur]->length;
+volatile bool receive_pending = false;
 
-            rx_descs[rx_cur]->status = 0;
-            old_cur = rx_cur;
-            rx_cur = (rx_cur + 1) % E1000_NUM_RX_DESC;
-            write_command(REG_RXDESCTAIL, old_cur);
-    }
+void handle_receive() {
+    receive_pending = true;
 }
 
-bool transmit_done = false;
+volatile bool transmit_done = true;
 
 __attribute__((interrupt))
 void fire(void* frame) {
@@ -309,11 +299,13 @@ void fire(void* frame) {
 
 	if (status & 0x04) {
 		start_link();
-	} else if (status & 0x10) {
+	} else if (status & 0x03) {
 		transmit_done = true;
-	} else if (status & 0x80) {
+	} else if (status & 0x90) {
 		handle_receive();
 	}
+
+	arch::x86_64::cpu::idt::send_eoi(interrupt_line);
 }
 
 int send_packet(const void* p_data, uint16_t p_len) {
@@ -334,7 +326,7 @@ int send_packet(const void* p_data, uint16_t p_len) {
         __asm__ volatile("pause");
     }
     
-    return !(tx_descs[old_cur]->status & ~TSTA_DD);
+    return (int)(tx_descs[old_cur]->status & (TSTA_EC | TSTA_LC));
 }
 
 bool e1000_send(const uint8_t* data, size_t length);
@@ -363,7 +355,11 @@ void e1000_init(pcie_device* dev, net_card_driver* driver) {
 
 	bar_type = dev->bars[0] & 0x1;
 	io_base = dev->bars[0] & ~0x3;
-	mem_base = dev->bars[0] & ~0xF;
+	if (((dev->bars[0] >> 1) & 0x3) == 0x2) {
+		mem_base = ((uint64_t)dev->bars[1] << 32) | (dev->bars[0] & ~0xFULL);
+	} else {
+		mem_base = dev->bars[0] & ~0xFULL;
+	}
 
 	eeprom_exists = false;
 
@@ -387,6 +383,7 @@ void e1000_init(pcie_device* dev, net_card_driver* driver) {
 	for (int i = 0; i < 0x80; i++)
 		write_command(0x5200 + i * 4, 0);
 
+	interrupt_line = dev->interrupt_line;
 	arch::x86_64::cpu::idt::set_descriptor(0x20 + dev->interrupt_line, (uint64_t)fire, 0x8E);
 	arch::x86_64::cpu::idt::send_eoi(dev->interrupt_line);
 	arch::x86_64::cpu::idt::irq_clear_mask(dev->interrupt_line);

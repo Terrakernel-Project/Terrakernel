@@ -1,21 +1,16 @@
 #include "apic.hpp"
 #include <config.hpp>
 #include <arch/arch.hpp>
-#ifdef CONFIG_FALLBACK_TO_PIT
-#	include <drivers/timers/pit/pit.hpp> // fallback if no apic available
+#ifdef CONFIG_FALLBACK_TO_HPET
+#	include <drivers/timers/hpet/hpet.hpp> // fallback if no apic available
 #endif
 #include <cstdio>
-#include <drivers/display/gfx.hpp>
 
 volatile uint64_t ticks = 0;
 
 extern "C" void apic_timer_interrupt_handler();
 extern "C" ApicCpuContext* apic_timer_c_handler(ApicCpuContext* ctx) {
 	arch::x86_64::cpu::idt::send_eoi(0);
-
-	if (ticks % 4 == 0) {
-		user_fb_frame();
-	}
 
 	return ctx;
 }
@@ -38,8 +33,8 @@ namespace drivers::timers::apic {
 
 void sleep_ms(uint64_t ms) {
 	if (!apic_enabled()) {
-#ifdef CONFIG_FALLBACK_TO_PIT
-		drivers::timers::pit::sleep_ms(ms);
+#ifdef CONFIG_FALLBACK_TO_HPET
+		drivers::timers::hpet::sleep_ms(ms);
 #endif
 		return;
 	}
@@ -54,8 +49,8 @@ void sleep_ms(uint64_t ms) {
 
 uint64_t ns_elapsed_time() {
 	if (!apic_enabled()) {
-#ifdef CONFIG_FALLBACK_TO_PIT
-		return drivers::timers::pit::ns_elapsed_time();
+#ifdef CONFIG_FALLBACK_TO_HPET
+		return drivers::timers::hpet::ns_elapsed_time();
 #else
 		return 0;
 #endif
@@ -66,8 +61,8 @@ uint64_t ns_elapsed_time() {
 
 uint64_t get_ticks() {
 	if (!apic_enabled()) {
-#ifdef CONFIG_FALLBACK_TO_PIT
-		return drivers::timers::pit::get_ticks();
+#ifdef CONFIG_FALLBACK_TO_HPET
+		return drivers::timers::hpet::get_ticks();
 #else
 		return 0;
 #endif
