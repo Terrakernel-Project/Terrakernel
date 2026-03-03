@@ -52,10 +52,10 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Partitions with MBR
 - [x] Partitions with GPT
 - [ ] Userspace graphics driver
-- [ ] Network cards drivers
-- [ ] DHCP support
-- [ ] UDP support
-- [ ] TCP/IP support
+- [x] Network cards drivers
+- [x] DHCP support
+- [x] UDP support
+- [x] TCP/IP support
 - [ ] HTTP protocol support
 - [ ] End of other
 
