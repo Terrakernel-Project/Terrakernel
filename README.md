@@ -46,22 +46,20 @@ Terra is the operating system I'm planning to use terrakernel for.
 - [x] Line discipline
 - [x] EDID driver
 - [x] AHCI disk driver
-- [ ] NVMe disk driver
 - [x] FAT32 file system
-- [ ] HLFS file system
 - [x] Partitions with MBR
 - [x] Partitions with GPT
-- [ ] Userspace graphics driver
+- [x] Userspace graphics driver
 - [x] Network cards drivers
 - [x] DHCP support
 - [x] UDP support
 - [x] TCP/IP support
-- [ ] HTTP protocol support
-- [ ] End of other
+- [x] HTTP protocol support
+- [x] End of other
 
 ### Writing and Porting software
 - [ ] Write a better init process
-- [ ] Write a LibC
+- [x] Port mlibc
 - [ ] Write a window manager
 - [ ] Port something
 - [ ] Write a package manager, tpkgs (Terra PKGs)
@@ -74,22 +72,22 @@ Check [BUILD_INSTRUCTIONS.md](https://github.com/Terrakernel-Project/Terrakernel
 ### How many LoC?
 
 ```x86asm
-     296 text files.
-     275 unique files.
+     321 text files.
+     300 unique files.
        5 files ignored.
 
-github.com/AlDanial/cloc v 1.98  T=3.46 s (79.4 files/s, 26427.2 lines/s)
+github.com/AlDanial/cloc v 1.98  T=0.97 s (310.3 files/s, 98146.4 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C                               55           6549           4123          36407
-C/C++ Header                   162           3651          11698          15964
-C++                             50           2458             57          10251
-Assembly                         6             55              1            281
+C                               55           6549           4124          36436
+C/C++ Header                   175           3731          11702          16179
+C++                             62           2762             54          12990
+Assembly                         6             56              2            290
 CMake                            1              0              0             21
 Markdown                         1              0              0              2
 -------------------------------------------------------------------------------
-SUM:                           275          12713          15879          62926 (58283 old / +4643)
+SUM:                           300          13098          15882          65918 (62926 old / +2992)
 -------------------------------------------------------------------------------
 ```
 
