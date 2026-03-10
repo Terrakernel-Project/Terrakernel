@@ -5,12 +5,17 @@
 #	include <drivers/timers/hpet/hpet.hpp> // fallback if no apic available
 #endif
 #include <cstdio>
+#include <drivers/display/gfx.hpp>
 
 volatile uint64_t ticks = 0;
 
 extern "C" void apic_timer_interrupt_handler();
 extern "C" ApicCpuContext* apic_timer_c_handler(ApicCpuContext* ctx) {
 	arch::x86_64::cpu::idt::send_eoi(0);
+
+	if (ticks % 15 == 0) {
+		gfx_frame_composit();
+	}
 
 	return ctx;
 }

@@ -34,6 +34,7 @@ void HlTerminateProcess(int64_t pid);
 int HlExec(const char* __restrict path, const char* args[], const char* env_vars[]);
 void HlExit(int error_code);
 void HlOpenConsole(Handle* portR, Handle* portW);
+void HlCloseConsole(Handle* anyport);
 void HlWaitForInputConsole(Handle* portR);
 int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count);
 int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count);

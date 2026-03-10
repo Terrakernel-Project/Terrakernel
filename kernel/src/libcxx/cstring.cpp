@@ -1,5 +1,6 @@
 #include "cstring"
 #include <mem/mem.hpp>
+#include <cctype>
 
 char* strcpy(char* dest, const char* src) {
     char* ptr = dest;
@@ -140,6 +141,83 @@ char* strtok_r(char* str, const char* delim, char** saveptr) {
     }
 
     return token;
+}
+
+uint64_t strtod(const char *nptr, char **endptr) {
+    const char *s = nptr;
+    uint64_t result = 0;
+    int sign = 1;
+
+    while (*s == ' ' || *s == '\t' || *s == '\n') s++;
+
+    if (*s == '+') s++;
+    else if (*s == '-') { sign = -1; s++; }
+
+    while (isdigit((unsigned char)*s)) {
+        result = result * 10 + (*s - '0');
+        s++;
+    }
+
+    if (endptr) *endptr = (char*)s;
+    return sign * result;
+}
+
+long strtol(const char *nptr, char **endptr, int base) {
+    const char *s = nptr;
+    long result = 0;
+    int neg = 0;
+
+    while (*s == ' ' || *s == '\t' || *s == '\n' ||
+           *s == '\r' || *s == '\f' || *s == '\v') {
+        s++;
+    }
+
+    if (*s == '-') {
+        neg = 1;
+        s++;
+    } else if (*s == '+') {
+        s++;
+    }
+
+    if (base == 0) {
+        if (s[0] == '0') {
+            if (s[1] == 'x' || s[1] == 'X') {
+                base = 16;
+                s += 2;
+            } else {
+                base = 8;
+                s++;
+            }
+        } else {
+            base = 10;
+        }
+    } else if (base == 16 && s[0] == '0' && (s[1]=='x' || s[1]=='X')) {
+        s += 2;
+    }
+
+    const char *start = s;
+
+    while (*s) {
+        int digit;
+        if (*s >= '0' && *s <= '9') digit = *s - '0';
+        else if (*s >= 'a' && *s <= 'z') digit = *s - 'a' + 10;
+        else if (*s >= 'A' && *s <= 'Z') digit = *s - 'A' + 10;
+        else break;
+
+        if (digit >= base) break;
+
+        result = result * base + digit;
+        s++;
+    }
+
+    if (s == start) {
+        if (endptr) *endptr = (char*)nptr;
+        return 0;
+    }
+
+    if (endptr) *endptr = (char*)s;
+
+    return neg ? -result : result;
 }
 
 char* strrchr(const char* s, int c) {

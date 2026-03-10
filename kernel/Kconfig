@@ -151,6 +151,18 @@ endmenu # Filesystems
 
 endmenu # Drivers
 
+menu "Subsystems"
+
+menu "VFS"
+
+config VFS_VERBOSE
+	bool "VFS verbose output"
+	default n
+
+endmenu # VFS
+
+endmenu # Subsystems
+
 menu "IDT"
 
 menu "Exceptions"

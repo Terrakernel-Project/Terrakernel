@@ -6,7 +6,7 @@
 #include "ps2k_key_event.hpp"
 #include "ps2k_scancode_map.hpp"
 #include <kerr.hpp>
-#include <drivers/timers/pit/pit.hpp>
+#include <drivers/timers/apic/apic.hpp>
 #include <types.hpp>
 
 namespace drivers::input::ps2k {
@@ -157,7 +157,7 @@ static void ps2k_interrupt_handler(void*) {
         key_event ev;
         ev.keycode = kc;
         ev.state = pressed ? key_state::PRESSED : key_state::RELEASED;
-        ev.timestamp = drivers::timers::pit::ns_elapsed_time();
+        ev.timestamp = drivers::timers::apic::ns_elapsed_time();
         
         buffer_push(evbuf, ev);
         
@@ -206,7 +206,7 @@ void user_ps2k_poll() {
         key_event ev;
         ev.keycode = kc;
         ev.state = pressed ? key_state::PRESSED : key_state::RELEASED;
-        ev.timestamp = drivers::timers::pit::ns_elapsed_time();
+        ev.timestamp = drivers::timers::apic::ns_elapsed_time();
         
         buffer_push(evbuf, ev);
         

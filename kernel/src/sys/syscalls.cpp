@@ -576,6 +576,12 @@ void HlOpenConsole(Handle* portR, Handle* portW) {
     SDPRINTF("console opened successfully");
 }
 
+void HlCloseConsole(Handle* anyport) {
+	SDPRINTF("closing console: anyport=%p", anyport);
+
+	SDPRINTF("console closed successfully");
+}
+
 void HlWaitForInputConsole(Handle* portR) {
     SDPRINTF("waiting for console input: handle=%p", portR);
     
@@ -665,7 +671,7 @@ void HlObtainFramebuffer(Handle* hptr) {
     hptr->OwnerPID = 0;
     hptr->LastError = 0;
 
-    QUICK_FB_ACCESS.BaseAddress = (void*)nullptr;
+    QUICK_FB_ACCESS.BaseAddress = (void*)get_layer_bg();
     QUICK_FB_ACCESS.Width = g_scr_width;;
     QUICK_FB_ACCESS.Height = g_scr_height;
     QUICK_FB_ACCESS.Pitch = get_pitch();

@@ -200,15 +200,16 @@ typedef struct {
  * 28  HlExec
  * 29  HlExit
  * 30  HlOpenConsole
- * 31  HlWaitForInputConsole
- * 32  HlReadConsole
- * 33  HlWriteConsole
- * 34  HlStatConsole
- * 35  HlObtainFramebuffer
- * 36  HlStatFramebuffer
- * 37  HlRetrieveFileMappedMemory
- * 38  HlRetrieveMappedFileSize
- * 39  HlSleepMs
+ * 31  HlCloseConsole
+ * 32  HlWaitForInputConsole
+ * 33  HlReadConsole
+ * 34  HlWriteConsole
+ * 35  HlStatConsole
+ * 36  HlObtainFramebuffer
+ * 37  HlStatFramebuffer
+ * 38  HlRetrieveFileMappedMemory
+ * 39  HlRetrieveMappedFileSize
+ * 40  HlSleepMs
  */
 
 static inline void HlKernelMessage(const char* __restrict dat) {
@@ -335,40 +336,44 @@ static inline void HlOpenConsole(Handle* portR, Handle* portW) {
 	syscall2(30, SYSARG(portR), SYSARG(portW));
 }
 
+static inline void HlCloseConsole(Handle* anyport) {
+	syscall1(31, SYSARG(anyport));
+}
+
 static inline void HlWaitForInputConsole(Handle* portR) {
-	syscall1(31, SYSARG(portR));
+	syscall1(32, SYSARG(portR));
 }
 
 static inline int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count) {
-	return (int64_t)syscall3(32, SYSARG(portW), SYSARG(buf), SYSARG(count));
+	return (int64_t)syscall3(33, SYSARG(portW), SYSARG(buf), SYSARG(count));
 }
 
 static inline int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count) {
-	return (int64_t)syscall3(33, SYSARG(portW), SYSARG(dat), SYSARG(count));
+	return (int64_t)syscall3(34, SYSARG(portW), SYSARG(dat), SYSARG(count));
 }
 
 static inline void HlStatConsole(Handle* anyport, HlConsoleStat* stat) {
-	syscall2(34, SYSARG(anyport), SYSARG(stat));
+	syscall2(35, SYSARG(anyport), SYSARG(stat));
 }
 
 static inline void HlObtainFramebuffer(Handle* hptr) {
-	syscall1(35, SYSARG(hptr));
+	syscall1(36, SYSARG(hptr));
 }
 
 static inline void HlStatFramebuffer(Handle* hptr, HlFb* buf) {
-	syscall2(36, SYSARG(hptr), SYSARG(buf));
+	syscall2(37, SYSARG(hptr), SYSARG(buf));
 }
 
 static inline void* HlRetrieveFileMappedMemory(Handle* hptr) {
-	return (void*)syscall1(37, SYSARG(hptr));
+	return (void*)syscall1(38, SYSARG(hptr));
 }
 
 static inline uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
-	return syscall1(38, SYSARG(hptr));
+	return syscall1(39, SYSARG(hptr));
 }
 
 static inline void HlSleepMs(uint64_t ms) {
-	syscall1(39, SYSARG(ms));
+	syscall1(40, SYSARG(ms));
 }
 
 #endif

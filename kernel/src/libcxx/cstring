@@ -15,6 +15,8 @@ char* strchr(const char* str, int c);
 char* strstr(const char* haystack, const char* needle);
 char* strtok(char* str, const char* delim);
 char* strtok_r(char* str, const char* delim, char** saveptr);
+uint64_t strtod(const char *nptr, char **endptr);
+long strtol(const char *nptr, char **endptr, int base);
 char* strrchr(const char* s, int c);
 char* strdup(const char* s);
 char* strndup(const char* s, unsigned int n);

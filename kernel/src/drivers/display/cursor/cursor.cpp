@@ -12,7 +12,9 @@ void render(uint64_t x, uint64_t y) {
     if (!first_render) {
         for (size_t xx = prev_x; xx < prev_x + CURSOR_WIDTH; xx++) {
             for (size_t yy = prev_y; yy < prev_y + CURSOR_HEIGHT; yy++) {
-                ppx(xx, yy, cursor_buffer[xx-prev_x][yy-prev_y]);
+                if (cursor_image[yy-prev_y][xx-prev_x] != 0) {
+                    ppx_cl(xx, yy, 0x00000000);
+                }
             }
         }
     }
@@ -21,7 +23,10 @@ void render(uint64_t x, uint64_t y) {
     
     for (size_t xx = x; xx < x + CURSOR_WIDTH; xx++) {
         for (size_t yy = y; yy < y + CURSOR_HEIGHT; yy++) {
-            cursor_buffer[xx-x][yy-y] = replace_pixel(xx, yy, cursor_image[yy-y][xx-x], true);
+            uint32_t pixel = cursor_image[yy-y][xx-x];
+            if (pixel != 0) {
+                ppx_cl(xx, yy, pixel);
+            }
         }
     }
     

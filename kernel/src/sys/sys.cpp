@@ -66,16 +66,17 @@ void initialise_syscalls() {
 	set_handler(28, HlExec, 3);
 	set_handler(29, HlExit, 1);
 	set_handler(30, HlOpenConsole, 2);
-	set_handler(31, HlWaitForInputConsole, 1);
-	set_handler(32, HlReadConsole, 3);
-	set_handler(33, HlWriteConsole, 3);
-	set_handler(34, HlStatConsole, 2);
+	set_handler(31, HlCloseConsole, 1);
+	set_handler(32, HlWaitForInputConsole, 1);
+	set_handler(33, HlReadConsole, 3);
+	set_handler(34, HlWriteConsole, 3);
+	set_handler(35, HlStatConsole, 2);
 	/* HlApi 1.1 */
-	set_handler(35, HlObtainFramebuffer, 1);
-	set_handler(36, HlStatFramebuffer, 2);
+	set_handler(36, HlObtainFramebuffer, 1);
+	set_handler(37, HlStatFramebuffer, 2);
 	/* HlApi 1.2 */
-	set_handler(37, HlRetrieveFileMappedMemory, 1);
-	set_handler(38, HlRetrieveMappedFileSize, 1);
-	set_handler(39, HlSleepMs, 1);
+	set_handler(38, HlRetrieveFileMappedMemory, 1);
+	set_handler(39, HlRetrieveMappedFileSize, 1);
+	set_handler(40, HlSleepMs, 1);
 }
 

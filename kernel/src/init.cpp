@@ -265,12 +265,6 @@ skip_redraw:;
 	drivers::net::netgeneric::initialise();
 	Log::printf_status("OK", "Networking Initialised");
 
-	const char* lookup_hostname = "google.com";
-	printf("Looking up DNS hostname \"%s\"\r\n", lookup_hostname);
-	ip_u target = drivers::net::dns::dns_lookup(lookup_hostname);
-	printf("Pinging\r\n");
-	drivers::net::icmp::icmp_ping_print(parse_ip("10.0.0.1"), 4);
-
 	drivers::blockio::diskgeneric::initialise();
 	Log::printf_status("OK", "Block I/O Initialised");	
 
@@ -288,6 +282,10 @@ skip_redraw:;
 		}
 	}
 
+	if (boot_disk < 0) {
+		Log::warnf("Couldn't find boot disk");
+	}
+
 	drivers::blockio::diskgeneric::partitions::initialise();
 	Log::printf_status("OK", "Partitions Initialised");
 
@@ -301,8 +299,6 @@ skip_redraw:;
 
 	sched::initialise();
 	Log::printf_status("OK", "Scheduler Initialised");
-
-    // Finished bootstrapping
 
 	asm ("sti");
 
@@ -350,8 +346,6 @@ skip_redraw:;
 
 	console_lock = new Spinlock("CONSOLE.LOCK");
 
-	printf("Got %d CPUs\n\r", (int)mp_request.response->cpu_count);
-
 	Log::force_enable();
 
 	Log::infof("CPU#0 is already online (BSP/Boostrap Processor)");
@@ -387,7 +381,11 @@ skip_redraw:;
 	drivers::timers::apic::sleep_ms(100);
 
     Log::end_kernel_messages(); // now no messages print
-	//userfb_ready();
+
+	init_graphics();
+	Log::printf_status("OK", "Software-Accelerated Graphics Initialised");
+
+    // Finished bootstrapping
 
 	const char* argv[] = {
 	    "/initrd/init",
@@ -399,21 +397,23 @@ skip_redraw:;
 	    nullptr
 	};
 
-	int exefd = ramfs::open("/initrd/init", O_RDONLY);
+	int exefd = vfs::open("ramfs:/initrd/init", O_RDONLY);
+	if (exefd < 0) {
+		exefd = vfs::open("a:/Terra/Terrakernel/Sys64/Boot/TkInit", O_RDONLY);
+		if (exefd < 0) {
+			panic("Could not open neither TkInit nor initrd/init, please reinstall TK to your media to fix this error");
+		}
+	}
 
-	stat statbuf;
-	ramfs::fstat(exefd, &statbuf);
+	uint64_t sz = vfs::stat_sz(exefd);
+	void* data = mem::heap::malloc(sz);
+	int64_t nreadbytes = vfs::read_file(exefd, data, sz);
+	vfs::close(exefd);
 
-	void* data = mem::heap::malloc(statbuf.st_size);
+	run_elf(data, nreadbytes, true, argv, envp);
 
-	ramfs::read(exefd, data, statbuf.st_size);
-
-	ramfs::close(exefd);
-
-	//run_elf(data, statbuf.st_size, true, argv, envp);
-
-    while (1) {
-        asm volatile("hlt");
+	while (1) {
+    	asm volatile("hlt");
     }
     
     __builtin_unreachable();

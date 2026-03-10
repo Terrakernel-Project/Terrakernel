@@ -3,7 +3,7 @@
 #include <cstdio>
 
 #ifdef CONFIG_NVME_VERBOSE
-#	define NDPRINTF(fmt, ...) printf("[ %s ] " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS);
+#	define NDPRINTF(fmt, ...) printf("[ %s ] " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS__);
 #else
 #	define NDPRINTF(fmt, ...)
 #endif

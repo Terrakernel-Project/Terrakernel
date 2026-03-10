@@ -21,7 +21,7 @@ Handle* get_conr() {
 	return CONR;
 }
 
-size_t __internal_strlen(char* s) {
+size_t __internal_strlen(const char* s) {
 	size_t c = 0;
 	while (*s) {
 		s++;
