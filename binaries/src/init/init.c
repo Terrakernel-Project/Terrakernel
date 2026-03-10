@@ -1,32 +1,20 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <sys/syscalls.h>
-#include "console.h"
+#include <stdio.h>
 
-HlConsoleStat* constat;
+int main() {
+	char* message = "hello\r\n";
 
-void HlMain(void) {
-	initialise_console();
+	long ret;
+	__asm__ volatile (
+	    "syscall"
+	    : "=a"(ret)
+	    : "a"(0),
+	      "D"(message)
+	    : "rcx", "r11", "memory"
+	);
 
-	constat = (HlConsoleStat*)HlMemoryPoolAllocate(sizeof(HlConsoleStat));
-
-	HlStatConsole(get_conw(), constat);
-
-	if (constat->supports_colour) {
-		conprint("SUPPORT COLOUR\r\n");
-	} else conprint("NO COLOUR\r\n");
-
-	if (constat->supports_unicode) {
-		conprint("HOW TF BUT SUPPORT UNICODE\r\n");
-	} else conprint("NO UNICODE\r\n");
-
-	if (constat->supports_mouse) {
-		conprint("KEWL IT SUPPORTS MOUSE\r\n");
-	} else conprint("NO MOUSR :<\r\n");
-
-	if (constat->supports_resize) {
-		conprint("SUPPORT RESIZE\r\n");
-	} else conprint("NO RESIZE\r\n");	
+	printf("test\r\n");
 
     while (1);
 }

@@ -1,0 +1,7 @@
+prefix=/usr/local
+includedir=${prefix}/include
+
+Name: libsmarter
+Description: A library for freestanding smart pointers in C++
+Version: undefined
+Cflags: -I${includedir}

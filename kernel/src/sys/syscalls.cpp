@@ -128,6 +128,8 @@ uint64_t HlStatFileSize(Handle* hptr) {
 
     uint64_t size = vfs::stat_sz(hptr->Payload.File.FileDescriptor);
 
+	hptr->RefCount++;
+
     SDPRINTF("file size: %zu bytes", size);
     return size;
 }
@@ -144,6 +146,9 @@ int64_t HlSeekFile(Handle* hptr, int64_t offset, int whence) {
     } else {
         SDPRINTF("seek failed: error=%ld", result);
     }
+
+	hptr->RefCount++;
+    
     return result;
 }
 
@@ -185,6 +190,9 @@ int64_t HlWriteFile(Handle* hptr, const void* __restrict dat, size_t count) {
     } else {
         SDPRINTF("write failed: error=%ld", r);
     }
+
+	hptr->RefCount++;
+    
     return r;
 }
 
@@ -226,6 +234,9 @@ int64_t HlReadFile(Handle* hptr, void* __restrict buf, size_t count) {
     } else {
         SDPRINTF("read failed: error=%ld", r);
     }
+
+	hptr->RefCount++;
+    
     return r;
 }
 
@@ -258,6 +269,8 @@ int64_t HlPositionedWriteFile(
         SDPRINTF("positioned write to mapped file: bytes=%zu at offset=%zu", to_copy, offset);
         return to_copy;
     }
+
+	hptr->RefCount++;
 
     return vfs::pwrite_file(
         hptr->Payload.File.FileDescriptor,
@@ -297,6 +310,8 @@ int64_t HlPositionedReadFile(
         return to_copy;
     }
 
+	hptr->RefCount++;
+
     return vfs::pread_file(
         hptr->Payload.File.FileDescriptor,
         offset,
@@ -328,6 +343,8 @@ void HlSyncFile(Handle* hptr) {
     } else {
         vfs::sync_file(hptr->Payload.File.FileDescriptor);
     }
+
+	hptr->RefCount++;
 }
 
 void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFlags) {
@@ -357,6 +374,8 @@ void HlOpenDirectory(Handle* hptr, const char* __restrict path, uint32_t OpenFla
     hptr->Payload.Directory.DirDescriptor = dfd;
     hptr->Payload.Directory.ReadOffset = 0;
     hptr->Payload.Directory.EntryCountCache = 0;
+
+	hptr->RefCount++;
     
     SDPRINTF("directory opened: dfd=%d", dfd);
 }
@@ -372,13 +391,15 @@ void HlCloseDirectory(Handle* hptr) {
 
     hptr->Payload.Directory.DirDescriptor = 0;
     hptr->HandleType = HANDLE_TYPE_GENERIC;
+
+	hptr->RefCount++;
 }
 
 void HlMakeDirectory(const char* __restrict path) {
     SDPRINTF("creating directory: path='%s'", path);
     
     vfs::make_dir(path);
-    
+
     SDPRINTF("directory creation initiated: path='%s'", path);
 }
 
@@ -386,7 +407,7 @@ void HlRemoveDirectory(const char* __restrict path) {
     SDPRINTF("removing directory: path='%s'", path);
     
     vfs::remove_dir(path);
-    
+
     SDPRINTF("directory removal initiated: path='%s'", path);
 }
 
@@ -405,6 +426,8 @@ void HlListDirectory(Handle* hptr, void* __restrict buf) {
     
     uint64_t* count = (uint64_t*)buf;
     hptr->Payload.Directory.ReadOffset += *count;
+
+	hptr->RefCount++;
     
     SDPRINTF("directory listed: entries=%lu, total_offset=%lu", *count, hptr->Payload.Directory.ReadOffset);
 }
@@ -422,6 +445,8 @@ void HlResetDirectoryReadOffset(Handle* hptr) {
 
     vfs::reset_dir_read_off(dfd);
     hptr->Payload.Directory.ReadOffset = 0;
+
+	hptr->RefCount++;
     
     SDPRINTF("directory read offset reset");
 }
@@ -514,36 +539,6 @@ void HlTerminateProcess(int64_t pid) {
     (void)pid;
 }
 
-struct proc {
-	uint64_t parent_rip;
-	uint64_t parent_stack;
-	proc_address_space* addr_space;
-	void* mem;
-	size_t mem_sz;
-};
-
-proc proctab[1024];
-int counter_proctab = 0;
-
-static void push_proc(uint64_t rip, uint64_t stack, proc_address_space* addr_space, void* mem, size_t mem_sz) {
-	if (counter_proctab >= (sizeof(proctab)/sizeof(proctab[0]))) return;
-	proctab[counter_proctab].parent_rip = rip;
-	proctab[counter_proctab].parent_stack = stack;
-	proctab[counter_proctab].addr_space = addr_space;
-	proctab[counter_proctab].mem = mem;
-	proctab[counter_proctab].mem_sz = mem_sz;
-	counter_proctab++;
-}
-
-static void pop_proc(uint64_t* rip, uint64_t* stack, proc_address_space** addr_space, void** mem, size_t* mem_sz) {
-	if (counter_proctab <= 0) return;
-	*rip = proctab[--counter_proctab].parent_rip;
-	*stack = proctab[counter_proctab].parent_stack;
-	*addr_space = proctab[counter_proctab].addr_space;
-	*mem = proctab[counter_proctab].mem;
-	*mem_sz = proctab[counter_proctab].mem_sz;
-}
-
 int HlExec(const char* __restrict path, const char* args[], const char* env_vars[]) {
     SDPRINTF("executing: path='%s'", path);
     
@@ -587,6 +582,8 @@ void HlWaitForInputConsole(Handle* portR) {
     
     VALID_HNDL(portR, HANDLE_TYPE_CONSOLE_R, return)
     while (!drivers::tty::ldisc::has_input());
+
+    portR->RefCount++;
     
     SDPRINTF("console input available");
 }
@@ -596,22 +593,24 @@ int64_t HlReadConsole(Handle* portW, void* __restrict buf, size_t count) {
     
     VALID_HNDL(portW, HANDLE_TYPE_CONSOLE_R, return -1)
     int64_t bytes = drivers::tty::ldisc::read(true, (char*)buf, count);
+
+    portW->RefCount++;
     
     SDPRINTF("console read: bytes=%ld", bytes);
     return bytes;
 }
 
-int64_t HlWriteConsole(Handle* portR, const void* __restrict dat, size_t count) {
-    SDPRINTF("writing console: handle=%p, data=%p, count=%zu", portR, dat, count);
+int64_t HlWriteConsole(Handle* portW, const void* __restrict dat, size_t count) {
+    SDPRINTF("writing console: handle=%p, data=%p, count=%zu", portW, dat, count);
     
-    VALID_HNDL(portR, HANDLE_TYPE_CONSOLE_W, return -1)
+    VALID_HNDL(portW, HANDLE_TYPE_CONSOLE_W, return -1)
     int64_t bytes = drivers::tty::ldisc::write((const char*)dat, count);
+
+    portW->RefCount++;
     
     SDPRINTF("console written: bytes=%ld", bytes);
     return bytes;
 }
-
-#include <cstdint>
 
 struct HlConsole {
     uint32_t width_cells;
@@ -657,6 +656,8 @@ void HlStatConsole(Handle* anyport, void* buf) {
 
 	con->max_width_cells = con->width_cells;
 	con->max_height_cells = con->height_cells;
+
+	anyport->RefCount++;
 }
 
 #define QUICK_FB_ACCESS hptr->Payload.Framebuffer
@@ -690,6 +691,8 @@ void HlStatFramebuffer(Handle* hptr, void* buf) {
     VALID_HNDL(hptr, HANDLE_TYPE_FRAMEBUFFER, buf = nullptr; return);
 
     mem::memcpy(buf, &hptr->Payload.Framebuffer, sizeof(void*) + (5*sizeof(uint64_t)));
+
+    hptr->RefCount++;
     
     SDPRINTF("framebuffer stats copied");
 }
@@ -701,6 +704,9 @@ void* HlRetrieveFileMappedMemory(Handle* hptr) {
     
     void* addr = hptr->Payload.File.MappedAddress;
     SDPRINTF("mapped memory retrieved: addr=%p", addr);
+
+    hptr->RefCount++;
+    
     return addr;
 }
 
@@ -711,6 +717,9 @@ uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
 
     uint64_t size = hptr->Payload.File.MappedSize;
     SDPRINTF("mapped file size: %lu pages", size);
+
+    hptr->RefCount++;
+    
     return size;
 }
 
@@ -718,4 +727,44 @@ void HlSleepMs(uint64_t ms) {
 	SDPRINTF("sleeping for %zu milliseconds", ms);
 
 	drivers::timers::hpet::sleep_ms(ms);
+}
+
+int64_t HlObjectManagerGetFd(Handle* hptr) {
+	SDPRINTF("fetching global handle descriptor");
+
+	VALID_HNDL(hptr, -1, return -1);
+
+    hptr->RefCount++;
+
+	return hptr->GlobalHd;
+}
+
+uint64_t HlObjectManagerStatFdType(Handle* hptr) {
+	SDPRINTF("fetching global handle type");
+
+	VALID_HNDL(hptr, -1, return -1);
+
+    hptr->RefCount++;
+
+	return hptr->HandleType;
+}
+
+uint64_t HlObjectManagerStatFdReferenceCount(Handle* hptr) {
+	SDPRINTF("fetching global handle reference count");
+
+	VALID_HNDL(hptr, -1, return 0); // reference count 0 is invalid, a handle MUST have at least 1 reference count
+
+    hptr->RefCount++;
+
+	return hptr->RefCount;
+}
+
+Handle* HlObjectManagerGetHandleFromHd(int64_t hd) {
+	SDPRINTF("fetching handle from handle descriptor");
+
+	return ObjMan::GetHandleFromHd(hd);
+}
+
+uint64_t HlGetUptimeNs() {
+	return drivers::timers::hpet::ns_elapsed_time();
 }

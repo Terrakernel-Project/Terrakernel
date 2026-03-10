@@ -210,6 +210,10 @@ typedef struct {
  * 38  HlRetrieveFileMappedMemory
  * 39  HlRetrieveMappedFileSize
  * 40  HlSleepMs
+ * 41  HlObjectManagerGetFd
+ * 42  HlObjectManagerStatFdType
+ * 43  HlObjectManagerStatFdReferenceCount
+ * 44  HlObjectManagerGetHandleFromHd
  */
 
 static inline void HlKernelMessage(const char* __restrict dat) {
@@ -374,6 +378,26 @@ static inline uint64_t HlRetrieveMappedFileSize(Handle* hptr) {
 
 static inline void HlSleepMs(uint64_t ms) {
 	syscall1(40, SYSARG(ms));
+}
+
+static inline int64_t HlObjectManagerGetHd(Handle* hptr) {
+	return (int64_t)syscall1(41, SYSARG(hptr));
+}
+
+static inline uint64_t HlObjectManagerStatHdType(Handle* hptr) {
+	return syscall1(42, SYSARG(hptr));
+}
+
+static inline uint64_t HlObjectManagerStatHdReferenceCount(Handle* hptr) {
+	return syscall1(43, SYSARG(hptr));
+}
+
+static inline Handle* HlObjectManagerGetHandleFromHd(int64_t hd) {
+	return (Handle*)syscall1(44, hd);
+}
+
+static inline uint64_t HlGetUptimeNs() {
+	return syscall0(45);
 }
 
 #endif

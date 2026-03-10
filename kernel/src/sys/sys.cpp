@@ -78,5 +78,11 @@ void initialise_syscalls() {
 	set_handler(38, HlRetrieveFileMappedMemory, 1);
 	set_handler(39, HlRetrieveMappedFileSize, 1);
 	set_handler(40, HlSleepMs, 1);
+	/* HlApi 1.3 */
+	set_handler(41, HlObjectManagerGetFd, 1);
+	set_handler(42, HlObjectManagerStatFdType, 1);
+	set_handler(43, HlObjectManagerStatFdReferenceCount, 1);
+	set_handler(44, HlObjectManagerGetHandleFromHd, 1)
+	set_handler(45, HlGetUptimeNs, 0);
 }
 

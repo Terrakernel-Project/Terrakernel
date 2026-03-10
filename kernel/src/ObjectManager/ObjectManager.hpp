@@ -24,6 +24,8 @@
 #define PROC_STATE_TERMINATED      3
 
 typedef struct objman_handle {
+	int64_t GlobalHd; // since TK uses an object manager instead of unix-like fd based system, each handle has a handle descriptor for posix compat
+
     uint32_t HandleType;
     uint32_t Flags;
     uint64_t RefCount;
@@ -97,6 +99,7 @@ namespace ObjMan {
 Handle* CreateNewHandle();
 void DestroyHandle(Handle* HandlePtr);
 bool ValidateID(uint64_t objid);
+Handle* GetHandleFromHd(uint64_t hd);
 
 }
 

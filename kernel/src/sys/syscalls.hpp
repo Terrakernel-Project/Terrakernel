@@ -44,5 +44,10 @@ void HlStatFramebuffer(Handle* hptr, void* buf);
 void* HlRetrieveFileMappedMemory(Handle* hptr);
 uint64_t HlRetrieveMappedFileSize(Handle* hptr);
 void HlSleepMs(uint64_t ms);
+int64_t HlObjectManagerGetFd(Handle* hptr);
+uint64_t HlObjectManagerStatFdType(Handle* hptr);
+uint64_t HlObjectManagerStatFdReferenceCount(Handle* hptr);
+Handle* HlObjectManagerGetHandleFromHd(int64_t hd);
+uint64_t HlGetUptimeNs();
 
 #endif
